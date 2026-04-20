@@ -587,7 +587,7 @@ function buildHeader(d) {
    カウントダウン（修正版：あと→数字→日 の順）
    ============================================================ */
 function buildCountdown(d) {
-  const events = (d.events && d.events.length) ? d.events : DEFAULTS.events;
+  const events = Array.isArray(d.events) ? d.events : DEFAULTS.events;
   const grid   = document.getElementById('cd-grid');
   const today  = new Date();
   today.setHours(0, 0, 0, 0);
@@ -689,7 +689,7 @@ function buildCampaign(d) {
    お知らせ
    ============================================================ */
 function buildNotice(d) {
-  const notices = (d.notices && d.notices.length) ? d.notices : DEFAULTS.notices;
+  const notices = Array.isArray(d.notices) ? d.notices : DEFAULTS.notices;
   const ul = document.getElementById('notice-list');
   const tagMap = {
     info:   { label: 'お知らせ', css: 'tag-info'   },
@@ -712,7 +712,7 @@ function buildNotice(d) {
    今月の予定
    ============================================================ */
 function buildSchedule(d) {
-  const list  = (d.schedule && d.schedule.length) ? d.schedule : DEFAULTS.schedule;
+  const list  = Array.isArray(d.schedule) ? d.schedule : DEFAULTS.schedule;
   const tbody = document.getElementById('sched-body');
   list.forEach(r => {
     const tr = document.createElement('tr');
