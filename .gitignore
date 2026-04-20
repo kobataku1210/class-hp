@@ -1,0 +1,12 @@
+node_modules/
+.claude/
+*.bat
+*.cmd
+*.ps1
+corepack
+node.exe
+npm
+npx
+LICENSE
+CHANGELOG.md
+README.md

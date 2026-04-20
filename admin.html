@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理画面 ― 学級ホームページ</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+    min-height: 100vh;
+  }
+
+  /* ===== ログイン画面 ===== */
+  #login-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1148a0, #38b2ac);
+  }
+  .login-box {
+    background: white;
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: min(400px, 90vw);
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .login-box h1 { font-size: 1.4rem; color: #1148a0; margin-bottom: 6px; }
+  .login-box p  { font-size: 0.82rem; color: #64748b; margin-bottom: 28px; }
+  .pin-input {
+    width: 100%;
+    padding: 14px;
+    font-size: 1.4rem;
+    text-align: center;
+    letter-spacing: 0.4em;
+    border: 2px solid #bfdbfe;
+    border-radius: 12px;
+    outline: none;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+  .pin-input:focus { border-color: #1148a0; }
+  .login-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #1148a0, #38b2ac);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .login-btn:hover { opacity: 0.9; }
+  #login-error { color: #ef4444; font-size: 0.85rem; margin-top: 10px; min-height: 1.2em; }
+
+  /* ===== 管理画面本体 ===== */
+  #admin-screen { display: none; }
+
+  .admin-header {
+    background: linear-gradient(135deg, #1148a0, #2f8bcc);
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  }
+  .admin-header h1 { font-size: 1.05rem; white-space: nowrap; }
+  .header-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .btn-preview {
+    padding: 7px 15px;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.42);
+    color: white;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+  }
+  .btn-preview:hover { background: rgba(255,255,255,0.32); }
+  .btn-save-top {
+    padding: 7px 20px;
+    background: #f0fdf4;
+    border: none;
+    color: #166534;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-save-top:hover { background: #dcfce7; }
+  .btn-logout {
+    padding: 7px 13px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: rgba(255,255,255,0.75);
+    border-radius: 10px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .admin-body { max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; }
+
+  /* セクション */
+  .admin-section {
+    background: white;
+    border-radius: 16px;
+    padding: 24px 22px;
+    margin-bottom: 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    border: 1px solid #e2e8f0;
+  }
+  .admin-section h2 {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #1148a0;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #bfdbfe;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* フォーム部品 */
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 4px; }
+  .form-input, .form-textarea, .form-select {
+    width: 100%;
+    padding: 9px 13px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.93rem;
+    font-family: inherit;
+    color: #1e293b;
+    outline: none;
+    transition: border-color 0.2s;
+    background: #fafafa;
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: #1148a0; background: white; }
+  .form-textarea { min-height: 76px; resize: vertical; }
+
+  /* 動的リスト */
+  .dynamic-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+  .list-item {
+    display: grid;
+    gap: 7px;
+    padding: 13px 14px;
+    background: #f8faff;
+    border: 1px solid #dbeafe;
+    border-radius: 11px;
+  }
+  .list-item-3 { grid-template-columns: 1fr 1fr 1fr auto; }
+  .list-item-2 { grid-template-columns: auto 1fr auto; }
+  .list-item-4 { grid-template-columns: 1fr 1fr 1fr auto; }
+  .list-item input, .list-item select {
+    padding: 8px 11px;
+    border: 1.5px solid #dbeafe;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-family: inherit;
+    color: #1e293b;
+    background: white;
+    outline: none;
+    width: 100%;
+  }
+  .list-item input:focus, .list-item select:focus { border-color: #1148a0; }
+  .item-label { font-size: 0.68rem; color: #94a3b8; margin-bottom: 2px; font-weight: 600; }
+  .btn-remove {
+    background: #fee2e2; border: none; color: #ef4444;
+    border-radius: 8px; width: 33px; height: 33px;
+    font-size: 0.95rem; cursor: pointer; align-self: end; flex-shrink: 0;
+  }
+  .btn-remove:hover { background: #fecaca; }
+  .btn-add {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 16px;
+    background: #eff6ff;
+    border: 1.5px dashed #93c5fd;
+    color: #1148a0;
+    border-radius: 10px;
+    font-size: 0.85rem; font-weight: 700; cursor: pointer; width: 100%; justify-content: center;
+  }
+  .btn-add:hover { background: #dbeafe; }
+
+  /* すごろく */
+  .sugoroku-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  @media (max-width: 500px) { .sugoroku-grid { grid-template-columns: 1fr 1fr; } }
+
+  /* パスワード */
+  .pin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 480px) { .pin-grid { grid-template-columns: 1fr; } }
+
+  /* 保存バー */
+  .save-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: white; border-top: 1px solid #e2e8f0;
+    padding: 13px 22px;
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 99;
+  }
+  .btn-save-main {
+    padding: 13px 44px;
+    background: linear-gradient(135deg, #1148a0, #38b2ac);
+    color: white; border: none; border-radius: 14px;
+    font-size: 1rem; font-weight: 800; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(17,72,160,0.35);
+    transition: transform 0.15s, opacity 0.15s;
+  }
+  .btn-save-main:hover { opacity: 0.88; transform: translateY(-1px); }
+  #save-status { font-size: 0.88rem; color: #16a34a; font-weight: 700; min-width: 80px; }
+
+  @media (max-width: 600px) {
+    .list-item-3 { grid-template-columns: 1fr 1fr; }
+    .list-item-4 { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== ログイン画面 ========== -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>🔒 管理画面ログイン</h1>
+    <p>学級ホームページ 管理者専用</p>
+    <input type="password" class="pin-input" id="pin-input"
+           placeholder="暗証番号" maxlength="20"
+           onkeydown="if(event.key==='Enter') doLogin()">
+    <button class="login-btn" onclick="doLogin()">ログイン</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+
+<!-- ========== 管理画面本体 ========== -->
+<div id="admin-screen">
+
+  <div class="admin-header">
+    <h1>⚙️ 管理画面</h1>
+    <div class="header-btns">
+      <a href="class_homepage.html" target="_blank" class="btn-preview">👁 ホームページ確認</a>
+      <a href="campaign.html"       target="_blank" class="btn-preview">🎲 キャンペーン確認</a>
+      <button class="btn-save-top" onclick="saveAll()">💾 保存</button>
+      <button class="btn-logout"   onclick="doLogout()">ログアウト</button>
+    </div>
+  </div>
+
+  <div class="admin-body">
+
+    <!-- 基本情報 -->
+    <div class="admin-section">
+      <h2>🏫 基本情報</h2>
+      <div class="form-row">
+        <label>学級名</label>
+        <input type="text" class="form-input" id="f-className" placeholder="例：3年○組">
+      </div>
+      <div class="form-row">
+        <label>学級目標（漢字）</label>
+        <input type="text" class="form-input" id="f-classGoal" placeholder="例：雲外蒼天">
+      </div>
+      <div class="form-row">
+        <label>学級目標（読み・説明）</label>
+        <input type="text" class="form-input" id="f-classGoalSub"
+               placeholder="例：くもがいそうてん ― 苦しい時を越えれば、青空が待っている">
+      </div>
+      <div class="form-row">
+        <label>学級メッセージ（改行は \n と入力）</label>
+        <textarea class="form-textarea" id="f-classMessage"></textarea>
+      </div>
+    </div>
+
+    <!-- 行事カウントダウン -->
+    <div class="admin-section">
+      <h2>📅 行事カウントダウン</h2>
+      <div class="dynamic-list" id="events-list"></div>
+      <button class="btn-add" onclick="addEvent()">＋ 行事を追加</button>
+    </div>
+
+    <!-- キャンペーン管理（複数対応） -->
+    <div class="admin-section">
+      <h2>🎲 キャンペーン管理</h2>
+      <p style="font-size:.78rem;color:#64748b;margin-bottom:14px">
+        ※ キャンペーンは複数登録できます。ホームページにはすべて表示され、ゴール済みは「完」と表示されます。<br>
+        　「現在位置」をここから変更できます。ポイント追加はキャンペーンページ内（教員用PIN：1210）から行います。
+      </p>
+      <div class="dynamic-list" id="camps-list"></div>
+      <button class="btn-add" onclick="addCamp()">＋ キャンペーンを追加</button>
+    </div>
+
+    <!-- お知らせ -->
+    <div class="admin-section">
+      <h2>📢 お知らせ</h2>
+      <div class="dynamic-list" id="notices-list"></div>
+      <button class="btn-add" onclick="addNotice()">＋ お知らせを追加</button>
+    </div>
+
+    <!-- 今月の予定 -->
+    <div class="admin-section">
+      <h2>🗓️ 今月の予定</h2>
+      <div class="dynamic-list" id="schedule-list"></div>
+      <button class="btn-add" onclick="addSchedule()">＋ 予定を追加</button>
+    </div>
+
+    <!-- 暗証番号 -->
+    <div class="admin-section">
+      <h2>🔒 暗証番号の変更</h2>
+      <div class="pin-grid">
+        <div class="form-row" style="margin-bottom:0">
+          <label>新しい暗証番号</label>
+          <input type="password" class="form-input" id="f-newPin" placeholder="新しい番号">
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>確認のため再入力</label>
+          <input type="password" class="form-input" id="f-newPin2" placeholder="もう一度入力">
+        </div>
+      </div>
+      <p style="font-size:0.76rem;color:#94a3b8;margin-top:10px">
+        ※ 変更しない場合は空欄のままにしてください。初期暗証番号は <strong>1210</strong> です。
+      </p>
+    </div>
+
+  </div><!-- /admin-body -->
+
+  <div class="save-bar">
+    <span id="save-status"></span>
+    <button class="btn-save-main" onclick="saveAll()">💾 すべて保存してホームページに反映</button>
+  </div>
+
+</div><!-- /admin-screen -->
+
+
+<script>
+/* ============================================================
+   暗証番号 ＆ ログイン
+   ============================================================ */
+const DEFAULT_PIN = '1210';
+const STORAGE_KEY = 'classHomepageData';
+const PIN_KEY     = 'classAdminPIN';
+
+function getPin()  { return localStorage.getItem(PIN_KEY) || DEFAULT_PIN; }
+
+function doLogin() {
+  const input = document.getElementById('pin-input').value;
+  if (input === getPin()) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-screen').style.display = 'block';
+    loadFormData();
+  } else {
+    document.getElementById('login-error').textContent = '暗証番号が違います。もう一度確認してください。';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+function doLogout() {
+  document.getElementById('admin-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('login-error').textContent = '';
+}
+
+/* ============================================================
+   デフォルトデータ
+   ============================================================ */
+const DEFAULTS = {
+  className:    '3年○組',
+  classGoal:    '雲外蒼天',
+  classGoalSub: 'くもがいそうてん ― 苦しい時を越えれば、青空が待っている',
+  classMessage: 'みんなで力を合わせて、最高の3年間の仕上げをしよう。\nどんな雲の中にいても、ここで一緒に突き抜けていこう！',
+  events: [
+    { name: '定期テスト', date: '2026-05-08', emoji: '✏️' },
+    { name: '修学旅行',   date: '2026-05-20', emoji: '🚅' },
+    { name: '体育祭',     date: '2026-06-10', emoji: '🏃' },
+  ],
+  campaigns: [{ name: 'あいさつチャレンジ', total: 30, current: 8, goalEmoji: '🏆', completed: false, type: 'cloud' }],
+  notices: [
+    { tag: 'info',   text: '学級通信を配布しました。ご確認ください。' },
+    { tag: 'submit', text: '提出物（理科レポート）の締切は水曜日です。忘れずに！' },
+    { tag: 'remind', text: '来週からあいさつキャンペーンが始まります。みんなで盛り上げよう！' },
+  ],
+  schedule: [
+    { date: '5月 8日（金）', event: '定期テスト①',         memo: '1・2時間目' },
+    { date: '5月12日（火）', event: '学年集会',             memo: '体育館 6時間目' },
+    { date: '5月15日（木）', event: '学級通信配布',         memo: '' },
+    { date: '5月20日（火）', event: '修学旅行（出発）',     memo: '集合 7:30' },
+    { date: '5月22日（木）', event: '修学旅行（帰着）',     memo: '帰着予定 18:00頃' },
+    { date: '5月29日（金）', event: '学年レクリエーション', memo: '運動場' },
+  ],
+};
+
+/* ============================================================
+   フォームにデータを読み込む
+   ============================================================ */
+function loadFormData() {
+  const raw  = localStorage.getItem(STORAGE_KEY);
+  const data = raw ? JSON.parse(raw) : DEFAULTS;
+
+  document.getElementById('f-className').value    = data.className    || DEFAULTS.className;
+  document.getElementById('f-classGoal').value    = data.classGoal    || DEFAULTS.classGoal;
+  document.getElementById('f-classGoalSub').value = data.classGoalSub || DEFAULTS.classGoalSub;
+  document.getElementById('f-classMessage').value = data.classMessage || DEFAULTS.classMessage;
+
+  document.getElementById('events-list').innerHTML = '';
+  (data.events || DEFAULTS.events).forEach(e => addEvent(e));
+
+  document.getElementById('camps-list').innerHTML = '';
+  const camps = data.campaigns || (data.sugoroku
+    ? [{ name:      data.sugoroku.campaignName || 'キャンペーン',
+         total:     data.sugoroku.total     ?? 30,
+         current:   data.sugoroku.current   ?? 0,
+         goalEmoji: data.sugoroku.goalEmoji || '🏆',
+         completed: false,
+         type:      'cloud' }]
+    : DEFAULTS.campaigns);
+  camps.forEach(c => addCamp(c));
+
+  document.getElementById('notices-list').innerHTML = '';
+  (data.notices || DEFAULTS.notices).forEach(n => addNotice(n));
+
+  document.getElementById('schedule-list').innerHTML = '';
+  (data.schedule || DEFAULTS.schedule).forEach(r => addSchedule(r));
+}
+
+/* ============================================================
+   動的リスト：キャンペーン
+   ============================================================ */
+function addCamp(data = {}) {
+  const row = document.createElement('div');
+  row.className = 'list-item';
+  row.style.cssText = 'grid-template-columns:1fr; gap:10px;';
+  const completed = data.completed || false;
+  const type      = data.type || 'cloud';
+  const typeOpts  = [
+    ['cloud', '☁ 雲渡りキャンペーン'],
+    ['tree',  '🌸 挙手・桜の木'],
+  ].map(([v,l]) => `<option value="${v}"${type===v?' selected':''}>${l}</option>`).join('');
+  row.innerHTML = `
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 72px auto;gap:8px;align-items:end">
+      <div>
+        <div class="item-label">キャンペーン名</div>
+        <input type="text" placeholder="例：あいさつチャレンジ" value="${esc(data.name||'')}">
+      </div>
+      <div>
+        <div class="item-label">目標回数（マス数）</div>
+        <input type="number" min="1" max="200" value="${data.total ?? 30}" style="text-align:center">
+      </div>
+      <div>
+        <div class="item-label">現在位置</div>
+        <input type="number" min="0" max="200" value="${data.current ?? 0}" style="text-align:center">
+      </div>
+      <div>
+        <div class="item-label">ゴール絵文字</div>
+        <input type="text" placeholder="🏆" value="${esc(data.goalEmoji||'🏆')}" style="text-align:center;width:60px">
+      </div>
+      <button class="btn-remove" onclick="this.closest('.list-item').remove()" title="削除" style="align-self:end">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:4px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <div class="item-label" style="margin-bottom:3px">種類</div>
+          <select style="padding:6px 10px;border:1.5px solid #dbeafe;border-radius:8px;font-size:.84rem;font-family:inherit">
+            ${typeOpts}
+          </select>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;color:#475569;cursor:pointer;margin-top:16px">
+          <input type="checkbox" ${completed?'checked':''} style="width:auto;accent-color:#1148a0">
+          完了済み（「完」と表示）
+        </label>
+      </div>
+      <a href="#" onclick="openCamp(this);return false;"
+         style="font-size:.75rem;color:#1148a0;font-weight:700;text-decoration:none;white-space:nowrap;align-self:end">
+        🎲 ページを確認 →
+      </a>
+    </div>
+  `;
+  document.getElementById('camps-list').appendChild(row);
+}
+
+function openCamp(a) {
+  const items = [...document.querySelectorAll('#camps-list .list-item')];
+  const idx   = items.indexOf(a.closest('.list-item'));
+  const type  = a.closest('.list-item').querySelector('select').value;
+  const page  = type === 'tree' ? 'campaign_tree.html' : 'campaign.html';
+  window.open(page + '?ci=' + idx, '_blank');
+}
+
+function getCamps() {
+  return [...document.querySelectorAll('#camps-list .list-item')].map(r => {
+    const inputs = r.querySelectorAll('input[type=text], input[type=number]');
+    const cb     = r.querySelector('input[type=checkbox]');
+    const sel    = r.querySelector('select');
+    return {
+      name:      inputs[0].value.trim()       || 'キャンペーン',
+      total:     parseInt(inputs[1].value, 10) || 30,
+      current:   parseInt(inputs[2].value, 10) || 0,
+      goalEmoji: inputs[3].value.trim()       || '🏆',
+      completed: cb  ? cb.checked  : false,
+      type:      sel ? sel.value   : 'cloud',
+    };
+  });
+}
+
+/* ============================================================
+   動的リスト：行事
+   ============================================================ */
+function addEvent(data = {}) {
+  const row = document.createElement('div');
+  row.className = 'list-item list-item-3';
+  row.innerHTML = `
+    <div><div class="item-label">行事名</div>
+      <input type="text" placeholder="例：修学旅行" value="${esc(data.name||'')}"></div>
+    <div><div class="item-label">日付（YYYY-MM-DD）</div>
+      <input type="date" value="${esc(data.date||'')}"></div>
+    <div><div class="item-label">絵文字</div>
+      <input type="text" placeholder="🎯" value="${esc(data.emoji||'')}" style="width:70px"></div>
+    <button class="btn-remove" onclick="this.closest('.list-item').remove()" title="削除">✕</button>
+  `;
+  document.getElementById('events-list').appendChild(row);
+}
+function getEvents() {
+  return [...document.querySelectorAll('#events-list .list-item')].map(r => {
+    const i = r.querySelectorAll('input');
+    return { name: i[0].value.trim(), date: i[1].value, emoji: i[2].value.trim() };
+  }).filter(e => e.name && e.date);
+}
+
+/* ============================================================
+   動的リスト：お知らせ
+   ============================================================ */
+function addNotice(data = {}) {
+  const row = document.createElement('div');
+  row.className = 'list-item list-item-2';
+  const tagOpts = [
+    ['info',   'お知らせ'],
+    ['submit', '提出物'],
+    ['remind', '連絡'],
+  ].map(([v,l]) => `<option value="${v}"${(data.tag||'info')===v?' selected':''}>${l}</option>`).join('');
+  row.innerHTML = `
+    <div><div class="item-label">種類</div>
+      <select style="width:100px">${tagOpts}</select></div>
+    <div><div class="item-label">内容</div>
+      <input type="text" placeholder="お知らせの内容" value="${esc(data.text||'')}"></div>
+    <button class="btn-remove" onclick="this.closest('.list-item').remove()" title="削除">✕</button>
+  `;
+  document.getElementById('notices-list').appendChild(row);
+}
+function getNotices() {
+  return [...document.querySelectorAll('#notices-list .list-item')].map(r => ({
+    tag:  r.querySelector('select').value,
+    text: r.querySelector('input').value.trim(),
+  })).filter(n => n.text);
+}
+
+/* ============================================================
+   動的リスト：予定
+   ============================================================ */
+function addSchedule(data = {}) {
+  const row = document.createElement('div');
+  row.className = 'list-item list-item-4';
+  row.innerHTML = `
+    <div><div class="item-label">日程</div>
+      <input type="text" placeholder="5月8日（金）" value="${esc(data.date||'')}"></div>
+    <div><div class="item-label">行事・内容</div>
+      <input type="text" placeholder="定期テスト" value="${esc(data.event||'')}"></div>
+    <div><div class="item-label">備考</div>
+      <input type="text" placeholder="1・2時間目" value="${esc(data.memo||'')}"></div>
+    <button class="btn-remove" onclick="this.closest('.list-item').remove()" title="削除">✕</button>
+  `;
+  document.getElementById('schedule-list').appendChild(row);
+}
+function getSchedule() {
+  return [...document.querySelectorAll('#schedule-list .list-item')].map(r => {
+    const i = r.querySelectorAll('input');
+    return { date: i[0].value.trim(), event: i[1].value.trim(), memo: i[2].value.trim() };
+  }).filter(r => r.date || r.event);
+}
+
+/* ============================================================
+   保存
+   ============================================================ */
+function saveAll() {
+  const newPin  = document.getElementById('f-newPin').value.trim();
+  const newPin2 = document.getElementById('f-newPin2').value.trim();
+  if (newPin || newPin2) {
+    if (newPin !== newPin2)  { alert('新しい暗証番号と確認用が一致しません。'); return; }
+    if (newPin.length < 4)   { alert('暗証番号は4文字以上にしてください。'); return; }
+    localStorage.setItem(PIN_KEY, newPin);
+    document.getElementById('f-newPin').value  = '';
+    document.getElementById('f-newPin2').value = '';
+  }
+
+  const data = {
+    className:    document.getElementById('f-className').value.trim(),
+    classGoal:    document.getElementById('f-classGoal').value.trim(),
+    classGoalSub: document.getElementById('f-classGoalSub').value.trim(),
+    classMessage: document.getElementById('f-classMessage').value,
+    events:    getEvents(),
+    campaigns: getCamps(),
+    notices:   getNotices(),
+    schedule: getSchedule(),
+  };
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+  const status = document.getElementById('save-status');
+  status.textContent = '✅ 保存しました！';
+  setTimeout(() => { status.textContent = ''; }, 3000);
+}
+
+/* ============================================================
+   ユーティリティ
+   ============================================================ */
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

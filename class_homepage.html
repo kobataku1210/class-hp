@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>学級ホームページ</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ===== ページ全体 ===== */
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+    background: #eef4fb;
+    color: #1e293b;
+    min-height: 100vh;
+  }
+
+  /* ===== 固定背景グラデーション ===== */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(175deg,
+      #daeeff 0%,
+      #e8f4fd 30%,
+      #f0f8e8 65%,
+      #fdf8ee 100%
+    );
+    z-index: -2;
+  }
+
+  /* ===== 雲の背景アニメーション ===== */
+  .cloud-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .cld {
+    position: absolute;
+    background: white;
+    border-radius: 60px;
+    opacity: 0.45;
+  }
+  .cld::before, .cld::after {
+    content: '';
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+  }
+  .cld1 { width:200px; height:62px; top:4%;  left:3%;   animation: drift 32s linear infinite; }
+  .cld1::before { width:96px;  height:96px;  top:-48px; left:22px;  }
+  .cld1::after  { width:72px;  height:72px;  top:-36px; left:88px;  }
+  .cld2 { width:150px; height:48px; top:12%; right:8%;  animation: drift 42s linear infinite reverse; }
+  .cld2::before { width:72px;  height:72px;  top:-36px; left:18px;  }
+  .cld2::after  { width:54px;  height:54px;  top:-27px; left:66px;  }
+  .cld3 { width:240px; height:74px; top:38%; left:-4%;  animation: drift 54s linear infinite; }
+  .cld3::before { width:115px; height:115px; top:-58px; left:28px;  }
+  .cld3::after  { width:86px;  height:86px;  top:-43px; left:110px; }
+  .cld4 { width:130px; height:40px; top:60%; right:4%;  animation: drift 38s linear infinite reverse; }
+  .cld4::before { width:62px;  height:62px;  top:-31px; left:14px;  }
+  .cld4::after  { width:46px;  height:46px;  top:-23px; left:58px;  }
+  .cld5 { width:170px; height:52px; top:80%; left:20%;  animation: drift 46s linear infinite; }
+  .cld5::before { width:80px;  height:80px;  top:-40px; left:20px;  }
+  .cld5::after  { width:60px;  height:60px;  top:-30px; left:76px;  }
+  @keyframes drift {
+    from { transform: translateX(-280px); }
+    to   { transform: translateX(110vw);  }
+  }
+
+  /* ===== ラッパー ===== */
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 24px 16px 72px;
+  }
+
+  /* ===== ヒーローヘッダー ===== */
+  header {
+    position: relative;
+    border-radius: 28px;
+    overflow: hidden;
+    margin-bottom: 40px;
+    box-shadow: 0 12px 48px rgba(17,72,160,0.28), 0 2px 8px rgba(0,0,0,0.08);
+  }
+  /* 空グラデーション */
+  .hero-sky {
+    background:
+      radial-gradient(ellipse 70% 60% at 50% -10%, rgba(255,255,200,0.22) 0%, transparent 65%),
+      linear-gradient(160deg, #0c2f66 0%, #1148a0 28%, #1976d2 52%, #2196f3 72%, #38b2ac 100%);
+    padding: 52px 28px 44px;
+    text-align: center;
+    color: white;
+  }
+  /* 管理画面リンク */
+  .admin-link {
+    position: absolute;
+    top: 14px; right: 14px;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.28);
+    color: rgba(255,255,255,0.7);
+    padding: 5px 13px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: background 0.2s, color 0.2s;
+    z-index: 2;
+  }
+  .admin-link:hover { background: rgba(255,255,255,0.26); color: white; }
+
+  /* 学期バッジ */
+  .hero-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.36);
+    padding: 4px 18px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    margin-bottom: 16px;
+  }
+
+  /* ▼ 学級名 */
+  .hero-class {
+    font-size: clamp(1.8rem, 6vw, 3rem);
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    margin-bottom: 18px;
+    line-height: 1.15;
+  }
+
+  /* ▼ 学級目標 雲外蒼天 */
+  .hero-goal-wrap {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 10px;
+  }
+  .hero-goal {
+    font-size: clamp(2.2rem, 8vw, 4rem);
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    /* 空からの光：白→淡いシアン グラデーション */
+    background: linear-gradient(170deg, #ffffff 0%, #e0f7ff 50%, #b2f0e8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 3px 8px rgba(0,0,0,0.28));
+    line-height: 1.1;
+  }
+  .hero-goal-ruby {
+    display: block;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    opacity: 0.78;
+    margin-top: 6px;
+    -webkit-text-fill-color: rgba(255,255,255,0.78);
+    color: rgba(255,255,255,0.78);
+    filter: none;
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+  }
+
+  /* ▼ 学級メッセージ */
+  .hero-msg {
+    max-width: 520px;
+    margin: 18px auto 0;
+    font-size: 0.93rem;
+    line-height: 1.85;
+    opacity: 0.88;
+  }
+
+  /* 下部の波形装飾 */
+  .hero-wave {
+    display: block;
+    width: 100%;
+    height: 40px;
+    background: #eef4fb;
+    clip-path: ellipse(55% 100% at 50% 100%);
+    margin-top: -1px;
+  }
+  body::before ~ .wrap header .hero-wave { background: transparent; }
+
+  /* ===== セクション共通 ===== */
+  section { margin-bottom: 42px; }
+  .sec-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: #1148a0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #bfdbfe;
+    letter-spacing: 0.04em;
+  }
+  .sec-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, #1148a0, #38b2ac);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 1.05rem;
+    flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba(17,72,160,0.3);
+  }
+
+  /* ===== カウントダウン ===== */
+  .cd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 16px;
+  }
+  .cd-card {
+    background: white;
+    border-radius: 18px;
+    padding: 22px 16px 18px;
+    text-align: center;
+    box-shadow: 0 3px 16px rgba(17,72,160,0.1);
+    border: 1px solid #bfdbfe;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .cd-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #1148a0, #38b2ac);
+    border-radius: 18px 18px 0 0;
+  }
+  .cd-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(17,72,160,0.18); }
+  .cd-emoji   { font-size: 1.9rem; line-height: 1; margin-bottom: 8px; }
+  .cd-name    { font-size: 0.9rem; font-weight: 800; color: #374151; margin-bottom: 4px; }
+  .cd-date    { font-size: 0.7rem; color: #94a3b8; margin-bottom: 14px; }
+
+  /* カウントダウン数字 */
+  .cd-body     { display: flex; align-items: baseline; justify-content: center; gap: 3px; }
+  .cd-pre      { font-size: 0.8rem; font-weight: 700; color: #64748b; }
+  .cd-num      {
+    font-size: 2.6rem;
+    font-weight: 900;
+    line-height: 1;
+    background: linear-gradient(135deg, #1148a0, #38b2ac);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .cd-suf      { font-size: 0.88rem; font-weight: 700; color: #64748b; }
+  .cd-done     { font-size: 0.92rem; font-weight: 700; color: #94a3b8; padding: 10px 0; }
+  .cd-today    { font-size: 1.05rem; font-weight: 800; color: #f59e0b; padding: 8px 0; }
+  .cd-card.is-done { opacity: 0.55; }
+  .cd-card.is-done::before { background: #e2e8f0; }
+
+  /* ===== キャンペーンカードリスト ===== */
+  .camp-list { display: flex; flex-direction: column; gap: 14px; }
+  .camp-card {
+    background: linear-gradient(135deg, #0f3460 0%, #1148a0 50%, #2196f3 100%);
+    border-radius: 18px; padding: 22px 24px;
+    color: white; position: relative; overflow: hidden;
+    box-shadow: 0 6px 28px rgba(17,72,160,0.3);
+    text-decoration: none; display: block;
+    transition: transform 0.18s, box-shadow 0.18s;
+  }
+  .camp-card:hover { transform: translateY(-3px); box-shadow: 0 10px 36px rgba(17,72,160,0.38); }
+  .camp-card::before {
+    content: '☁'; position: absolute;
+    font-size: 7rem; right: -8px; top: -18px;
+    opacity: 0.08; line-height: 1; pointer-events: none;
+  }
+  .camp-card.is-done {
+    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+  }
+  .camp-card-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px; gap: 10px;
+  }
+  .camp-card-name { font-size: 1.1rem; font-weight: 900; text-shadow: 0 1px 6px rgba(0,0,0,0.2); }
+  .camp-badge-done {
+    background: rgba(255,255,255,0.22); border: 1px solid rgba(255,255,255,0.38);
+    padding: 3px 12px; border-radius: 10px; font-size: 0.78rem; font-weight: 800;
+    flex-shrink: 0;
+  }
+  .camp-badge-active {
+    background: rgba(110,231,183,0.25); border: 1px solid rgba(110,231,183,0.5);
+    color: #6ee7b7; padding: 3px 12px; border-radius: 10px;
+    font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
+  }
+  .camp-pbar-wrap { background: rgba(255,255,255,0.2); border-radius: 5px; height: 7px; overflow: hidden; margin-bottom: 12px; }
+  .camp-pbar-fill { height: 100%; background: linear-gradient(90deg,#6ee7b7,#38b2ac); border-radius: 5px; transition: width .8s ease; }
+  .camp-card-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.78rem; opacity: 0.82;
+  }
+  .camp-arrow { font-size: 1rem; opacity: 0.7; }
+
+  /* ===== ご褒美スロットバナー ===== */
+  .reward-banner {
+    display: block; text-decoration: none;
+    background: linear-gradient(135deg, #0a0f28 0%, #1a1050 40%, #0f0a28 100%);
+    border-radius: 20px; padding: 22px 26px;
+    border: 2px solid rgba(255,215,0,.3);
+    box-shadow: 0 8px 32px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.05);
+    position: relative; overflow: hidden;
+    transition: transform .18s, box-shadow .18s;
+  }
+  .reward-banner:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,.45); }
+  .reward-banner::before {
+    content: '🎰'; position: absolute;
+    font-size: 7rem; right: -6px; top: -14px;
+    opacity: .1; line-height: 1; pointer-events: none;
+  }
+  .rb-badge {
+    display: inline-block;
+    background: rgba(255,215,0,.18); border: 1px solid rgba(255,215,0,.4);
+    color: #fde68a; padding: 2px 12px; border-radius: 10px;
+    font-size: .72rem; font-weight: 800; letter-spacing: .08em; margin-bottom: 8px;
+  }
+  .rb-title {
+    font-size: 1.35rem; font-weight: 900; letter-spacing: .06em;
+    background: linear-gradient(135deg, #fff 0%, #fde68a 60%, #f59e0b 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 6px;
+  }
+  .rb-sub { font-size: .8rem; color: rgba(255,255,255,.55); }
+  .rb-arrow { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); font-size: 1.4rem; color: rgba(255,215,0,.6); }
+
+  /* ===== お知らせ ===== */
+  .notice-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .notice-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 18px;
+    background: white;
+    border-radius: 13px;
+    border: 1px solid #bfdbfe;
+    box-shadow: 0 1px 8px rgba(17,72,160,0.07);
+  }
+  .notice-tag {
+    flex-shrink: 0;
+    padding: 3px 11px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    margin-top: 1px;
+    letter-spacing: 0.04em;
+  }
+  .tag-info   { background: #dbeafe; color: #1e40af; }
+  .tag-submit { background: #fef9c3; color: #854d0e; }
+  .tag-remind { background: #dcfce7; color: #14532d; }
+  .notice-text { font-size: 0.9rem; line-height: 1.7; color: #374151; }
+
+  /* ===== 今月の予定 ===== */
+  .sched-wrap {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid #bfdbfe;
+    box-shadow: 0 2px 14px rgba(17,72,160,0.08);
+  }
+  .sched-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .sched-table th {
+    background: linear-gradient(135deg, #1148a0, #1976d2);
+    color: white;
+    padding: 11px 16px;
+    text-align: left;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+  .sched-table td { padding: 11px 16px; border-bottom: 1px solid #e2e8f0; color: #374151; }
+  .sched-table tr:nth-child(even) td { background: #f4f8ff; }
+  .sched-table tr:last-child td { border-bottom: none; }
+  .sched-memo { color: #64748b; font-size: 0.82rem; }
+
+  /* ===== フッター ===== */
+  footer {
+    text-align: center;
+    padding: 32px 16px 16px;
+    color: #94a3b8;
+    font-size: 0.78rem;
+    line-height: 2;
+  }
+  .footer-goal {
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    background: linear-gradient(135deg, #1148a0, #38b2ac);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 6px;
+  }
+
+  /* ===== レスポンシブ ===== */
+  @media (max-width: 600px) {
+    .cd-grid { grid-template-columns: repeat(2, 1fr); }
+    .sched-table th:last-child, .sched-table td:last-child { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 背景の雲アニメーション -->
+<div class="cloud-canvas">
+  <div class="cld cld1"></div>
+  <div class="cld cld2"></div>
+  <div class="cld cld3"></div>
+  <div class="cld cld4"></div>
+  <div class="cld cld5"></div>
+</div>
+
+<div class="wrap">
+
+  <!-- ========== ヒーローヘッダー ========== -->
+  <header>
+    <div class="hero-sky">
+      <a href="admin.html" class="admin-link">⚙ 管理画面</a>
+
+      <div class="hero-badge">📚 学級ホームページ</div>
+
+      <!-- ▼ 学級名 -->
+      <div class="hero-class" id="h-class"></div>
+
+      <!-- ▼ 学級目標 -->
+      <div class="hero-goal-wrap">
+        <div class="hero-goal" id="h-goal"></div>
+        <span class="hero-goal-ruby" id="h-goal-sub"></span>
+      </div>
+
+      <!-- ▼ 学級メッセージ -->
+      <p class="hero-msg" id="h-msg"></p>
+    </div>
+    <!-- 波形の境界 -->
+    <svg viewBox="0 0 900 48" xmlns="http://www.w3.org/2000/svg"
+         preserveAspectRatio="none"
+         style="display:block;width:100%;height:48px;background:transparent;">
+      <path d="M0,0 Q225,48 450,24 Q675,0 900,32 L900,48 L0,48 Z"
+            fill="#eef4fb"/>
+    </svg>
+  </header>
+
+
+  <!-- ========== 行事カウントダウン ========== -->
+  <section id="sec-countdown">
+    <h2 class="sec-title">
+      <span class="sec-icon">📅</span>
+      行事カウントダウン
+    </h2>
+    <div class="cd-grid" id="cd-grid"></div>
+  </section>
+
+
+  <!-- ========== キャンペーンコーナー ========== -->
+  <section id="sec-campaign">
+    <h2 class="sec-title">
+      <span class="sec-icon">🎲</span>
+      キャンペーンコーナー
+    </h2>
+    <!-- キャンペーンカードはJSで生成 -->
+    <div class="camp-list" id="camp-list"></div>
+  </section>
+
+
+  <!-- ========== ご褒美スロット ========== -->
+  <section>
+    <h2 class="sec-title">
+      <span class="sec-icon">🎰</span>
+      ご褒美スロット
+    </h2>
+    <a href="reward.html" class="reward-banner">
+      <div class="rb-badge">✨ REWARD ROULETTE</div>
+      <div class="rb-title">スロットチャレンジ</div>
+      <div class="rb-sub">回してご褒美を決めよう！🎉</div>
+      <div class="rb-arrow">▶</div>
+    </a>
+  </section>
+
+  <!-- ========== お知らせ ========== -->
+  <section id="sec-notice">
+    <h2 class="sec-title">
+      <span class="sec-icon">📢</span>
+      お知らせ
+    </h2>
+    <ul class="notice-list" id="notice-list"></ul>
+  </section>
+
+
+  <!-- ========== 今月の予定 ========== -->
+  <section id="sec-schedule">
+    <h2 class="sec-title">
+      <span class="sec-icon">🗓️</span>
+      今月の予定
+    </h2>
+    <div class="sched-wrap">
+      <table class="sched-table">
+        <thead>
+          <tr><th>日程</th><th>行事・内容</th><th>備考</th></tr>
+        </thead>
+        <tbody id="sched-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+
+  <!-- ========== フッター ========== -->
+  <footer>
+    <div class="footer-goal" id="f-goal"></div>
+    <div id="f-class"></div>
+    <div style="margin-top:4px;font-size:0.72rem">
+      ※ このページに個人情報は含まれていません
+    </div>
+  </footer>
+
+</div><!-- /wrap -->
+
+
+<script>
+/* ============================================================
+   設定
+   ============================================================ */
+const STORAGE_KEY = 'classHomepageData';
+
+const DEFAULTS = {
+  className:    '3年○組',
+  classGoal:    '雲外蒼天',
+  classGoalSub: 'くもがいそうてん ― 苦しい時を越えれば、青空が待っている',
+  classMessage: 'みんなで力を合わせて、最高の3年間の仕上げをしよう。\nどんな雲の中にいても、ここで一緒に突き抜けていこう！',
+  events: [
+    { name: '定期テスト', date: '2026-05-08', emoji: '✏️' },
+    { name: '修学旅行',   date: '2026-05-20', emoji: '🚅' },
+    { name: '体育祭',     date: '2026-06-10', emoji: '🏃' },
+  ],
+  campaigns: [
+    { name: 'あいさつチャレンジ', total: 30, current: 8, goalEmoji: '🏆', completed: false, type: 'cloud' },
+  ],
+  notices: [
+    { tag: 'info',   text: '学級通信を配布しました。ご確認ください。' },
+    { tag: 'submit', text: '提出物（理科レポート）の締切は水曜日です。忘れずに！' },
+    { tag: 'remind', text: '来週からあいさつキャンペーンが始まります。みんなで盛り上げよう！' },
+  ],
+  schedule: [
+    { date: '5月 8日（金）', event: '定期テスト①',         memo: '1・2時間目' },
+    { date: '5月12日（火）', event: '学年集会',             memo: '体育館 6時間目' },
+    { date: '5月15日（木）', event: '学級通信配布',         memo: '' },
+    { date: '5月20日（火）', event: '修学旅行（出発）',     memo: '集合 7:30' },
+    { date: '5月22日（木）', event: '修学旅行（帰着）',     memo: '帰着予定 18:00頃' },
+    { date: '5月29日（金）', event: '学年レクリエーション', memo: '運動場' },
+  ],
+};
+
+/* ============================================================
+   データ読み込み
+   ============================================================ */
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+function merge(val, def) {
+  return (val !== undefined && val !== null && val !== '') ? val : def;
+}
+
+/* ============================================================
+   ヘッダー
+   ============================================================ */
+function buildHeader(d) {
+  const name = merge(d.className,    DEFAULTS.className);
+  const goal = merge(d.classGoal,    DEFAULTS.classGoal);
+  const sub  = merge(d.classGoalSub, DEFAULTS.classGoalSub);
+  const msg  = merge(d.classMessage, DEFAULTS.classMessage);
+
+  document.title = name + ' 学級ホームページ';
+  document.getElementById('h-class').textContent = name;
+  document.getElementById('h-goal').textContent  = goal;
+  document.getElementById('h-goal-sub').textContent = sub;
+  document.getElementById('h-msg').innerHTML = msg.replace(/\n/g, '<br>');
+  document.getElementById('f-goal').textContent  = '☁ ' + goal + ' ☁';
+  document.getElementById('f-class').textContent = name + ' 学級ホームページ ― 2026年度';
+}
+
+/* ============================================================
+   カウントダウン（修正版：あと→数字→日 の順）
+   ============================================================ */
+function buildCountdown(d) {
+  const events = (d.events && d.events.length) ? d.events : DEFAULTS.events;
+  const grid   = document.getElementById('cd-grid');
+  const today  = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  events.forEach(ev => {
+    const t = new Date(ev.date);
+    t.setHours(0, 0, 0, 0);
+    const diff = Math.round((t - today) / 86400000);
+    const dateStr = `${t.getFullYear()}年${t.getMonth()+1}月${t.getDate()}日`;
+
+    let bodyHTML;
+    if (diff < 0) {
+      bodyHTML = `<div class="cd-done">✓ 終了しました</div>`;
+    } else if (diff === 0) {
+      bodyHTML = `<div class="cd-today">🎉 今日です！</div>`;
+    } else {
+      bodyHTML = `
+        <div class="cd-body">
+          <span class="cd-pre">あと</span>
+          <span class="cd-num">${diff}</span>
+          <span class="cd-suf">日</span>
+        </div>`;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'cd-card' + (diff < 0 ? ' is-done' : '');
+    card.innerHTML = `
+      <div class="cd-emoji">${ev.emoji || '📅'}</div>
+      <div class="cd-name">${ev.name}</div>
+      <div class="cd-date">${dateStr}</div>
+      ${bodyHTML}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+/* ============================================================
+   キャンペーンカードリスト
+   ============================================================ */
+function buildCampaign(d) {
+  const list = document.getElementById('camp-list');
+  list.innerHTML = '';
+
+  // campaigns 配列 または 旧形式 sugoroku を統一して配列化
+  let camps = [];
+  if (d.campaigns && d.campaigns.length) {
+    camps = d.campaigns;
+  } else if (d.sugoroku) {
+    // 旧形式を変換
+    camps = [{
+      name:      d.sugoroku.campaignName || 'キャンペーン',
+      total:     d.sugoroku.total     ?? 30,
+      current:   d.sugoroku.current   ?? 0,
+      goalEmoji: d.sugoroku.goalEmoji || '🏆',
+      completed: false,
+      type:      'cloud',
+    }];
+  } else {
+    camps = DEFAULTS.campaigns;
+  }
+
+  camps.forEach((c, idx) => {
+    const cur  = c.current   ?? 0;
+    const tot  = c.total     ?? 30;
+    const done = c.completed || cur >= tot;
+    const pct  = Math.min(100, Math.round(cur / tot * 100));
+    const isTree = c.type === 'tree';
+
+    // キャンペーンの種類によってページを切り替え
+    const campPage = isTree ? 'campaign_tree.html' : 'campaign.html';
+    const campIcon = isTree ? '🌸' : '🌟';
+    const campUnit = isTree ? '回' : 'マス';
+    const campArrow = isTree ? '🌸 詳しく見る →' : '🚀 詳しく見る →';
+
+    const a = document.createElement('a');
+    a.href      = `${campPage}?ci=${idx}`;
+    a.className = 'camp-card' + (done ? ' is-done' : '');
+
+    a.innerHTML = `
+      <div class="camp-card-top">
+        <div class="camp-card-name">${campIcon} ${c.name || 'キャンペーン'}</div>
+        ${done
+          ? '<span class="camp-badge-done">✅ 完</span>'
+          : '<span class="camp-badge-active">● 進行中</span>'}
+      </div>
+      <div class="camp-pbar-wrap">
+        <div class="camp-pbar-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="camp-card-foot">
+        <span>${cur} / ${tot} ${campUnit}（${pct}%）</span>
+        <span class="camp-arrow">${campArrow}</span>
+      </div>
+    `;
+    list.appendChild(a);
+  });
+}
+
+/* ============================================================
+   お知らせ
+   ============================================================ */
+function buildNotice(d) {
+  const notices = (d.notices && d.notices.length) ? d.notices : DEFAULTS.notices;
+  const ul = document.getElementById('notice-list');
+  const tagMap = {
+    info:   { label: 'お知らせ', css: 'tag-info'   },
+    submit: { label: '提出物',   css: 'tag-submit'  },
+    remind: { label: '連絡',     css: 'tag-remind'  },
+  };
+  notices.forEach(n => {
+    const t  = tagMap[n.tag] || tagMap.info;
+    const li = document.createElement('li');
+    li.className = 'notice-item';
+    li.innerHTML = `
+      <span class="notice-tag ${t.css}">${t.label}</span>
+      <span class="notice-text">${n.text}</span>
+    `;
+    ul.appendChild(li);
+  });
+}
+
+/* ============================================================
+   今月の予定
+   ============================================================ */
+function buildSchedule(d) {
+  const list  = (d.schedule && d.schedule.length) ? d.schedule : DEFAULTS.schedule;
+  const tbody = document.getElementById('sched-body');
+  list.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.date  || ''}</td>
+      <td>${r.event || ''}</td>
+      <td class="sched-memo">${r.memo || '―'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ============================================================
+   初期化
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  const d = loadData();
+  buildHeader(d);
+  buildCountdown(d);
+  buildCampaign(d);
+  buildNotice(d);
+  buildSchedule(d);
+});
+</script>
+</body>
+</html>

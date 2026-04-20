@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>挙手キャンペーン ― 桜の木</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(160deg, #dbeafe 0%, #f0e9f9 38%, #fce7f3 68%, #fff5f7 100%);
+  color: #1e293b;
+}
+
+/* ===== 背景花びら ===== */
+.petals-bg { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+.petal-bg  { position:absolute; opacity:0; animation:bgpetal linear infinite; }
+@keyframes bgpetal {
+  0%   { opacity:0;   transform:translateY(-20px) rotate(0deg)    translateX(0); }
+  8%   { opacity:.3; }
+  92%  { opacity:.2;  }
+  100% { opacity:0;   transform:translateY(110vh) rotate(420deg)  translateX(var(--drift,0px)); }
+}
+
+/* ===== ページ ===== */
+.page { position:relative; z-index:1; max-width:520px; margin:0 auto; padding:0 16px 60px; }
+
+/* ===== ヘッダー ===== */
+.hd { padding:20px 0 14px; text-align:center; position:relative; }
+.back-btn {
+  position:absolute; top:24px; left:0;
+  background:rgba(255,182,193,.28); border:1px solid rgba(255,182,193,.55);
+  color:#be185d; padding:6px 14px; border-radius:20px;
+  font-size:.78rem; font-weight:700; text-decoration:none;
+}
+.back-btn:hover { background:rgba(255,182,193,.48); }
+.hd-badge {
+  display:inline-block; background:rgba(255,182,193,.22);
+  border:1px solid rgba(255,182,193,.48); padding:3px 16px;
+  border-radius:16px; font-size:.76rem; letter-spacing:.1em; color:#be185d; margin-bottom:8px;
+}
+.hd-title {
+  font-size:clamp(1.4rem,5vw,2rem); font-weight:900;
+  color:#9d174d; text-shadow:0 2px 10px rgba(190,24,93,.15); margin-bottom:4px;
+}
+.hd-sub { font-size:.78rem; color:#db2777; opacity:.72; letter-spacing:.06em; }
+
+/* ===== 桜ツリーカード ===== */
+.tree-card {
+  background:linear-gradient(170deg, #e0f2fe 0%, #f0e8fb 50%, #fdf5f0 100%);
+  border-radius:24px; padding:14px 10px 12px;
+  box-shadow:0 8px 32px rgba(190,24,93,.12), 0 2px 8px rgba(0,0,0,.06);
+  border:1px solid rgba(255,182,193,.35);
+  margin-bottom:16px;
+}
+.tree-label {
+  text-align:center; font-size:.76rem; font-weight:800;
+  color:#be185d; letter-spacing:.08em; margin-bottom:8px;
+}
+#tree-svg {
+  width:100%; display:block;
+  filter:drop-shadow(0 8px 18px rgba(190,24,93,.14));
+}
+.tree-foot {
+  text-align:center; font-size:.85rem; font-weight:800;
+  color:#9d174d; margin-top:8px; letter-spacing:.04em;
+}
+
+/* ===== ステータス ===== */
+.stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+.stat {
+  background:rgba(255,255,255,.88); backdrop-filter:blur(6px);
+  border-radius:14px; padding:12px 8px; text-align:center;
+  box-shadow:0 2px 10px rgba(190,24,93,.08); border:1px solid rgba(255,182,193,.32);
+}
+.stat .lbl { font-size:.64rem; color:#db2777; font-weight:700; margin-bottom:2px; }
+.stat .val { font-size:1.45rem; font-weight:900; color:#9d174d; line-height:1; }
+.stat .unt { font-size:.64rem; color:#f9a8d4; }
+
+/* ===== ポイント追加パネル ===== */
+.pt-panel {
+  background:rgba(255,255,255,.9); backdrop-filter:blur(8px);
+  border-radius:18px; padding:20px;
+  box-shadow:0 4px 18px rgba(190,24,93,.1);
+  border:1px solid rgba(255,182,193,.38); margin-bottom:16px;
+}
+.pt-title { font-size:.9rem; font-weight:800; color:#9d174d; margin-bottom:14px; }
+.pin-row  { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+.pin-f {
+  padding:9px 13px; border:2px solid #fbcfe8; border-radius:10px;
+  font-size:1rem; text-align:center; letter-spacing:.2em; width:130px;
+  font-family:inherit; outline:none; transition:border-color .2s;
+}
+.pin-f:focus { border-color:#db2777; }
+.btn-auth {
+  padding:9px 18px; background:linear-gradient(135deg,#be185d,#ec4899);
+  color:#fff; border:none; border-radius:10px;
+  font-size:.88rem; font-weight:700; cursor:pointer;
+}
+.btn-auth:hover { opacity:.9; }
+.pin-ng { color:#ef4444; font-size:.82rem; }
+.pt-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.pt-input {
+  padding:10px 13px; border:2px solid #fbcfe8; border-radius:10px;
+  font-size:1.1rem; font-weight:700; text-align:center; width:90px;
+  outline:none; font-family:inherit; color:#9d174d;
+}
+.pt-input:focus { border-color:#db2777; }
+.btn-add-pt {
+  padding:10px 22px; background:linear-gradient(135deg,#be185d,#ec4899);
+  color:#fff; border:none; border-radius:10px;
+  font-size:.95rem; font-weight:800; cursor:pointer;
+  box-shadow:0 3px 12px rgba(190,24,93,.32);
+  transition:opacity .15s, transform .1s;
+}
+.btn-add-pt:hover:not(:disabled) { opacity:.88; transform:translateY(-1px); }
+.btn-add-pt:disabled { opacity:.4; cursor:not-allowed; box-shadow:none; }
+.pt-hint { font-size:.73rem; color:#f9a8d4; margin-top:8px; }
+
+/* ===== ゴールオーバーレイ ===== */
+#goal-overlay {
+  display:none; position:fixed; inset:0; z-index:1000;
+  background:rgba(157,23,77,.55); backdrop-filter:blur(6px);
+  align-items:center; justify-content:center;
+}
+#goal-overlay.show { display:flex; }
+.goal-card {
+  background:#fff; border-radius:24px; padding:40px 28px;
+  text-align:center; max-width:320px; width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,.28);
+  animation:gpop .5s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes gpop { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
+.goal-icon { font-size:4rem; margin-bottom:14px; animation:gbounce .9s ease-out .5s both; }
+@keyframes gbounce {
+  0%  {transform:translateY(-20px) rotate(-10deg);}
+  60% {transform:translateY(6px)   rotate(4deg);}
+  100%{transform:translateY(0)     rotate(0);}
+}
+.goal-ttl { font-size:1.9rem; font-weight:900; color:#9d174d; margin-bottom:8px; letter-spacing:.1em; }
+.goal-msg { font-size:.93rem; color:#475569; line-height:1.78; }
+.goal-cls {
+  margin-top:20px; padding:12px 32px;
+  background:linear-gradient(135deg,#be185d,#ec4899);
+  color:#fff; border:none; border-radius:12px;
+  font-size:1rem; font-weight:700; cursor:pointer;
+}
+
+/* ===== 紙吹雪（花びら） ===== */
+.confetti-wrap { position:fixed; inset:0; pointer-events:none; z-index:999; overflow:hidden; }
+.conf { position:absolute; top:-16px; opacity:0; animation:cfall linear forwards; }
+@keyframes cfall {
+  0%   { opacity:1;   transform:translateY(0)     rotate(0)     translateX(0); }
+  100% { opacity:.1;  transform:translateY(112vh) rotate(560deg) translateX(var(--cdrift,0px)); }
+}
+
+footer { text-align:center; padding:22px 0 0; color:#db2777; font-size:.76rem; opacity:.6; }
+footer a { color:#db2777; text-decoration:none; font-weight:700; }
+footer a:hover { opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="petals-bg" id="bg-petals"></div>
+<div class="confetti-wrap" id="confetti-wrap"></div>
+
+<div id="goal-overlay">
+  <div class="goal-card">
+    <div class="goal-icon">🌸</div>
+    <div class="goal-ttl">満開達成！</div>
+    <div class="goal-msg" id="goal-msg">みんなの挙手で<br>桜が満開になった！<br>雲外蒼天！🌸</div>
+    <button class="goal-cls" onclick="closeGoal()">✨ とじる</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="hd">
+    <a href="class_homepage.html" class="back-btn">← ホームへ</a>
+    <div class="hd-badge">🌸 挙手キャンペーン</div>
+    <div class="hd-title" id="hd-title">キャンペーン</div>
+    <div class="hd-sub">✋ 挙手するたびに桜が咲く 🌸</div>
+  </div>
+
+  <!-- 桜の木 -->
+  <div class="tree-card">
+    <div class="tree-label">
+      🌸 開花：<span id="bloom-now">0</span> クラスター ／ あと
+      <span id="bloom-rem">—</span> で満開
+    </div>
+
+    <svg id="tree-svg" viewBox="0 0 320 295" xmlns="http://www.w3.org/2000/svg">
+
+      <!-- 背景グラデーション -->
+      <defs>
+        <radialGradient id="skyGrad" cx="50%" cy="25%" r="75%">
+          <stop offset="0%"   stop-color="#e8f4fd" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#fce7f3" stop-opacity="0.3"/>
+        </radialGradient>
+        <radialGradient id="trunkGrad" cx="35%" cy="50%" r="65%">
+          <stop offset="0%"   stop-color="#7a4e20"/>
+          <stop offset="100%" stop-color="#3d1f08"/>
+        </radialGradient>
+      </defs>
+      <rect x="0" y="0" width="320" height="295" fill="url(#skyGrad)" rx="14"/>
+
+      <!-- 地面 -->
+      <ellipse cx="160" cy="286" rx="108" ry="11" fill="rgba(180,130,80,.18)"/>
+      <ellipse cx="160" cy="283" rx="95"  ry="8"  fill="rgba(120,80,30,.12)"/>
+
+      <!-- 根元の広がり（左右） -->
+      <path d="M 138 285 C 128 280 118 275 110 272 C 118 278 128 282 138 285 Z"
+            fill="#4a2c0a" opacity="0.7"/>
+      <path d="M 182 285 C 192 280 202 275 210 272 C 202 278 192 282 182 285 Z"
+            fill="#4a2c0a" opacity="0.7"/>
+
+      <!-- 幹（太い・有機的な形状） -->
+      <path d="M 140 287
+               C 138 265 136 245 138 225
+               C 140 210 146 200 152 192
+               C 155 188 158 186 160 185
+               C 162 186 165 188 168 192
+               C 174 200 180 210 182 225
+               C 184 245 182 265 180 287 Z"
+            fill="url(#trunkGrad)"/>
+      <!-- 幹のハイライト -->
+      <path d="M 150 283 C 149 263 149 243 151 224 C 152 212 156 200 160 192
+               L 161 198 C 158 206 157 218 157 237 C 157 257 157 272 157 283 Z"
+            fill="#8a5c28" opacity="0.45"/>
+
+      <!-- 主枝（枯れ木として見える） -->
+      <g fill="none" stroke-linecap="round">
+        <path d="M 158 186 C 142 174 110 158 80 140"  stroke="#4a2c0a" stroke-width="9"/>
+        <path d="M 162 186 C 178 174 210 158 240 140" stroke="#4a2c0a" stroke-width="9"/>
+        <path d="M 160 186 C 158 168 156 148 155 128" stroke="#4a2c0a" stroke-width="7"/>
+        <path d="M 158 186 C 148 172 136 156 126 136" stroke="#4a2c0a" stroke-width="6"/>
+        <path d="M 162 186 C 172 172 184 156 194 136" stroke="#4a2c0a" stroke-width="6"/>
+
+        <path d="M 80 140 C 64 130 46 118 34 104"    stroke="#5a3512" stroke-width="5"/>
+        <path d="M 80 140 C 72 124 68 108 64 92"     stroke="#5a3512" stroke-width="4"/>
+        <path d="M 240 140 C 256 130 274 118 286 104" stroke="#5a3512" stroke-width="5"/>
+        <path d="M 240 140 C 248 124 252 108 256 92"  stroke="#5a3512" stroke-width="4"/>
+        <path d="M 155 128 C 148 114 140 98 136 82"  stroke="#5a3512" stroke-width="4"/>
+        <path d="M 155 128 C 156 112 157 96 158 80"  stroke="#5a3512" stroke-width="3.5"/>
+        <path d="M 126 136 C 114 118 106 100 100 82" stroke="#5a3512" stroke-width="4"/>
+        <path d="M 194 136 C 206 118 214 100 220 82" stroke="#5a3512" stroke-width="4"/>
+
+        <path d="M 34 104 C 26 92 20 78 18 66"      stroke="#6a4020" stroke-width="2.5"/>
+        <path d="M 34 104 C 30 88 28 74 28 60"      stroke="#6a4020" stroke-width="2.5"/>
+        <path d="M 64 92 C 56 78 52 64 48 52"       stroke="#6a4020" stroke-width="2.5"/>
+        <path d="M 64 92 C 62 76 60 62 58 50"       stroke="#6a4020" stroke-width="2.5"/>
+        <path d="M 286 104 C 294 92 300 78 302 66"  stroke="#6a4020" stroke-width="2.5"/>
+        <path d="M 286 104 C 290 88 292 74 292 60"  stroke="#6a4020" stroke-width="2.5"/>
+        <path d="M 256 92 C 264 78 268 64 272 52"   stroke="#6a4020" stroke-width="2.5"/>
+        <path d="M 256 92 C 258 76 260 62 262 50"   stroke="#6a4020" stroke-width="2.5"/>
+        <path d="M 136 82 C 128 68 124 54 122 42"   stroke="#6a4020" stroke-width="2.5"/>
+        <path d="M 158 80 C 152 66 148 52 146 40"   stroke="#6a4020" stroke-width="2.5"/>
+        <path d="M 158 80 C 164 66 168 52 170 40"   stroke="#6a4020" stroke-width="2.5"/>
+        <path d="M 220 82 C 228 68 232 54 234 42"   stroke="#6a4020" stroke-width="2.5"/>
+        <path d="M 100 82 C 92 68 88 54 86 42"      stroke="#6a4020" stroke-width="2.5"/>
+      </g>
+
+      <!-- ===== 落ちた花びら（ゴール付近で表示） ===== -->
+      <g id="ground-petals" opacity="0" style="transition:opacity 1.5s ease">
+        <ellipse cx="88"  cy="281" rx="7"  ry="3.5" fill="#ffb7c5" opacity=".7" transform="rotate(-18,88,281)"/>
+        <ellipse cx="112" cy="285" rx="5.5" ry="2.8" fill="#ffdde5" opacity=".65" transform="rotate(12,112,285)"/>
+        <ellipse cx="136" cy="289" rx="6"  ry="3"   fill="#ffb7c5" opacity=".6"  transform="rotate(-8,136,289)"/>
+        <ellipse cx="162" cy="291" rx="7"  ry="3.2" fill="#ffc5d5" opacity=".68" transform="rotate(5,162,291)"/>
+        <ellipse cx="188" cy="289" rx="5.5" ry="2.8" fill="#ffdde5" opacity=".62" transform="rotate(-14,188,289)"/>
+        <ellipse cx="212" cy="285" rx="6.5" ry="3"  fill="#ffb7c5" opacity=".65" transform="rotate(10,212,285)"/>
+        <ellipse cx="236" cy="281" rx="6"  ry="3.2" fill="#ffdde5" opacity=".7"  transform="rotate(-6,236,281)"/>
+        <ellipse cx="102" cy="277" rx="5"  ry="2.5" fill="#ffc5d5" opacity=".55" transform="rotate(20,102,277)"/>
+        <ellipse cx="222" cy="277" rx="5"  ry="2.5" fill="#ffb7c5" opacity=".55" transform="rotate(-20,222,277)"/>
+      </g>
+
+      <!-- ===== 桜クラスター（JSで生成） ===== -->
+      <g id="blossoms-group"></g>
+
+      <!-- ===== 動物たち（20ptごとに登場） ===== -->
+      <g id="animals-group"></g>
+
+    </svg>
+
+    <div class="tree-foot" id="tree-foot">枯れ木に花を咲かせましょう 🌸</div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="pt-panel" id="pt-panel">
+    <div class="pt-title">🔑 挙手ポイント追加（教員専用）</div>
+    <div class="pin-row" id="pin-row">
+      <input type="password" class="pin-f" id="pin-f" placeholder="暗証番号" maxlength="8"
+             onkeydown="if(event.key==='Enter')authPin()">
+      <button class="btn-auth" onclick="authPin()">認証する</button>
+      <span id="pin-msg"></span>
+    </div>
+    <div id="pt-add-area" style="display:none">
+      <div class="pt-row">
+        <input type="number" class="pt-input" id="pt-val" min="1" max="99" value="1">
+        <span style="font-size:.88rem;font-weight:700;color:#9d174d">回分</span>
+        <button class="btn-add-pt" id="btn-add-pt" onclick="handleAdd()">🌸 咲かせる</button>
+      </div>
+      <div class="pt-hint">※ 挙手1回 = 桜が1クラスター咲きます</div>
+    </div>
+  </div>
+
+  <footer><a href="class_homepage.html">← ホームページへ戻る</a></footer>
+</div>
+
+<script>
+/* ============================================================
+   定数
+   ============================================================ */
+const STORAGE_KEY   = 'classHomepageData';
+const TEACHER_PIN   = '1210';
+const HOP_MS        = 480;
+const HOP_PAUSE     = 100;
+const SVG_NS        = 'http://www.w3.org/2000/svg';
+
+/* ============================================================
+   桜クラスター 座標（65箇所 ― 枝先まで覆う満開樹形）
+   top→bottom, 外縁→内側へ埋まっていく
+   ============================================================ */
+const BLOSSOM_POS = [
+  // ── 頂上（3） ──
+  { x:148, y:26 }, { x:162, y:16 }, { x:176, y:26 },
+
+  // ── 上段（9） ──
+  { x:114, y:46 }, { x:132, y:36 }, { x:150, y:30 }, { x:168, y:30 },
+  { x:186, y:36 }, { x:204, y:46 }, { x:220, y:58 },
+  { x:90,  y:46 }, { x:230, y:46 },                          // 上左右の枝先
+
+  // ── 中上段（15） ──
+  { x:86,  y:70 }, { x:106, y:60 }, { x:126, y:52 }, { x:146, y:46 },
+  { x:164, y:44 }, { x:182, y:48 }, { x:202, y:56 }, { x:222, y:66 }, { x:240, y:78 },
+  { x:22,  y:68 }, { x:46,  y:56 }, { x:54,  y:84 },         // 左外枝先
+  { x:298, y:68 }, { x:274, y:56 }, { x:266, y:84 },         // 右外枝先
+
+  // ── 中段（11） ──
+  { x:66,  y:96 }, { x:88,  y:86 }, { x:110, y:78 }, { x:132, y:72 },
+  { x:158, y:68 }, { x:184, y:72 }, { x:208, y:80 }, { x:228, y:90 }, { x:246, y:102 },
+  { x:38,  y:100 }, { x:282, y:100 },                        // 左右の中間枝
+
+  // ── 中下段（11） ──
+  { x:62,  y:122 }, { x:84,  y:112 }, { x:108, y:104 }, { x:134, y:98 },
+  { x:184, y:100 }, { x:210, y:106 }, { x:232, y:116 }, { x:252, y:128 },
+  { x:156, y:96 }, { x:128, y:110 }, { x:190, y:110 },       // 内側中央を埋める
+
+  // ── 下段（10） ──
+  { x:78,  y:144 }, { x:104, y:134 }, { x:132, y:126 }, { x:190, y:128 },
+  { x:218, y:136 }, { x:240, y:148 },
+  { x:116, y:132 }, { x:158, y:136 }, { x:200, y:132 }, { x:100, y:150 }, // 内側下を埋める
+
+  // ── 最下段 / 枝先（6） ──
+  { x:56,  y:112 }, { x:262, y:112 },
+  { x:96,  y:158 }, { x:158, y:162 }, { x:222, y:158 }, { x:220, y:150 },
+];
+
+/* ============================================================
+   クラスター内の花の配置テンプレート（8種）
+   各エントリ: [dx, dy, size, rotation]
+   ============================================================ */
+const CLUSTER_CFG = [
+  [[0,0,13,0],  [10,-7,10,36],   [-9,5,10,-28],  [5,10,9,60]],
+  [[0,0,12,0],  [-10,-5,10,-36], [9,6,10,28],    [-4,10,9,-60]],
+  [[0,0,14,0],  [11,-4,10,20],   [-8,-9,10,-20], [6,9,9,50],  [-5,5,8,80]],
+  [[0,0,12,0],  [-9,8,10,-50],   [10,5,10,30],   [3,-10,9,-20]],
+  [[0,0,13,0],  [9,9,10,40],     [-11,-2,10,-30],[-5,9,9,70]],
+  [[0,0,12,0],  [-7,-10,10,-40], [11,5,10,20],   [5,-8,9,60]],
+  [[0,0,14,0],  [10,-9,10,30],   [-9,6,10,-40],  [7,8,9,70]],
+  [[0,0,12,0],  [9,-6,10,50],    [-10,7,10,-30], [11,3,9,20]],
+];
+
+/* ============================================================
+   20ptごとに登場する動物（x, y はSVG座標 / em は絵文字）
+   ============================================================ */
+const ANIMALS = [
+  { x:  54, y: 273, em: '🐰' },  //  20pt ウサギ
+  { x:  88, y: 273, em: '🐱' },  //  40pt ネコ
+  { x: 118, y: 273, em: '🐶' },  //  60pt イヌ
+  { x: 144, y: 271, em: '🦊' },  //  80pt キツネ
+  { x: 176, y: 271, em: '🐻' },  // 100pt クマ
+  { x: 202, y: 273, em: '🐼' },  // 120pt パンダ
+  { x: 232, y: 273, em: '🐸' },  // 140pt カエル
+  { x: 264, y: 273, em: '🐨' },  // 160pt コアラ
+  { x:  70, y: 261, em: '🐹' },  // 180pt ハムスター（後列左）
+  { x: 250, y: 261, em: '🦁' },  // 200pt ライオン（後列右）
+];
+
+/* 花びら色ペア（交互に使用） */
+const PETAL_PINKS = [
+  ['#ffb7c5','#ffdde5'], ['#ff9db0','#ffccd5'],
+  ['#ffc0cb','#ffe4ec'], ['#ff85a1','#ffb7c5'],
+  ['#ffdde5','#fff0f4'], ['#ffaec0','#ffd5e2'],
+  ['#ff9db5','#ffdde5'], ['#ffccd5','#fff4f7'],
+];
+
+/* ============================================================
+   状態
+   ============================================================ */
+let ci         = 0;
+let curPos     = 0;
+let totalCells = 200;
+let campName   = '挙手キャンペーン';
+let isAuth     = false;
+let isAnim     = false;
+let isGoal          = false;
+let blossomEls      = [];
+let animalShownCount = 0;
+const BLOSSOM_COUNT = BLOSSOM_POS.length; // 42
+
+/* ============================================================
+   データ
+   ============================================================ */
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.campaigns && d.campaigns[ci]) {
+      const c    = d.campaigns[ci];
+      curPos     = c.current   ?? 0;
+      totalCells = c.total     ?? 30;
+      campName   = c.name      || '挙手キャンペーン';
+      isGoal     = c.completed || curPos >= totalCells;
+    } else if (d.sugoroku) {
+      curPos     = d.sugoroku.current       ?? 0;
+      totalCells = d.sugoroku.total         ?? 30;
+      campName   = d.sugoroku.campaignName || '挙手キャンペーン';
+      isGoal     = curPos >= totalCells;
+    }
+  } catch(e) { console.error(e); }
+}
+
+function savePos() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const d   = raw ? JSON.parse(raw) : {};
+    const completed = curPos >= totalCells;
+    if (d.campaigns && d.campaigns[ci]) {
+      d.campaigns[ci].current   = curPos;
+      d.campaigns[ci].completed = completed;
+    } else if (d.sugoroku) {
+      d.sugoroku.current = curPos;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+  } catch(e) { console.error(e); }
+}
+
+/* ============================================================
+   桜クラスター SVG 構築
+   ============================================================ */
+
+/**
+ * 5枚花びらの桜を1輪生成する
+ * @param {number} cx     - クラスター内 X オフセット
+ * @param {number} cy     - クラスター内 Y オフセット
+ * @param {number} size   - 花のサイズ（半径基準）
+ * @param {number} rot    - 全体回転角（deg）
+ * @param {string} pinkA  - 奇数花びら色
+ * @param {string} pinkB  - 偶数花びら色
+ */
+function makeSakura(cx, cy, size, rot, pinkA, pinkB) {
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('transform', `translate(${cx},${cy}) rotate(${rot})`);
+
+  const pd = size * 0.54;   // 花びら中心の距離
+  const pr = size * 0.63;   // 花びらの長さ（ry）
+  const pw = size * 0.36;   // 花びらの幅（rx）
+
+  for (let i = 0; i < 5; i++) {
+    const p = document.createElementNS(SVG_NS, 'ellipse');
+    p.setAttribute('cx', '0');
+    p.setAttribute('cy', String(-pd));
+    p.setAttribute('rx', String(pw));
+    p.setAttribute('ry', String(pr));
+    p.setAttribute('fill', i % 2 === 0 ? pinkA : pinkB);
+    p.setAttribute('opacity', '0.88');
+    p.setAttribute('transform', `rotate(${i * 72})`);
+    g.appendChild(p);
+  }
+
+  // 花芯（白）
+  const c = document.createElementNS(SVG_NS, 'circle');
+  c.setAttribute('r',    String(size * 0.26));
+  c.setAttribute('fill', '#fff4f7');
+  g.appendChild(c);
+
+  return g;
+}
+
+function buildBlossoms() {
+  const g = document.getElementById('blossoms-group');
+  g.innerHTML = '';
+  blossomEls  = [];
+
+  BLOSSOM_POS.forEach(({ x, y }, idx) => {
+    const cfg   = CLUSTER_CFG[idx % CLUSTER_CFG.length];
+    const pinks = PETAL_PINKS[idx % PETAL_PINKS.length];
+
+    const outer = document.createElementNS(SVG_NS, 'g');
+    outer.setAttribute('transform', `translate(${x},${y})`);
+
+    const inner = document.createElementNS(SVG_NS, 'g');
+    inner.setAttribute('class', 'blossom-inner');
+    inner.style.transform       = 'scale(0)';
+    inner.style.transformOrigin = '0 0';
+    inner.style.opacity         = '0';
+
+    // クラスター内の各花びら（dx, dy, size, rotation）
+    cfg.forEach(([dx, dy, sz, rot]) => {
+      inner.appendChild(makeSakura(dx, dy, sz, rot, pinks[0], pinks[1]));
+    });
+
+    outer.appendChild(inner);
+    g.appendChild(outer);
+    blossomEls.push(inner);
+  });
+}
+
+/* curPos に合わせて即座に表示（アニメなし） */
+function refreshBlossoms() {
+  const show = visibleCount();
+  blossomEls.forEach((el, i) => {
+    const on = i < show;
+    el.style.transform = on ? 'scale(1)' : 'scale(0)';
+    el.style.opacity   = on ? '1'        : '0';
+  });
+  updateBloomLabel(show);
+  refreshGroundPetals(show);
+  refreshAnimals(false);
+}
+
+function visibleCount(pos) {
+  const p = (pos === undefined) ? curPos : pos;
+  return Math.min(BLOSSOM_COUNT, Math.round(p / totalCells * BLOSSOM_COUNT));
+}
+
+function updateBloomLabel(show) {
+  document.getElementById('bloom-now').textContent = show;
+  document.getElementById('bloom-rem').textContent = Math.max(0, BLOSSOM_COUNT - show) + 'クラスター';
+}
+
+/* 落ちた花びらは 60%以上で表示 */
+function refreshGroundPetals(show) {
+  const pct = show / BLOSSOM_COUNT;
+  const gp = document.getElementById('ground-petals');
+  if (gp) gp.style.opacity = pct >= 0.6 ? Math.min(1, (pct - 0.6) / 0.4 * 1.4).toFixed(2) : '0';
+}
+
+/* ============================================================
+   動物の表示（20ptごと）
+   ============================================================ */
+function refreshAnimals(animate) {
+  const target = Math.min(ANIMALS.length, Math.floor(curPos / 20));
+  const g = document.getElementById('animals-group');
+  if (!g) return;
+
+  while (animalShownCount < target) {
+    const { x, y, em } = ANIMALS[animalShownCount];
+
+    // 位置グループ
+    const outer = document.createElementNS(SVG_NS, 'g');
+    outer.setAttribute('transform', `translate(${x},${y})`);
+
+    // アニメ対象グループ
+    const inner = document.createElementNS(SVG_NS, 'g');
+    inner.style.transformOrigin = '0 0';
+    inner.style.opacity = '0';
+    inner.style.transform = 'scale(0)';
+
+    // 影（楕円）
+    const shadow = document.createElementNS(SVG_NS, 'ellipse');
+    shadow.setAttribute('cx', '0'); shadow.setAttribute('cy', '4');
+    shadow.setAttribute('rx', '10'); shadow.setAttribute('ry', '3.5');
+    shadow.setAttribute('fill', 'rgba(0,0,0,0.10)');
+    inner.appendChild(shadow);
+
+    // 絵文字テキスト
+    const txt = document.createElementNS(SVG_NS, 'text');
+    txt.setAttribute('x', '0');
+    txt.setAttribute('y', '0');
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('dominant-baseline', 'auto');
+    txt.setAttribute('font-size', '20');
+    txt.textContent = em;
+    inner.appendChild(txt);
+
+    outer.appendChild(inner);
+    g.appendChild(outer);
+
+    if (animate) {
+      inner.animate([
+        { transform:'scale(0) translateY(8px)', opacity:'0',   offset:0    },
+        { transform:'scale(1.4) translateY(-5px)', opacity:'1', offset:0.55 },
+        { transform:'scale(0.88) translateY(2px)', opacity:'1', offset:0.78 },
+        { transform:'scale(1) translateY(0)',    opacity:'1',   offset:1    },
+      ], { duration: 580, easing:'ease-out', fill:'forwards' });
+    } else {
+      inner.style.transform = 'scale(1)';
+      inner.style.opacity   = '1';
+    }
+
+    animalShownCount++;
+  }
+}
+
+/* ============================================================
+   PIN 認証
+   ============================================================ */
+function authPin() {
+  const v   = document.getElementById('pin-f').value;
+  const msg = document.getElementById('pin-msg');
+  if (v === TEACHER_PIN) {
+    isAuth = true;
+    document.getElementById('pin-row').style.display     = 'none';
+    document.getElementById('pt-add-area').style.display = 'block';
+  } else {
+    msg.className   = 'pin-ng';
+    msg.textContent = '暗証番号が違います';
+    document.getElementById('pin-f').value = '';
+    document.getElementById('pin-f').focus();
+  }
+}
+
+/* ============================================================
+   ポイント追加
+   ============================================================ */
+async function handleAdd() {
+  if (isAnim || isGoal || !isAuth) return;
+  const n = parseInt(document.getElementById('pt-val').value, 10);
+  if (isNaN(n) || n < 1) return;
+
+  const btn = document.getElementById('btn-add-pt');
+  btn.disabled = true;
+  isAnim = true;
+
+  for (let i = 0; i < n; i++) {
+    if (curPos >= totalCells) break;
+    await animOneCluster();
+    curPos++;
+    savePos();
+    renderStats();
+    renderTreeFoot();
+    refreshAnimals(true);
+
+    if (curPos >= totalCells) {
+      isGoal = true;
+      await sleep(500);
+      triggerGoal();
+      break;
+    }
+    if (i < n - 1) await sleep(HOP_PAUSE);
+  }
+
+  isAnim = false;
+  if (!isGoal) btn.disabled = false;
+}
+
+/* ============================================================
+   1クラスター 開花アニメーション
+   ============================================================ */
+async function animOneCluster() {
+  const prev = visibleCount(curPos);
+  const next = visibleCount(curPos + 1);
+
+  if (next > prev && prev < blossomEls.length) {
+    const el = blossomEls[prev];
+
+    await el.animate([
+      { transform:'scale(0) rotate(-20deg)', opacity:'0',   offset:0    },
+      { transform:'scale(1.4) rotate(6deg)', opacity:'1',   offset:0.50 },
+      { transform:'scale(0.88) rotate(-3deg)', opacity:'1', offset:0.75 },
+      { transform:'scale(1) rotate(0deg)',   opacity:'1',   offset:1    },
+    ], { duration: HOP_MS, easing:'ease-out', fill:'forwards' }).finished;
+
+    el.style.transform = 'scale(1)';
+    el.style.opacity   = '1';
+
+    const show = prev + 1;
+    updateBloomLabel(show);
+    refreshGroundPetals(show);
+
+  } else {
+    // 花が増えない場合は木を揺らす
+    const svg = document.getElementById('tree-svg');
+    svg.animate([
+      { transform:'rotate(0deg) translateX(0px)'   },
+      { transform:'rotate(-1.2deg) translateX(-2px)' },
+      { transform:'rotate(1.2deg) translateX(2px)'  },
+      { transform:'rotate(0deg) translateX(0px)'   },
+    ], { duration:260, easing:'ease-in-out' });
+    await sleep(200);
+  }
+}
+
+/* ============================================================
+   ゴール演出
+   ============================================================ */
+function triggerGoal() {
+  // 落ち花びらを最大に
+  const gp = document.getElementById('ground-petals');
+  if (gp) gp.style.opacity = '1';
+
+  spawnPetals();
+  document.getElementById('goal-overlay').classList.add('show');
+  const btn = document.getElementById('btn-add-pt');
+  const inp = document.getElementById('pt-val');
+  if (btn) btn.disabled = true;
+  if (inp) inp.disabled = true;
+}
+
+function closeGoal() {
+  document.getElementById('goal-overlay').classList.remove('show');
+}
+
+function spawnPetals() {
+  const wrap   = document.getElementById('confetti-wrap');
+  wrap.innerHTML = '';
+  const shades = ['#ffb7c5','#ffdde5','#ff80ab','#f9a8d4','#fce7f3','#fbcfe8','#ff9dba'];
+  for (let i = 0; i < 90; i++) {
+    const el  = document.createElement('div');
+    el.className = 'conf';
+    const w   = 10 + Math.random() * 12;
+    const rot = Math.random() * 360;
+    const drift = (Math.random() - 0.5) * 160;
+    el.style.cssText = `
+      left:${Math.random()*100}vw;
+      width:${w}px; height:${w * .7}px;
+      background:${shades[i % shades.length]};
+      border-radius:50% 50% 50% 0;
+      transform:rotate(${rot}deg);
+      --cdrift:${drift}px;
+      animation:cfall ${1.8 + Math.random()*2.6}s ${Math.random()*1.6}s linear forwards;
+    `;
+    wrap.appendChild(el);
+  }
+  setTimeout(() => { wrap.innerHTML = ''; }, 7000);
+}
+
+/* ============================================================
+   ステータス
+   ============================================================ */
+function renderStats() {
+  const rem = Math.max(0, totalCells - curPos);
+  const pct = Math.min(100, Math.round(curPos / totalCells * 100));
+  document.getElementById('stats').innerHTML = `
+    <div class="stat">
+      <div class="lbl">挙手回数</div>
+      <div class="val">${curPos}</div>
+      <div class="unt">/ ${totalCells} 回</div>
+    </div>
+    <div class="stat">
+      <div class="lbl">あと</div>
+      <div class="val">${rem}</div>
+      <div class="unt">回で満開</div>
+    </div>
+    <div class="stat">
+      <div class="lbl">達成率</div>
+      <div class="val">${pct}</div>
+      <div class="unt">%</div>
+    </div>
+  `;
+}
+
+function renderTreeFoot() {
+  const rem = totalCells - curPos;
+  const el  = document.getElementById('tree-foot');
+  if (rem <= 0)       el.innerHTML = '🌸🌸 満開！雲外蒼天！ 🌸🌸';
+  else if (!curPos)   el.innerHTML = '枯れ木に花を咲かせましょう 🌸';
+  else                el.innerHTML = `あと <strong>${rem}</strong> 回の挙手で満開 🌸`;
+}
+
+/* ============================================================
+   背景花びら
+   ============================================================ */
+function initBgPetals() {
+  const wrap = document.getElementById('bg-petals');
+  for (let i = 0; i < 18; i++) {
+    const el   = document.createElement('div');
+    el.className    = 'petal-bg';
+    el.textContent  = '🌸';
+    const dur  = 14 + Math.random() * 22;
+    const drift = (Math.random() - 0.5) * 140;
+    el.style.cssText = `
+      left:${Math.random()*100}vw;
+      font-size:${0.5 + Math.random()*.8}rem;
+      --drift:${drift}px;
+      animation-duration:${dur}s;
+      animation-delay:-${Math.random()*dur}s;
+    `;
+    wrap.appendChild(el);
+  }
+}
+
+/* ============================================================
+   ユーティリティ
+   ============================================================ */
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* ============================================================
+   初期化
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  ci = parseInt(new URLSearchParams(location.search).get('ci') || '0', 10);
+  loadData();
+
+  document.title = campName + ' ― 桜の木';
+  document.getElementById('hd-title').textContent = campName;
+
+  buildBlossoms();
+  refreshBlossoms();
+  renderStats();
+  renderTreeFoot();
+  initBgPetals();
+
+  if (isGoal) {
+    const gp = document.getElementById('ground-petals');
+    if (gp) gp.style.opacity = '1';
+    document.getElementById('pt-panel').innerHTML =
+      `<div style="text-align:center;padding:18px 14px;font-size:1.05rem;font-weight:800;color:#9d174d">
+        🌸 満開達成済みです！おめでとう！ 🌸
+      </div>`;
+  }
+});
+</script>
+</body>
+</html>

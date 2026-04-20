@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ご褒美スロット</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(160deg, #080d1e 0%, #0d1a3a 40%, #180d3d 70%, #080a1a 100%);
+  color: #fff;
+  overflow-x: hidden;
+}
+
+/* ===== 星の背景 ===== */
+.stars-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.star { position: absolute; background: #fff; border-radius: 50%; animation: twinkle linear infinite; }
+@keyframes twinkle {
+  0%,100% { opacity: .12; transform: scale(1);   }
+  50%      { opacity: 1;   transform: scale(1.4); }
+}
+
+/* ===== ページ ===== */
+.page { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; padding: 0 18px 64px; }
+
+/* ===== ヘッダー ===== */
+.hd { padding: 22px 0 20px; text-align: center; position: relative; }
+.back-btn {
+  position: absolute; top: 28px; left: 0;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22);
+  color: rgba(255,255,255,.8); padding: 6px 14px; border-radius: 20px;
+  font-size: .78rem; font-weight: 700; text-decoration: none;
+}
+.back-btn:hover { background: rgba(255,255,255,.2); }
+.hd-badge {
+  display: inline-block;
+  background: rgba(255,215,0,.15); border: 1px solid rgba(255,215,0,.4);
+  padding: 3px 18px; border-radius: 20px;
+  font-size: .76rem; letter-spacing: .1em; color: #fde68a; margin-bottom: 10px;
+}
+.hd-title {
+  font-size: clamp(1.8rem, 6vw, 2.6rem); font-weight: 900; letter-spacing: .06em;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 45%, #f59e0b 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 2px 12px rgba(251,191,36,.45));
+}
+.hd-sub { font-size: .8rem; color: rgba(255,255,255,.5); margin-top: 6px; letter-spacing: .05em; }
+
+/* ===== マシン本体 ===== */
+.machine-wrap {
+  background: linear-gradient(160deg, #1c2746 0%, #263559 50%, #1c2746 100%);
+  border-radius: 30px;
+  padding: 24px 20px 28px;
+  border: 2px solid rgba(255,215,0,.22);
+  box-shadow:
+    0 24px 64px rgba(0,0,0,.8),
+    0 0 0 1px rgba(255,255,255,.06),
+    inset 0 1px 0 rgba(255,255,255,.1);
+  margin-bottom: 18px;
+}
+.machine-banner {
+  text-align: center; margin-bottom: 22px;
+  font-size: .82rem; font-weight: 800; letter-spacing: .2em; color: #fde68a;
+  text-shadow: 0 0 18px rgba(253,230,138,.5);
+}
+.machine-banner span { opacity: .45; }
+
+/* ===== 1リール ===== */
+.reel-frame {
+  background: linear-gradient(145deg, #2e3b58, #3a4a6e, #2e3b58);
+  border-radius: 22px; padding: 8px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.5), inset 0 2px 8px rgba(0,0,0,.4);
+  border: 1px solid rgba(255,215,0,.2);
+  margin: 0 auto 22px; max-width: 320px;
+}
+.reel-window {
+  height: 300px; border-radius: 16px;
+  overflow: hidden; position: relative;
+  background: #05091a;
+  border: 2px solid rgba(255,215,0,.3);
+  box-shadow: inset 0 6px 28px rgba(0,0,0,.75), 0 4px 14px rgba(0,0,0,.5);
+}
+.reel-strip {
+  position: absolute; top: 0; left: 0; right: 0;
+  will-change: transform;
+}
+.reel-item {
+  height: 100px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 6px; padding: 8px;
+  user-select: none;
+}
+.ri-em  { font-size: 3.2rem; line-height: 1; }
+.ri-tx  {
+  font-size: .75rem; font-weight: 800; color: rgba(255,255,255,.82);
+  text-align: center; letter-spacing: .03em;
+  max-width: 100%; word-break: break-all;
+}
+
+/* 中央ハイライト */
+.reel-hl {
+  position: absolute; top: 100px; height: 100px;
+  left: 0; right: 0; pointer-events: none; z-index: 2;
+  border-top: 2px solid rgba(255,215,0,.95);
+  border-bottom: 2px solid rgba(255,215,0,.95);
+  background: rgba(255,215,0,.06);
+}
+/* 上下フェード */
+.reel-ft, .reel-fb {
+  position: absolute; left: 0; right: 0; height: 65px;
+  pointer-events: none; z-index: 3;
+}
+.reel-ft { top: 0;    background: linear-gradient(to bottom, rgba(5,9,26,.97), transparent); }
+.reel-fb { bottom: 0; background: linear-gradient(to top,   rgba(5,9,26,.97), transparent); }
+
+/* ===== ボタン ===== */
+.btn-wrap { display: flex; flex-direction: column; gap: 12px; align-items: center; margin-top: 22px; }
+#btn-start {
+  display: block; width: 100%; max-width: 280px;
+  padding: 17px 0;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 60%, #1e40af 100%);
+  color: #fff; border: none; border-radius: 50px;
+  font-size: 1.3rem; font-weight: 900; letter-spacing: .1em;
+  cursor: pointer;
+  box-shadow: 0 6px 28px rgba(37,99,235,.6), 0 0 0 3px rgba(37,99,235,.22),
+              inset 0 1px 0 rgba(255,255,255,.22);
+  transition: transform .15s, box-shadow .15s;
+}
+#btn-start:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 36px rgba(37,99,235,.78), 0 0 0 3px rgba(37,99,235,.3),
+              inset 0 1px 0 rgba(255,255,255,.22);
+}
+#btn-start:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; transform: none; }
+#btn-stop {
+  display: none; width: 100%; max-width: 280px;
+  padding: 17px 0;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 60%, #991b1b 100%);
+  color: #fff; border: none; border-radius: 50px;
+  font-size: 1.3rem; font-weight: 900; letter-spacing: .1em;
+  cursor: pointer;
+  box-shadow: 0 6px 28px rgba(220,38,38,.6), 0 0 0 3px rgba(220,38,38,.22),
+              inset 0 1px 0 rgba(255,255,255,.22);
+  transition: transform .15s, box-shadow .15s;
+  animation: pulse-red .8s ease-in-out infinite alternate;
+}
+#btn-stop:hover { transform: translateY(-3px); }
+@keyframes pulse-red {
+  from { box-shadow: 0 6px 28px rgba(220,38,38,.5), 0 0 0 3px rgba(220,38,38,.2); }
+  to   { box-shadow: 0 8px 38px rgba(220,38,38,.9), 0 0 0 7px rgba(220,38,38,.35); }
+}
+
+/* ===== 結果パネル ===== */
+#result-panel {
+  display: none;
+  background: linear-gradient(145deg, rgba(253,230,138,.14), rgba(251,191,36,.08));
+  border: 2px solid rgba(253,230,138,.48);
+  border-radius: 24px; padding: 26px 20px;
+  text-align: center; margin-bottom: 18px;
+  animation: rpop .5s cubic-bezier(.34,1.56,.64,1);
+}
+#result-panel.show { display: block; }
+@keyframes rpop { from { transform:scale(.75); opacity:0; } to { transform:scale(1); opacity:1; } }
+.res-label { font-size: .84rem; font-weight: 800; color: #fde68a; letter-spacing: .12em; margin-bottom: 12px; }
+#res-emoji { font-size: 4.2rem; animation: bounce .65s ease-out .25s both; }
+@keyframes bounce {
+  0%  { transform: translateY(-18px) scale(1.25); }
+  60% { transform: translateY(5px)   scale(.92); }
+  100%{ transform: translateY(0)     scale(1); }
+}
+#res-text {
+  font-size: 1.85rem; font-weight: 900; letter-spacing: .04em; margin-top: 6px;
+  background: linear-gradient(135deg, #fff 0%, #fde68a 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.res-sub { font-size: .78rem; color: rgba(255,255,255,.5); margin-top: 8px; }
+.btn-retry {
+  display: inline-block; margin-top: 14px; padding: 9px 30px;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22);
+  color: rgba(255,255,255,.82); border-radius: 20px;
+  font-size: .9rem; font-weight: 700; cursor: pointer; transition: background .15s;
+}
+.btn-retry:hover { background: rgba(255,255,255,.2); }
+
+/* ===== 紙吹雪 ===== */
+.conf-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 999; overflow: hidden; }
+.conf-p { position: absolute; top: -20px; animation: cfal linear forwards; }
+@keyframes cfal {
+  0%   { opacity: 1;   transform: translateY(0)      rotate(0)                translateX(0); }
+  100% { opacity: .1; transform: translateY(115vh) rotate(var(--cr,400deg)) translateX(var(--cx,0px)); }
+}
+
+/* ===== 管理パネル ===== */
+.mgr-panel {
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 20px; padding: 20px;
+}
+.mgr-title { font-size: .88rem; font-weight: 800; color: #fde68a; margin-bottom: 16px; }
+.pin-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pin-f {
+  padding: 9px 12px; background: rgba(255,255,255,.08);
+  border: 1.5px solid rgba(255,255,255,.18); border-radius: 10px;
+  color: #fff; font-size: .95rem; text-align: center; letter-spacing: .2em;
+  width: 130px; outline: none; font-family: inherit;
+}
+.pin-f:focus { border-color: #fde68a; }
+.btn-auth {
+  padding: 9px 20px;
+  background: rgba(253,230,138,.18); border: 1px solid rgba(253,230,138,.38);
+  color: #fde68a; border-radius: 10px; font-size: .88rem; font-weight: 700; cursor: pointer;
+}
+.btn-auth:hover { background: rgba(253,230,138,.32); }
+.pin-ng { color: #f87171; font-size: .82rem; }
+
+.reward-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 12px; }
+.reward-row {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.07); border-radius: 12px; padding: 9px 12px;
+}
+.rw-em {
+  width: 42px; padding: 5px; text-align: center; font-size: 1.2rem;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18);
+  border-radius: 8px; color: #fff; outline: none;
+}
+.rw-em:focus { border-color: #fde68a; }
+.rw-tx {
+  flex: 1; padding: 7px 10px; font-size: .88rem;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18);
+  border-radius: 8px; color: #fff; outline: none; font-family: inherit;
+}
+.rw-tx::placeholder { color: rgba(255,255,255,.3); }
+.rw-tx:focus { border-color: #fde68a; }
+.btn-del {
+  width: 30px; height: 30px; flex-shrink: 0;
+  background: rgba(239,68,68,.22); border: 1px solid rgba(239,68,68,.38);
+  color: #fca5a5; border-radius: 8px; font-size: .85rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-del:hover { background: rgba(239,68,68,.42); }
+.mgr-btns { display: flex; gap: 10px; }
+.btn-add {
+  padding: 10px 18px;
+  background: rgba(52,211,153,.18); border: 1px solid rgba(52,211,153,.35);
+  color: #6ee7b7; border-radius: 12px; font-size: .84rem; font-weight: 700; cursor: pointer;
+}
+.btn-add:hover { background: rgba(52,211,153,.32); }
+.btn-save {
+  flex: 1; padding: 11px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #1a0f00; border: none; border-radius: 12px;
+  font-size: .95rem; font-weight: 900; cursor: pointer; letter-spacing: .04em;
+}
+.btn-save:hover { opacity: .88; }
+.save-ok { color: #86efac; font-size: .82rem; text-align: center; margin-top: 8px; display: none; }
+
+footer { text-align: center; padding: 24px 0 0; color: rgba(255,255,255,.3); font-size: .76rem; }
+footer a { color: rgba(255,255,255,.42); text-decoration: none; font-weight: 700; }
+footer a:hover { color: rgba(255,255,255,.75); }
+</style>
+</head>
+<body>
+
+<div class="stars-bg" id="stars-bg"></div>
+<div class="conf-wrap" id="conf-wrap"></div>
+
+<div class="page">
+
+  <!-- ヘッダー -->
+  <div class="hd">
+    <a href="class_homepage.html" class="back-btn">← ホームへ</a>
+    <div class="hd-badge">🎰 クラスのご褒美</div>
+    <div class="hd-title">スロットチャレンジ</div>
+    <div class="hd-sub">回してご褒美を決めよう！</div>
+  </div>
+
+  <!-- 結果パネル -->
+  <div id="result-panel">
+    <div class="res-label">🎊　ご 褒 美 決 定！　🎊</div>
+    <div id="res-emoji"></div>
+    <div id="res-text"></div>
+    <div class="res-sub">みんなで一緒に楽しもう！🎉</div>
+    <button class="btn-retry" onclick="resetSlot()">🔄 もう一度引く</button>
+  </div>
+
+  <!-- スロットマシン -->
+  <div class="machine-wrap">
+    <div class="machine-banner">
+      <span>✦✦</span> REWARD ROULETTE <span>✦✦</span>
+    </div>
+
+    <div class="reel-frame">
+      <div class="reel-window" id="reel-main">
+        <div class="reel-strip" id="reel-strip"></div>
+        <div class="reel-hl"></div>
+        <div class="reel-ft"></div>
+        <div class="reel-fb"></div>
+      </div>
+    </div>
+
+    <div class="btn-wrap">
+      <button id="btn-start" onclick="handleStart()">🎰 スタート</button>
+      <button id="btn-stop"  onclick="handleStop()">🛑 ストップ</button>
+    </div>
+  </div>
+
+  <!-- 管理パネル -->
+  <div class="mgr-panel">
+    <div class="mgr-title">⚙️ ご褒美の設定（教員専用）</div>
+
+    <div class="pin-row" id="mgr-pin-row">
+      <input type="password" class="pin-f" id="mgr-pin" placeholder="暗証番号" maxlength="8"
+             onkeydown="if(event.key==='Enter')authMgr()">
+      <button class="btn-auth" onclick="authMgr()">認証する</button>
+      <span id="mgr-pin-msg"></span>
+    </div>
+
+    <div id="mgr-area" style="display:none">
+      <div class="reward-list" id="reward-list"></div>
+      <div class="mgr-btns">
+        <button class="btn-add" onclick="addRow()">＋ 追加</button>
+        <button class="btn-save" onclick="saveRewards()">💾 保存する</button>
+      </div>
+      <div class="save-ok" id="save-ok">✅ 保存しました！リールに反映されました</div>
+    </div>
+  </div>
+
+  <footer><a href="class_homepage.html">← ホームページへ戻る</a></footer>
+</div>
+
+<script>
+/* ============================================================
+   定数・デフォルト
+   ============================================================ */
+const STORAGE_KEY = 'classHomepageData';
+const ITEM_H      = 100;  // リールアイテム高さ(px)
+const REPS        = 40;   // ストリップ繰り返し回数
+
+const DEFAULT_REWARDS = [
+  { emoji:'🎮', text:'ゲーム大会'        },
+  { emoji:'🎬', text:'映画鑑賞'          },
+  { emoji:'🎨', text:'お絵かき大会'      },
+  { emoji:'🎤', text:'カラオケ大会'      },
+  { emoji:'⏰', text:'自由時間10分'      },
+  { emoji:'🎲', text:'席替えチャレンジ'  },
+  { emoji:'🍦', text:'お楽しみ会'        },
+  { emoji:'🏆', text:'表彰セレモニー'    },
+];
+
+/* ============================================================
+   状態
+   ============================================================ */
+let rewards      = [...DEFAULT_REWARDS];
+let reelPos      = 0;
+let reelRafId    = null;
+let reelPhase    = 'idle'; // idle / spinning / stopped
+let spinning     = false;
+let currentWinIdx = 0;      // 今回の当選インデックス
+let autoStopTimer = null;   // 自動停止タイマー
+
+/* ============================================================
+   データ
+   ============================================================ */
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (Array.isArray(d.rewards) && d.rewards.length >= 2) rewards = d.rewards;
+  } catch(e) {}
+}
+
+/* ============================================================
+   リール構築
+   ============================================================ */
+function buildReel() {
+  const strip = document.getElementById('reel-strip');
+  let html = '';
+  for (let r = 0; r < REPS; r++) {
+    rewards.forEach(it => {
+      html += `<div class="reel-item">
+        <div class="ri-em">${it.emoji}</div>
+        <div class="ri-tx">${it.text}</div>
+      </div>`;
+    });
+  }
+  strip.innerHTML = html;
+  strip.style.transition = '';
+
+  // 中央付近からスタート
+  const N = rewards.length;
+  const midTop = Math.floor(REPS / 2) * N;
+  reelPos = midTop * ITEM_H;
+  applyPos();
+}
+
+function applyPos() {
+  document.getElementById('reel-strip').style.transform = `translateY(-${reelPos}px)`;
+}
+
+/* ============================================================
+   スタート処理
+   ============================================================ */
+function handleStart() {
+  if (spinning) return;
+  spinning  = true;
+  reelPhase = 'spinning';
+
+  document.getElementById('result-panel').classList.remove('show');
+  const btn = document.getElementById('btn-start');
+  btn.disabled    = true;
+  btn.textContent = '🌀 スピン中...';
+
+  // 当選アイテムをランダム選択（ストップボタンでも同じ結果になる）
+  currentWinIdx = Math.floor(Math.random() * rewards.length);
+
+  // スピンループ
+  cancelAnimationFrame(reelRafId);
+  const loop = () => {
+    if (reelPhase !== 'spinning') return;
+    reelPos += 22;
+    applyPos();
+    reelRafId = requestAnimationFrame(loop);
+  };
+  reelRafId = requestAnimationFrame(loop);
+
+  // ストップボタンを表示（0.5秒後、リールが動き始めてから）
+  setTimeout(() => {
+    if (reelPhase === 'spinning') {
+      document.getElementById('btn-stop').style.display = 'block';
+    }
+  }, 500);
+
+  // 自動停止（5秒後）
+  clearTimeout(autoStopTimer);
+  autoStopTimer = setTimeout(() => {
+    if (reelPhase === 'spinning') triggerStop();
+  }, 5000);
+}
+
+/* ストップボタン押下 */
+function handleStop() {
+  if (reelPhase !== 'spinning') return;
+  clearTimeout(autoStopTimer);
+  triggerStop();
+}
+
+/* 停止処理（スタート自動 / ストップボタン 共通） */
+function triggerStop() {
+  cancelAnimationFrame(reelRafId);
+  reelPhase = 'stopping';
+
+  // ストップボタンを非表示
+  document.getElementById('btn-stop').style.display = 'none';
+
+  // 当選アイテムが中央に来るfinalPosを計算
+  const N = rewards.length;
+  const curCenter = Math.round((reelPos + ITEM_H) / ITEM_H);
+  let tgt = curCenter + N * 3;
+  while (((tgt % N) + N) % N !== currentWinIdx) tgt++;
+  const finalPos = (tgt - 1) * ITEM_H;
+
+  // CSSトランジションで減速停止
+  const strip = document.getElementById('reel-strip');
+  strip.style.transition = 'transform 2.2s cubic-bezier(0.08, 0.92, 0.22, 1)';
+  strip.style.transform  = `translateY(-${finalPos}px)`;
+  reelPos = finalPos;
+
+  // 停止後の処理
+  setTimeout(() => {
+    strip.style.transition = '';
+    reelPhase = 'stopped';
+    flashReel();
+    setTimeout(() => showResult(currentWinIdx), 300);
+  }, 2300);
+}
+
+/* リール停止フラッシュ */
+function flashReel() {
+  const win = document.getElementById('reel-main');
+  win.style.boxShadow  = '0 0 40px rgba(255,215,0,1), inset 0 0 24px rgba(255,215,0,.14)';
+  win.style.borderColor = 'rgba(255,215,0,1)';
+  setTimeout(() => {
+    win.style.boxShadow  = '';
+    win.style.borderColor = '';
+  }, 800);
+}
+
+/* 結果表示 */
+function showResult(winIdx) {
+  const w = rewards[winIdx];
+  document.getElementById('res-emoji').textContent = w.emoji;
+  document.getElementById('res-text').textContent  = w.text;
+  document.getElementById('result-panel').classList.add('show');
+  document.getElementById('result-panel').scrollIntoView({ behavior:'smooth', block:'center' });
+
+  spawnConfetti();
+  spinning = false;
+}
+
+/* リセット */
+function resetSlot() {
+  document.getElementById('result-panel').classList.remove('show');
+  document.getElementById('conf-wrap').innerHTML = '';
+  document.getElementById('btn-stop').style.display = 'none';
+  clearTimeout(autoStopTimer);
+  buildReel();
+  const btn = document.getElementById('btn-start');
+  btn.disabled    = false;
+  btn.textContent = '🎰 スタート';
+  spinning  = false;
+  reelPhase = 'idle';
+}
+
+/* ============================================================
+   紙吹雪
+   ============================================================ */
+function spawnConfetti() {
+  const wrap   = document.getElementById('conf-wrap');
+  wrap.innerHTML = '';
+  const colors = ['#fde68a','#fbbf24','#f59e0b','#34d399','#60a5fa','#f472b6','#a78bfa','#fb7185'];
+  for (let i = 0; i < 120; i++) {
+    const el  = document.createElement('div');
+    el.className = 'conf-p';
+    const sz  = 7 + Math.random() * 11;
+    const dur = 1.8 + Math.random() * 2.5;
+    const del = Math.random() * 1.5;
+    const rot = (Math.random() > .5 ? '' : '-') + (180 + Math.random() * 380) + 'deg';
+    const dx  = (Math.random() - .5) * 240;
+    el.style.cssText = `
+      left:${Math.random()*100}vw;
+      width:${sz}px; height:${sz * .62}px;
+      background:${colors[i % colors.length]};
+      border-radius:${Math.random() > .45 ? '50%' : '2px'};
+      --cr:${rot}; --cx:${dx}px;
+      animation: cfal ${dur}s ${del}s linear forwards;
+    `;
+    wrap.appendChild(el);
+  }
+  setTimeout(() => { wrap.innerHTML = ''; }, 7000);
+}
+
+/* ============================================================
+   管理パネル
+   ============================================================ */
+function authMgr() {
+  const v   = document.getElementById('mgr-pin').value;
+  const msg = document.getElementById('mgr-pin-msg');
+
+  const pin = '1210';
+
+  if (v === pin) {
+    document.getElementById('mgr-pin-row').style.display = 'none';
+    document.getElementById('mgr-area').style.display    = 'block';
+    renderList();
+  } else {
+    msg.className   = 'pin-ng';
+    msg.textContent = '暗証番号が違います';
+    document.getElementById('mgr-pin').value = '';
+  }
+}
+
+function renderList() {
+  const list = document.getElementById('reward-list');
+  list.innerHTML = '';
+  rewards.forEach(r => appendRow(r.emoji, r.text));
+}
+
+function appendRow(emoji, text) {
+  const row = document.createElement('div');
+  row.className = 'reward-row';
+  row.innerHTML = `
+    <input class="rw-em" type="text" value="${emoji}" maxlength="2" placeholder="🎁">
+    <input class="rw-tx" type="text" value="${text}" placeholder="ご褒美の内容">
+    <button class="btn-del" onclick="delRow(this)">✕</button>
+  `;
+  document.getElementById('reward-list').appendChild(row);
+  return row;
+}
+
+function addRow() {
+  const row = appendRow('🎁', '');
+  row.querySelector('.rw-tx').focus();
+}
+
+function delRow(btn) {
+  if (document.querySelectorAll('.reward-row').length <= 2) {
+    alert('ご褒美は2つ以上必要です');
+    return;
+  }
+  btn.closest('.reward-row').remove();
+}
+
+function saveRewards() {
+  const rows = document.querySelectorAll('.reward-row');
+  const newList = [];
+  rows.forEach(row => {
+    const em = row.querySelector('.rw-em').value.trim();
+    const tx = row.querySelector('.rw-tx').value.trim();
+    if (tx) newList.push({ emoji: em || '🎁', text: tx });
+  });
+  if (newList.length < 2) { alert('ご褒美は2つ以上必要です'); return; }
+
+  rewards = newList;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const d   = raw ? JSON.parse(raw) : {};
+    d.rewards = rewards;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+  } catch(e) {}
+
+  buildReel();
+  const ok = document.getElementById('save-ok');
+  ok.style.display = 'block';
+  setTimeout(() => { ok.style.display = 'none'; }, 2800);
+}
+
+/* ============================================================
+   星の背景
+   ============================================================ */
+function initStars() {
+  const wrap = document.getElementById('stars-bg');
+  for (let i = 0; i < 90; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = .4 + Math.random() * 2.4;
+    s.style.cssText = `
+      width:${sz}px; height:${sz}px;
+      left:${Math.random()*100}vw; top:${Math.random()*100}vh;
+      animation-duration:${1.5 + Math.random()*4}s;
+      animation-delay:-${Math.random()*4}s;
+    `;
+    wrap.appendChild(s);
+  }
+}
+
+/* ============================================================
+   初期化
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  loadData();
+  buildReel();
+  initStars();
+});
+</script>
+</body>
+</html>
