@@ -377,14 +377,16 @@ let isAnim     = false; // アニメーション中
 let isGoal     = false; // ゴール済み
 
 /* ============================================================
-   データ
+   データ（data.json から取得）
    ============================================================ */
-function loadData() {
+let _cachedData = null;
+
+async function loadData() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const d = JSON.parse(raw);
-    // 新形式: campaigns 配列
+    const res = await fetch('data.json');
+    if (!res.ok) return;
+    const d = await res.json();
+    _cachedData = d;
     if (d.campaigns && d.campaigns[ci]) {
       const c      = d.campaigns[ci];
       curPos       = c.current   ?? 0;
@@ -393,7 +395,6 @@ function loadData() {
       campName     = c.name      || 'キャンペーン';
       isGoal       = c.completed || curPos >= totalCells;
     } else if (d.sugoroku) {
-      // 旧形式フォールバック
       curPos       = d.sugoroku.current       ?? 0;
       totalCells   = d.sugoroku.total         ?? 24;
       goalEmoji    = d.sugoroku.goalEmoji    || '🏆';
@@ -403,18 +404,25 @@ function loadData() {
   } catch(e) { console.error(e); }
 }
 
-function savePos() {
+async function savePos() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const d   = raw ? JSON.parse(raw) : {};
+    let d = _cachedData;
+    if (!d) {
+      const res = await fetch('data.json');
+      d = res.ok ? await res.json() : {};
+    }
     const completed = curPos >= totalCells;
     if (d.campaigns && d.campaigns[ci]) {
       d.campaigns[ci].current   = curPos;
       d.campaigns[ci].completed = completed;
-    } else if (d.sugoroku) {
-      d.sugoroku.current = curPos;
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+    _cachedData = d;
+    const pin = d.adminPIN || '1210';
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin, data: d }),
+    });
   } catch(e) { console.error(e); }
 }
 
@@ -722,9 +730,9 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 /* ============================================================
    初期化
    ============================================================ */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   ci = parseInt(new URLSearchParams(location.search).get('ci') || '0', 10);
-  loadData();
+  await loadData();
 
   document.title = campName + ' ― キャンペーン';
   document.getElementById('hd-title').textContent = campName;

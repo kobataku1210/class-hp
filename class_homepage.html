@@ -523,8 +523,6 @@
 /* ============================================================
    設定
    ============================================================ */
-const STORAGE_KEY = 'classHomepageData';
-
 const DEFAULTS = {
   className:    '3年○組',
   classGoal:    '雲外蒼天',
@@ -554,13 +552,14 @@ const DEFAULTS = {
 };
 
 /* ============================================================
-   データ読み込み
+   データ読み込み（data.json から取得）
    ============================================================ */
-function loadData() {
+async function loadData() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (e) { return {}; }
+    const res = await fetch('data.json');
+    if (!res.ok) return {};
+    return await res.json();
+  } catch(e) { return {}; }
 }
 function merge(val, def) {
   return (val !== undefined && val !== null && val !== '') ? val : def;
@@ -729,8 +728,8 @@ function buildSchedule(d) {
 /* ============================================================
    初期化
    ============================================================ */
-document.addEventListener('DOMContentLoaded', () => {
-  const d = loadData();
+document.addEventListener('DOMContentLoaded', async () => {
+  const d = await loadData();
   buildHeader(d);
   buildCountdown(d);
   buildCampaign(d);

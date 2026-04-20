@@ -104,6 +104,18 @@
     white-space: nowrap;
   }
   .btn-save-top:hover { background: #dcfce7; }
+  .btn-github {
+    padding: 7px 16px;
+    background: #0f172a;
+    border: none;
+    color: #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-github:hover { background: #1e293b; }
   .btn-logout {
     padding: 7px 13px;
     background: rgba(255,255,255,0.1);
@@ -255,6 +267,7 @@
       <a href="class_homepage.html" target="_blank" class="btn-preview">👁 ホームページ確認</a>
       <a href="campaign.html"       target="_blank" class="btn-preview">🎲 キャンペーン確認</a>
       <button class="btn-save-top" onclick="saveAll()">💾 保存</button>
+      <button class="btn-github"   onclick="pushGitHub()">🚀 GitHubに反映</button>
       <button class="btn-logout"   onclick="doLogout()">ログアウト</button>
     </div>
   </div>
@@ -347,15 +360,21 @@
 /* ============================================================
    暗証番号 ＆ ログイン
    ============================================================ */
-const DEFAULT_PIN = '1210';
-const STORAGE_KEY = 'classHomepageData';
-const PIN_KEY     = 'classAdminPIN';
+let enteredPin = ''; // ログイン時に入力したPIN（API呼び出しに使用）
 
-function getPin()  { return localStorage.getItem(PIN_KEY) || DEFAULT_PIN; }
-
-function doLogin() {
+async function doLogin() {
   const input = document.getElementById('pin-input').value;
-  if (input === getPin()) {
+  let correctPin = '1210';
+  try {
+    const res = await fetch('data.json');
+    if (res.ok) {
+      const d = await res.json();
+      correctPin = d.adminPIN || '1210';
+    }
+  } catch(e) {}
+
+  if (input === correctPin) {
+    enteredPin = input;
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('admin-screen').style.display = 'block';
     loadFormData();
@@ -370,6 +389,7 @@ function doLogout() {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('pin-input').value = '';
   document.getElementById('login-error').textContent = '';
+  enteredPin = '';
 }
 
 /* ============================================================
@@ -404,9 +424,12 @@ const DEFAULTS = {
 /* ============================================================
    フォームにデータを読み込む
    ============================================================ */
-function loadFormData() {
-  const raw  = localStorage.getItem(STORAGE_KEY);
-  const data = raw ? JSON.parse(raw) : DEFAULTS;
+async function loadFormData() {
+  let data = DEFAULTS;
+  try {
+    const res = await fetch('data.json');
+    if (res.ok) data = await res.json();
+  } catch(e) {}
 
   document.getElementById('f-className').value    = data.className    || DEFAULTS.className;
   document.getElementById('f-classGoal').value    = data.classGoal    || DEFAULTS.classGoal;
@@ -589,20 +612,18 @@ function getSchedule() {
 }
 
 /* ============================================================
-   保存
+   保存（サーバーの data.json に書き込む）
    ============================================================ */
-function saveAll() {
+async function saveAll() {
   const newPin  = document.getElementById('f-newPin').value.trim();
   const newPin2 = document.getElementById('f-newPin2').value.trim();
   if (newPin || newPin2) {
-    if (newPin !== newPin2)  { alert('新しい暗証番号と確認用が一致しません。'); return; }
-    if (newPin.length < 4)   { alert('暗証番号は4文字以上にしてください。'); return; }
-    localStorage.setItem(PIN_KEY, newPin);
-    document.getElementById('f-newPin').value  = '';
-    document.getElementById('f-newPin2').value = '';
+    if (newPin !== newPin2) { alert('新しい暗証番号と確認用が一致しません。'); return; }
+    if (newPin.length < 4)  { alert('暗証番号は4文字以上にしてください。'); return; }
   }
 
   const data = {
+    adminPIN:     newPin || enteredPin,
     className:    document.getElementById('f-className').value.trim(),
     classGoal:    document.getElementById('f-classGoal').value.trim(),
     classGoalSub: document.getElementById('f-classGoalSub').value.trim(),
@@ -610,14 +631,70 @@ function saveAll() {
     events:    getEvents(),
     campaigns: getCamps(),
     notices:   getNotices(),
-    schedule: getSchedule(),
+    schedule:  getSchedule(),
+    rewards:   await getExistingRewards(),
   };
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-
   const status = document.getElementById('save-status');
-  status.textContent = '✅ 保存しました！';
-  setTimeout(() => { status.textContent = ''; }, 3000);
+  status.textContent = '⏳ 保存中...';
+
+  try {
+    const res = await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: enteredPin, data }),
+    });
+    const result = await res.json();
+    if (result.ok) {
+      if (newPin) {
+        enteredPin = newPin;
+        document.getElementById('f-newPin').value  = '';
+        document.getElementById('f-newPin2').value = '';
+      }
+      status.textContent = '✅ 保存しました！';
+    } else {
+      status.textContent = '❌ ' + (result.error || '保存失敗');
+    }
+  } catch(e) {
+    status.textContent = '❌ サーバーに接続できません。サーバー起動.bat を確認してください。';
+  }
+  setTimeout(() => { status.textContent = ''; }, 4000);
+}
+
+// 既存のご褒美データを保持する（admin画面では編集しないため）
+async function getExistingRewards() {
+  try {
+    const res = await fetch('data.json');
+    if (res.ok) {
+      const d = await res.json();
+      return d.rewards || [];
+    }
+  } catch(e) {}
+  return [];
+}
+
+/* ============================================================
+   GitHub に反映
+   ============================================================ */
+async function pushGitHub() {
+  const status = document.getElementById('save-status');
+  status.textContent = '⏳ GitHubに送信中...';
+  try {
+    const res = await fetch('/api/git-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: enteredPin }),
+    });
+    const result = await res.json();
+    if (result.ok) {
+      status.textContent = '🚀 GitHubに反映しました！数分後にサイトに反映されます。';
+    } else {
+      status.textContent = '❌ ' + (result.error || 'push失敗');
+    }
+  } catch(e) {
+    status.textContent = '❌ サーバーに接続できません。サーバー起動.bat を確認してください。';
+  }
+  setTimeout(() => { status.textContent = ''; }, 6000);
 }
 
 /* ============================================================
