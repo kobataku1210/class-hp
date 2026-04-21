@@ -328,6 +328,13 @@
       <button class="btn-add" onclick="addSchedule()">＋ 予定を追加</button>
     </div>
 
+    <!-- ご褒美スロット -->
+    <div class="admin-section">
+      <h2>🎰 ご褒美スロット</h2>
+      <div class="dynamic-list" id="rewards-list"></div>
+      <button class="btn-add" onclick="addReward()">＋ ご褒美を追加</button>
+    </div>
+
     <!-- 暗証番号 -->
     <div class="admin-section">
       <h2>🔒 暗証番号の変更</h2>
@@ -455,6 +462,12 @@ async function loadFormData() {
 
   document.getElementById('schedule-list').innerHTML = '';
   (data.schedule || DEFAULTS.schedule).forEach(r => addSchedule(r));
+
+  document.getElementById('rewards-list').innerHTML = '';
+  const rewards = Array.isArray(data.rewards) && data.rewards.length ? data.rewards : [
+    { emoji:'🎉', text:'レク' }, { emoji:'🎨', text:'黒板アート' }
+  ];
+  rewards.forEach(r => addReward(r));
 }
 
 /* ============================================================
@@ -612,6 +625,28 @@ function getSchedule() {
 }
 
 /* ============================================================
+   動的リスト：ご褒美
+   ============================================================ */
+function addReward(data = {}) {
+  const row = document.createElement('div');
+  row.className = 'list-item list-item-2';
+  row.innerHTML = `
+    <div><div class="item-label">絵文字</div>
+      <input type="text" placeholder="🎉" value="${esc(data.emoji||'🎁')}" style="width:70px;text-align:center" maxlength="2"></div>
+    <div><div class="item-label">ご褒美の内容</div>
+      <input type="text" placeholder="例：レク" value="${esc(data.text||'')}"></div>
+    <button class="btn-remove" onclick="this.closest('.list-item').remove()" title="削除">✕</button>
+  `;
+  document.getElementById('rewards-list').appendChild(row);
+}
+function getRewards() {
+  return [...document.querySelectorAll('#rewards-list .list-item')].map(r => {
+    const i = r.querySelectorAll('input');
+    return { emoji: i[0].value.trim() || '🎁', text: i[1].value.trim() };
+  }).filter(r => r.text);
+}
+
+/* ============================================================
    保存（サーバーの data.json に書き込む）
    ============================================================ */
 async function saveAll() {
@@ -632,7 +667,7 @@ async function saveAll() {
     campaigns: getCamps(),
     notices:   getNotices(),
     schedule:  getSchedule(),
-    rewards:   await getExistingRewards(),
+    rewards:   getRewards(),
   };
 
   const status = document.getElementById('save-status');
@@ -659,18 +694,6 @@ async function saveAll() {
     status.textContent = '❌ サーバーに接続できません。サーバー起動.bat を確認してください。';
   }
   setTimeout(() => { status.textContent = ''; }, 4000);
-}
-
-// 既存のご褒美データを保持する（admin画面では編集しないため）
-async function getExistingRewards() {
-  try {
-    const res = await fetch('data.json');
-    if (res.ok) {
-      const d = await res.json();
-      return d.rewards || [];
-    }
-  } catch(e) {}
-  return [];
 }
 
 /* ============================================================
