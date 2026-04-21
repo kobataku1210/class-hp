@@ -57,7 +57,7 @@
     },
     {
       "name": "挙手チャレンジ",
-      "total": 200,
+      "total": 350,
       "current": 0,
       "goalEmoji": "🏆",
       "completed": false,
