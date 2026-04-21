@@ -302,6 +302,10 @@ footer a:hover { opacity:1; }
         <button class="btn-add-pt" id="btn-add-pt" onclick="handleAdd()">🌸 咲かせる</button>
       </div>
       <div class="pt-hint">※ 挙手1回 = 桜が1クラスター咲きます</div>
+      <button onclick="pushGitHub()" style="margin-top:14px;width:100%;padding:11px;background:linear-gradient(135deg,#0f172a,#1e293b);color:#e2e8f0;border:none;border-radius:12px;font-size:.92rem;font-weight:800;cursor:pointer;letter-spacing:.04em">
+        🚀 GitHubに反映（生徒画面に更新）
+      </button>
+      <div id="push-status" style="font-size:.8rem;text-align:center;margin-top:6px;min-height:1.2em"></div>
     </div>
   </div>
 
@@ -457,6 +461,33 @@ async function savePos() {
       body: JSON.stringify({ pin, data: d }),
     });
   } catch(e) { console.error(e); }
+}
+
+async function pushGitHub() {
+  const status = document.getElementById('push-status');
+  status.textContent = '⏳ GitHubに送信中...';
+  status.style.color = '#f9a8d4';
+  try {
+    const d = _cachedData || {};
+    const pin = d.adminPIN || '1210';
+    const res = await fetch('/api/git-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    });
+    const result = await res.json();
+    if (result.ok) {
+      status.textContent = '🚀 反映しました！1〜3分後に生徒画面に表示されます';
+      status.style.color = '#86efac';
+    } else {
+      status.textContent = '❌ ' + (result.error || '失敗しました');
+      status.style.color = '#fca5a5';
+    }
+  } catch(e) {
+    status.textContent = '❌ サーバーに接続できません';
+    status.style.color = '#fca5a5';
+  }
+  setTimeout(() => { status.textContent = ''; }, 6000);
 }
 
 /* ============================================================
