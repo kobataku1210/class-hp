@@ -50,7 +50,7 @@
     {
       "name": "あいさつチャレンジ",
       "total": 30,
-      "current": 28,
+      "current": 30,
       "goalEmoji": "🏆",
       "completed": false,
       "type": "cloud"
@@ -58,7 +58,7 @@
     {
       "name": "挙手チャレンジ",
       "total": 350,
-      "current": 0,
+      "current": 117,
       "goalEmoji": "🏆",
       "completed": false,
       "type": "tree"
