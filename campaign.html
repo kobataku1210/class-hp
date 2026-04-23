@@ -508,6 +508,32 @@ async function handleAdd() {
 
   isAnim = false;
   if (!isGoal) btn.disabled = false;
+
+  // ポイント追加後に自動でGitHubへ反映
+  autoPush();
+}
+
+async function autoPush() {
+  const status = document.getElementById('push-status');
+  if (!status) return;
+  status.textContent = '⏳ 保存中...';
+  status.style.color = '#64748b';
+  try {
+    const d = _cachedData || {};
+    const pin = d.adminPIN || '1210';
+    const res = await fetch('/api/git-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    });
+    const result = await res.json();
+    status.textContent = result.ok ? '✅ 保存完了！生徒画面に反映されます' : '❌ ' + (result.error || '失敗');
+    status.style.color = result.ok ? '#16a34a' : '#dc2626';
+  } catch(e) {
+    status.textContent = '❌ サーバーに接続できません';
+    status.style.color = '#dc2626';
+  }
+  setTimeout(() => { if (status) status.textContent = ''; }, 5000);
 }
 
 /* ============================================================
