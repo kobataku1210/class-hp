@@ -553,10 +553,10 @@ function makeHandprint(pos) {
   g.setAttribute('opacity', '0');
   g.setAttribute('filter', 'url(#hand-shadow)');
 
-  // 暗い青紫のシルエット色（磨りガラス越しの影）
-  const base = 18 + (Math.random() * 12 | 0);
-  const a    = 0.58 + Math.random() * 0.28;
-  const c    = `rgba(${base},${base + 8},${base + 30},${a})`;
+  // 白い手形（幽霊の手がガラスに押しつけた）
+  const bright = 210 + (Math.random() * 35 | 0);
+  const a      = 0.55 + Math.random() * 0.30;
+  const c      = `rgba(${bright},${bright},${Math.min(255, bright + 20)},${a})`;
 
   const mk = (tag, attrs) => {
     const el = document.createElementNS(SVG_NS, tag);
@@ -598,8 +598,8 @@ function buildHandprints() {
 }
 
 function visibleCount(pos) {
-  // 目標の40%（400回）で手形が全部揃う → スピード感UP
-  const handPct = Math.min(pos / (totalCells * 0.4), 1);
+  // 目標の15%（150回）で手形が全部揃う → さらにスピードUP
+  const handPct = Math.min(pos / (totalCells * 0.15), 1);
   return Math.round(handPct * HANDPRINT_POS.length);
 }
 
