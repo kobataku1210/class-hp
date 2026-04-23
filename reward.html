@@ -418,11 +418,20 @@ function handleStart() {
   // 当選アイテムをランダム選択（ストップボタンでも同じ結果になる）
   currentWinIdx = Math.floor(Math.random() * rewards.length);
 
-  // スピンループ
+  // スピンループ（無限ループ対応）
   cancelAnimationFrame(reelRafId);
+  const oneRound   = rewards.length * ITEM_H;  // 1周分のピクセル数
+  const loopThresh = oneRound * (REPS / 2);    // ここを超えたら巻き戻す
   const loop = () => {
     if (reelPhase !== 'spinning') return;
     reelPos += 22;
+    // 折り返し：コンテンツが繰り返しのため視覚的に変化なし
+    if (reelPos > loopThresh) {
+      reelPos -= loopThresh;
+      const s = document.getElementById('reel-strip');
+      s.style.transition = 'none';
+      s.style.transform  = `translateY(-${reelPos}px)`;
+    }
     applyPos();
     reelRafId = requestAnimationFrame(loop);
   };
