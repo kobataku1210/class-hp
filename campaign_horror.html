@@ -177,11 +177,12 @@ body::before {
 }
 .handprint-new { animation: handSlam .55s ease-out forwards; }
 
-/* ===== 幽霊フロート ===== */
+/* ===== 幽霊フロート（後ろ姿がゆらゆら揺れる） ===== */
 @keyframes ghostFloat {
-  0%,100% { transform: translateY(0) scaleX(1); }
-  30%     { transform: translateY(-9px) scaleX(1.03); }
-  70%     { transform: translateY(-5px) scaleX(.97); }
+  0%,100% { transform-origin: center bottom; transform: translateY(0) rotate(0deg); }
+  25%     { transform: translateY(-8px) rotate(.8deg); }
+  50%     { transform: translateY(-4px) rotate(0deg); }
+  75%     { transform: translateY(-10px) rotate(-.6deg); }
 }
 
 footer { text-align: center; padding: 22px 0 0; color: rgba(255,60,60,.28); font-size: .76rem; }
@@ -216,20 +217,39 @@ footer a:hover { color: rgba(255,60,60,.8); }
 
     <svg id="window-svg" viewBox="0 0 320 270" xmlns="http://www.w3.org/2000/svg">
       <defs>
+        <!-- ガラス面グラデーション（やや霧がかった青白） -->
         <radialGradient id="glassGrad" cx="38%" cy="32%" r="72%">
-          <stop offset="0%"   stop-color="#18203e" stop-opacity=".95"/>
-          <stop offset="100%" stop-color="#04060e" stop-opacity="1"/>
+          <stop offset="0%"   stop-color="#1e2840" stop-opacity=".92"/>
+          <stop offset="100%" stop-color="#060810" stop-opacity="1"/>
         </radialGradient>
         <radialGradient id="moonGrad" cx="40%" cy="35%" r="60%">
           <stop offset="0%" stop-color="#d8d870"/>
           <stop offset="100%" stop-color="#a0a040"/>
         </radialGradient>
-        <filter id="glow-ghost">
-          <feGaussianBlur stdDeviation="5" result="b"/>
+        <!-- 幽霊の白い発光 -->
+        <filter id="glow-ghost" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="6" result="b"/>
           <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-        <filter id="blur-halo">
-          <feGaussianBlur stdDeviation="8"/>
+        <!-- 後光 -->
+        <filter id="blur-halo" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="10"/>
+        </filter>
+        <!-- 手形：磨りガラス越しの影 -->
+        <filter id="hand-shadow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="4.5" result="blurred"/>
+          <feMerge>
+            <feMergeNode in="blurred"/>
+            <feMergeNode in="blurred"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+        <!-- ガラス曇り加工 -->
+        <filter id="glass-fog" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" result="noise"/>
+          <feColorMatrix in="noise" type="saturate" values="0" result="grayNoise"/>
+          <feBlend in="SourceGraphic" in2="grayNoise" mode="screen" result="blended"/>
+          <feComposite in="blended" in2="SourceGraphic" operator="in"/>
         </filter>
         <clipPath id="glass-clip">
           <rect x="24" y="20" width="272" height="230" rx="3"/>
@@ -263,39 +283,86 @@ footer a:hover { color: rgba(255,60,60,.8); }
       <!-- 雨粒（ガラス面） -->
       <g id="rain-drops" clip-path="url(#glass-clip)" opacity=".4"></g>
 
-      <!-- 幽霊グループ -->
+      <!-- 幽霊グループ（白いローブ＋長い黒髪・後ろ姿） -->
       <g id="ghost-group" clip-path="url(#glass-clip)" opacity="0">
-        <!-- 後光ぼかし -->
-        <ellipse id="ghost-halo" cx="160" cy="128" rx="48" ry="65"
-                 fill="rgba(160,210,255,.18)" filter="url(#blur-halo)"/>
-        <!-- 幽霊本体 -->
-        <g id="ghost-body-g" filter="url(#glow-ghost)" transform="translate(160,140)">
-          <!-- 体 -->
-          <path d="M0,-90
-            C-44,-90 -44,-48 -44,4
-            L-44,58
-            Q-35,74 -25,58
-            Q-16,42 -8,58
-            Q0,74 8,58
-            Q16,42 25,58
-            Q35,74 44,58
-            L44,4
-            C44,-48 44,-90 0,-90 Z"
-            fill="rgba(205,228,255,.92)" id="ghost-body-path"/>
-          <!-- 目（黒） -->
-          <ellipse cx="-17" cy="-45" rx="12" ry="14" fill="rgba(0,4,28,.95)"/>
-          <ellipse cx=" 17" cy="-45" rx="12" ry="14" fill="rgba(0,4,28,.95)"/>
-          <!-- 目の光（青白） -->
-          <ellipse cx="-17" cy="-45" rx="5"  ry="6"  fill="rgba(80,190,255,.9)"/>
-          <ellipse cx=" 17" cy="-45" rx="5"  ry="6"  fill="rgba(80,190,255,.9)"/>
-          <!-- 口 -->
-          <path d="M-15,-24 Q0,-12 15,-24 Q8,-7 0,-5 Q-8,-7 -15,-24 Z"
-                fill="rgba(0,4,28,.78)"/>
-          <!-- 腕（幽霊っぽい波形） -->
-          <path d="M-44,10 Q-58,0 -62,14 Q-58,22 -50,18" stroke="rgba(205,228,255,.6)"
-                stroke-width="5" fill="none" stroke-linecap="round"/>
-          <path d="M44,10  Q58,0  62,14  Q58,22  50,18"  stroke="rgba(205,228,255,.6)"
-                stroke-width="5" fill="none" stroke-linecap="round"/>
+        <!-- 後光（白いぼんやり発光） -->
+        <ellipse id="ghost-halo" cx="160" cy="150" rx="52" ry="72"
+                 fill="rgba(220,230,255,.22)" filter="url(#blur-halo)"/>
+        <!-- 幽霊本体グループ（JS でスケール制御） -->
+        <g id="ghost-body-g" filter="url(#glow-ghost)" transform="translate(160,145)">
+
+          <!-- ===== ローブ（白） ===== -->
+          <!-- 本体：後ろから見た裾の広がったロング丈 -->
+          <path d="M -22,-55
+                   C -38,-45 -44,-20 -46,10
+                   C -48,36 -46,60 -44,76
+                   L  44,76
+                   C  46,60  48,36  46,10
+                   C  44,-20  38,-45  22,-55 Z"
+                fill="rgba(242,242,250,0.93)"/>
+          <!-- ローブの縦の影ライン（立体感） -->
+          <path d="M 0,-52 C -2,0 -2,48 0,76 L 2,76 C 2,48 2,0 0,-52 Z"
+                fill="rgba(120,130,180,0.12)"/>
+          <path d="M -14,-50 C -16,5 -16,50 -14,76 L -10,76 C -10,50 -10,5 -10,-50 Z"
+                fill="rgba(120,130,180,0.07)"/>
+          <path d="M  14,-50 C  16,5  16,50  14,76 L  10,76 C  10,50  10,5  10,-50 Z"
+                fill="rgba(120,130,180,0.07)"/>
+
+          <!-- 袖（左右にふんわり広がる） -->
+          <path d="M -46,5
+                   C -58,-2 -66,18 -62,36
+                   C -58,46 -50,42 -46,28 Z"
+                fill="rgba(238,238,248,0.90)"/>
+          <path d="M  46,5
+                   C  58,-2  66,18  62,36
+                   C  58,46  50,42  46,28 Z"
+                fill="rgba(238,238,248,0.90)"/>
+
+          <!-- 首すじ（肌色がわずかに） -->
+          <ellipse cx="0" cy="-60" rx="8" ry="9" fill="rgba(195,180,170,0.80)"/>
+
+          <!-- ===== 頭部（黒髪で覆われた後頭部） ===== -->
+          <ellipse cx="0" cy="-74" rx="17" ry="18" fill="#090912"/>
+
+          <!-- ===== 黒髪（長い直毛、後ろからサイドへ流れる） ===== -->
+          <!-- 中心付近の太い髪束（ロング） -->
+          <path d="M -13,-91 C -13,-55 -15,20 -17,75 L -9,75 C -9,20 -9,-54 -13,-91 Z" fill="#07070f"/>
+          <path d="M  -4,-93 C  -4,-55  -5,22  -6,76 L  2,76 C  2,22  0,-54  -4,-93 Z" fill="#060610"/>
+          <path d="M   4,-93 C   4,-55   5,22   6,76 L -2,76 C -2,22   0,-54   4,-93 Z" fill="#06060f"/>
+          <path d="M  13,-91 C  13,-55  15,20  17,75 L  9,75 C  9,20   9,-54  13,-91 Z" fill="#07070f"/>
+
+          <!-- サイドに広がる髪束 -->
+          <path d="M -13,-88
+                   C -28,-68 -44,-28 -46,38
+                   C -44,42 -40,41 -40,38
+                   C -40,-24 -26,-64 -13,-88 Z" fill="#060610"/>
+          <path d="M  13,-88
+                   C  28,-68  44,-28  46,38
+                   C  44,42  40,41  40,38
+                   C  40,-24  26,-64  13,-88 Z" fill="#060610"/>
+
+          <!-- 外側のほつれ毛（より広がる） -->
+          <path d="M -16,-86
+                   C -36,-62 -58,-14 -56,48
+                   C -54,52 -50,50 -50,48
+                   C -50,-10 -32,-58 -16,-86 Z" fill="#050508" opacity=".82"/>
+          <path d="M  16,-86
+                   C  36,-62  58,-14  56,48
+                   C  54,52  50,50  50,48
+                   C  50,-10  32,-58  16,-86 Z" fill="#050508" opacity=".82"/>
+
+          <!-- 最外のうっすら毛先 -->
+          <path d="M -18,-84
+                   C -42,-56 -66,-4 -64,52
+                   C -62,56 -60,55 -60,52
+                   C -60,-2 -40,-52 -18,-84 Z" fill="#030306" opacity=".60"/>
+          <path d="M  18,-84
+                   C  42,-56  66,-4  64,52
+                   C  62,56  60,55  60,52
+                   C  60,-2  40,-52  18,-84 Z" fill="#030306" opacity=".60"/>
+
+          <!-- 頭頂部（黒い） -->
+          <ellipse cx="0" cy="-80" rx="14" ry="12" fill="#08080f"/>
         </g>
       </g>
 
@@ -451,7 +518,7 @@ async function autoPush() {
 }
 
 /* ============================================================
-   手形SVG生成
+   手形SVG生成（磨りガラス越しの影シルエット）
    ============================================================ */
 function makeHandprint(pos) {
   const g  = document.createElementNS(SVG_NS, 'g');
@@ -460,29 +527,35 @@ function makeHandprint(pos) {
   const flip = pos.h === 1 ? -1 : 1;
   g.setAttribute('transform', `translate(${cx},${cy}) rotate(${pos.rot}) scale(${pos.sz * flip},${pos.sz})`);
   g.setAttribute('opacity', '0');
+  g.setAttribute('filter', 'url(#hand-shadow)');
 
-  const r = 130 + (Math.random() * 40 | 0);
-  const a = 0.52 + Math.random() * 0.22;
-  const c = `rgba(${r},${8 + Math.random()*18|0},${8 + Math.random()*18|0},${a})`;
+  // 暗い青紫のシルエット色（磨りガラス越しの影）
+  const base = 18 + (Math.random() * 12 | 0);
+  const a    = 0.58 + Math.random() * 0.28;
+  const c    = `rgba(${base},${base + 8},${base + 30},${a})`;
 
-  // 手のひら
-  const palm = document.createElementNS(SVG_NS, 'ellipse');
-  palm.setAttribute('rx','16'); palm.setAttribute('ry','18'); palm.setAttribute('fill', c);
-  g.appendChild(palm);
-  // 親指
-  const th = document.createElementNS(SVG_NS, 'ellipse');
-  th.setAttribute('cx','18'); th.setAttribute('cy','4');
-  th.setAttribute('rx','7'); th.setAttribute('ry','12');
-  th.setAttribute('transform','rotate(46,18,4)'); th.setAttribute('fill', c);
-  g.appendChild(th);
-  // 4本指
-  [[-4,10,-27,5.5,14],[1,2,-30,5.5,15],[6,-8,-27,5,13],[11,-16,-22,4.5,11]].forEach(([rot,fx,fy,rx,ry]) => {
-    const f = document.createElementNS(SVG_NS, 'ellipse');
-    f.setAttribute('cx', String(fx)); f.setAttribute('cy', String(fy));
-    f.setAttribute('rx', String(rx)); f.setAttribute('ry', String(ry));
-    f.setAttribute('transform', `rotate(${rot})`); f.setAttribute('fill', c);
-    g.appendChild(f);
-  });
+  const mk = (tag, attrs) => {
+    const el = document.createElementNS(SVG_NS, tag);
+    Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k, String(v)));
+    el.setAttribute('fill', c);
+    g.appendChild(el);
+  };
+
+  // 手のひら（やや縦長の楕円）
+  mk('ellipse', { cx: 0, cy: 6, rx: 17, ry: 20 });
+
+  // 親指（斜め左外側）
+  mk('ellipse', { cx: -20, cy: 0, rx: 6.5, ry: 13, transform: 'rotate(-38,-20,0)' });
+
+  // 人差し指
+  mk('ellipse', { cx: -11, cy: -23, rx: 5.5, ry: 16, transform: 'rotate(-10,-11,-23)' });
+  // 中指（一番長い）
+  mk('ellipse', { cx:  -2, cy: -27, rx: 5.5, ry: 18, transform: 'rotate(-2,-2,-27)'  });
+  // 薬指
+  mk('ellipse', { cx:   8, cy: -25, rx: 5,   ry: 17, transform: 'rotate(6,8,-25)'    });
+  // 小指
+  mk('ellipse', { cx:  17, cy: -18, rx: 4.5, ry: 13, transform: 'rotate(14,17,-18)'  });
+
   return g;
 }
 
@@ -522,26 +595,35 @@ function refreshHandprints(animate = false) {
 }
 
 /* ============================================================
-   幽霊更新
+   幽霊更新（後ろ姿の人型・白ローブ＋長黒髪）
    ============================================================ */
 function updateGhost() {
-  const pct    = Math.min(curPos / totalCells, 1);
-  const opacity = Math.max(0, pct > 0.05 ? pct : 0);
-  const scale  = 0.06 + pct * 1.08;
-  const offsetY = (1 - pct) * 35;
+  const pct     = Math.min(curPos / totalCells, 1);
+  // 5%以上で出現開始、線形に不透明になる
+  const opacity = pct < 0.05 ? 0 : Math.min(1, (pct - 0.05) / 0.25);
+  // 遠くにいる間は小さく（0.07→1.10）
+  const scale   = 0.07 + pct * 1.03;
+  // 遠ざかり感：小さい時は下にずらして「遠方」に見せる
+  const baseY   = 145;
+  const offsetY = (1 - pct) * 40;
 
   const group = document.getElementById('ghost-group');
-  group.setAttribute('opacity', String(opacity));
+  group.setAttribute('opacity', String(opacity.toFixed(3)));
 
   const bodyG = document.getElementById('ghost-body-g');
-  bodyG.setAttribute('transform', `translate(0,${offsetY}) scale(${scale})`);
+  // translate で窓中央に固定してからスケール（座標ずれ修正）
+  bodyG.setAttribute('transform',
+    `translate(160,${(baseY + offsetY).toFixed(1)}) scale(${scale.toFixed(3)})`);
 
   const halo = document.getElementById('ghost-halo');
-  halo.setAttribute('rx', String(50 * scale));
-  halo.setAttribute('ry', String(68 * scale));
+  halo.setAttribute('cx', '160');
+  halo.setAttribute('cy', String((baseY + offsetY - 20).toFixed(1)));
+  halo.setAttribute('rx', String((55 * scale).toFixed(1)));
+  halo.setAttribute('ry', String((75 * scale).toFixed(1)));
 
+  // 75%以上でふわふわ浮遊
   if (pct >= 0.75 && !bodyG.style.animation) {
-    bodyG.style.animation = 'ghostFloat 2.8s ease-in-out infinite';
+    bodyG.style.animation = 'ghostFloat 3.0s ease-in-out infinite';
   }
 }
 
