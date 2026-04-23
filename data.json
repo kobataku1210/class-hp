@@ -58,7 +58,7 @@
     {
       "name": "挙手チャレンジ",
       "total": 350,
-      "current": 248,
+      "current": 348,
       "goalEmoji": "🏆",
       "completed": false,
       "type": "tree"
