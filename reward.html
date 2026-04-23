@@ -434,12 +434,6 @@ function handleStart() {
       document.getElementById('btn-stop').style.display = 'block';
     }
   }, 500);
-
-  // 自動停止（5秒後）
-  clearTimeout(autoStopTimer);
-  autoStopTimer = setTimeout(() => {
-    if (reelPhase === 'spinning') triggerStop();
-  }, 5000);
 }
 
 /* ストップボタン押下 */
