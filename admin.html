@@ -480,8 +480,9 @@ function addCamp(data = {}) {
   const completed = data.completed || false;
   const type      = data.type || 'cloud';
   const typeOpts  = [
-    ['cloud', '☁ 雲渡りキャンペーン'],
-    ['tree',  '🌸 挙手・桜の木'],
+    ['cloud',   '☁ 雲渡りキャンペーン'],
+    ['tree',    '🌸 挙手・桜の木'],
+    ['horror',  '👻 挙手・幽霊の窓'],
   ].map(([v,l]) => `<option value="${v}"${type===v?' selected':''}>${l}</option>`).join('');
   row.innerHTML = `
     <div style="display:grid;grid-template-columns:2fr 1fr 1fr 72px auto;gap:8px;align-items:end">
@@ -529,7 +530,9 @@ function openCamp(a) {
   const items = [...document.querySelectorAll('#camps-list .list-item')];
   const idx   = items.indexOf(a.closest('.list-item'));
   const type  = a.closest('.list-item').querySelector('select').value;
-  const page  = type === 'tree' ? 'campaign_tree.html' : 'campaign.html';
+  const page  = type === 'tree' ? 'campaign_tree.html'
+              : type === 'horror' ? 'campaign_horror.html'
+              : 'campaign.html';
   window.open(page + '?ci=' + idx, '_blank');
 }
 

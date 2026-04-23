@@ -62,6 +62,14 @@
       "goalEmoji": "🏆",
       "completed": false,
       "type": "tree"
+    },
+    {
+      "name": "挙手チャレンジ（ホラー）",
+      "total": 350,
+      "current": 0,
+      "goalEmoji": "👻",
+      "completed": false,
+      "type": "horror"
     }
   ],
   "notices": [],

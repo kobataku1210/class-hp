@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>挙手チャレンジ ― 幽霊の窓</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+  min-height: 100vh;
+  background: #08060f;
+  color: #e0e0f0;
+  overflow-x: hidden;
+  animation: flicker 9s infinite;
+}
+@keyframes flicker {
+  0%,91%,95%,100% { opacity: 1; }
+  92%  { opacity: .5; }
+  93%  { opacity: 1; }
+  94%  { opacity: .7; }
+}
+
+/* ===== 背景 ===== */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 55% 40% at 78% 12%, rgba(60,10,80,.5) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 55% at 15% 85%, rgba(0,10,50,.6) 0%, transparent 70%),
+    linear-gradient(160deg, #090614 0%, #0c0e1c 45%, #07050e 100%);
+}
+
+/* ===== 雨 ===== */
+.rain { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.rain-drop {
+  position: absolute; top: -100px; width: 1px;
+  background: linear-gradient(to bottom, transparent, rgba(130,160,255,.28));
+  animation: rainFall linear infinite;
+}
+@keyframes rainFall { to { transform: translateY(115vh); } }
+
+/* ===== ページ ===== */
+.page { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; padding: 0 16px 60px; }
+
+/* ===== ヘッダー ===== */
+.hd { padding: 20px 0 14px; text-align: center; position: relative; }
+.back-btn {
+  position: absolute; top: 24px; left: 0;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16);
+  color: rgba(255,255,255,.65); padding: 6px 14px; border-radius: 20px;
+  font-size: .78rem; font-weight: 700; text-decoration: none;
+}
+.back-btn:hover { background: rgba(255,255,255,.14); }
+.hd-badge {
+  display: inline-block;
+  background: rgba(120,10,10,.35); border: 1px solid rgba(180,30,30,.45);
+  padding: 3px 16px; border-radius: 16px;
+  font-size: .76rem; letter-spacing: .1em; color: #ff7070; margin-bottom: 8px;
+}
+.hd-title {
+  font-size: clamp(1.4rem,5vw,2rem); font-weight: 900;
+  color: #cc2222;
+  text-shadow: 0 0 24px rgba(200,20,20,.7), 0 0 8px rgba(200,20,20,.4);
+  letter-spacing: .06em; margin-bottom: 4px;
+}
+.hd-sub { font-size: .78rem; color: rgba(255,255,255,.38); letter-spacing: .06em; }
+
+/* ===== 窓カード ===== */
+.window-card {
+  background: linear-gradient(170deg, #1c0808 0%, #0c1022 50%, #090608 100%);
+  border-radius: 16px; padding: 12px 10px 10px;
+  box-shadow: 0 8px 40px rgba(120,0,0,.25), 0 2px 10px rgba(0,0,0,.9), inset 0 0 40px rgba(0,0,0,.6);
+  border: 1px solid rgba(100,20,20,.35); margin-bottom: 16px;
+}
+.window-label {
+  text-align: center; font-size: .75rem; font-weight: 800;
+  color: rgba(255,70,70,.7); letter-spacing: .08em; margin-bottom: 8px;
+}
+#window-svg { width: 100%; display: block; filter: drop-shadow(0 4px 20px rgba(120,0,0,.35)); }
+.window-foot {
+  text-align: center; font-size: .85rem; font-weight: 800;
+  color: rgba(200,40,40,.85); margin-top: 8px; letter-spacing: .04em;
+  text-shadow: 0 0 10px rgba(200,40,40,.4);
+}
+
+/* ===== ステータス ===== */
+.stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+.stat {
+  background: rgba(18,4,4,.85); backdrop-filter: blur(6px);
+  border-radius: 14px; padding: 12px 8px; text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,.5); border: 1px solid rgba(100,20,20,.3);
+}
+.stat .lbl { font-size: .64rem; color: rgba(255,70,70,.7); font-weight: 700; margin-bottom: 2px; }
+.stat .val { font-size: 1.45rem; font-weight: 900; color: #ff5555; line-height: 1; }
+.stat .unt { font-size: .64rem; color: rgba(255,70,70,.4); }
+
+/* ===== ポイント追加パネル ===== */
+.pt-panel {
+  background: rgba(14,4,4,.88); backdrop-filter: blur(8px);
+  border-radius: 18px; padding: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.6); border: 1px solid rgba(100,20,20,.3); margin-bottom: 16px;
+}
+.pt-title { font-size: .9rem; font-weight: 800; color: rgba(255,70,70,.9); margin-bottom: 14px; }
+.pin-row  { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.pin-f {
+  padding: 9px 13px; border: 2px solid rgba(180,40,40,.35); border-radius: 10px;
+  font-size: 1rem; text-align: center; letter-spacing: .2em; width: 130px;
+  font-family: inherit; outline: none; background: rgba(0,0,0,.45); color: #ff8080;
+  transition: border-color .2s;
+}
+.pin-f:focus { border-color: rgba(180,40,40,.8); }
+.btn-auth {
+  padding: 9px 18px; background: linear-gradient(135deg, #7a0000, #bb1c1c);
+  color: #fff; border: none; border-radius: 10px;
+  font-size: .88rem; font-weight: 700; cursor: pointer;
+}
+.btn-auth:hover { opacity: .88; }
+.pin-ng { color: #ff5555; font-size: .82rem; }
+.pt-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pt-input {
+  padding: 10px 13px; border: 2px solid rgba(180,40,40,.35); border-radius: 10px;
+  font-size: 1.1rem; font-weight: 700; text-align: center; width: 90px;
+  outline: none; font-family: inherit; color: #ff8080; background: rgba(0,0,0,.45);
+}
+.pt-input:focus { border-color: rgba(180,40,40,.8); }
+.btn-add-pt {
+  padding: 10px 22px; background: linear-gradient(135deg, #7a0000, #bb1c1c);
+  color: #fff; border: none; border-radius: 10px;
+  font-size: .95rem; font-weight: 800; cursor: pointer;
+  box-shadow: 0 3px 14px rgba(120,0,0,.45); transition: opacity .15s, transform .1s;
+}
+.btn-add-pt:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
+.btn-add-pt:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+.pt-hint { font-size: .73rem; color: rgba(255,70,70,.45); margin-top: 8px; }
+#push-status { font-size: .8rem; text-align: center; margin-top: 8px; min-height: 1.2em; }
+
+/* ===== ゴールオーバーレイ ===== */
+#goal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(60,0,0,.78); backdrop-filter: blur(10px);
+  align-items: center; justify-content: center;
+}
+#goal-overlay.show { display: flex; }
+.goal-card {
+  background: #0a0208; border-radius: 24px; padding: 40px 28px;
+  text-align: center; max-width: 320px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,.9), 0 0 50px rgba(120,0,0,.5);
+  border: 1px solid rgba(180,30,30,.35);
+  animation: gpop .5s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes gpop { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
+.goal-icon { font-size: 4rem; margin-bottom: 14px; animation: shake 0.5s ease-out 0.3s both; }
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-10px) rotate(-5deg)}
+  40%{transform:translateX(10px) rotate(5deg)}
+  60%{transform:translateX(-8px)}
+  80%{transform:translateX(8px)}
+}
+.goal-ttl { font-size: 1.85rem; font-weight: 900; color: #cc1111; margin-bottom: 8px;
+  text-shadow: 0 0 20px rgba(200,0,0,.6); }
+.goal-msg { font-size: .93rem; color: rgba(255,180,180,.8); line-height: 1.78; }
+.goal-cls {
+  margin-top: 20px; padding: 12px 32px;
+  background: linear-gradient(135deg, #7a0000, #bb1c1c);
+  color: #fff; border: none; border-radius: 12px;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+}
+
+/* ===== 手形アニメーション ===== */
+@keyframes handSlam {
+  0%   { opacity: 0; filter: blur(4px); transform: scale(1.5); }
+  35%  { opacity: .95; filter: blur(0); transform: scale(.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.handprint-new { animation: handSlam .55s ease-out forwards; }
+
+/* ===== 幽霊フロート ===== */
+@keyframes ghostFloat {
+  0%,100% { transform: translateY(0) scaleX(1); }
+  30%     { transform: translateY(-9px) scaleX(1.03); }
+  70%     { transform: translateY(-5px) scaleX(.97); }
+}
+
+footer { text-align: center; padding: 22px 0 0; color: rgba(255,60,60,.28); font-size: .76rem; }
+footer a { color: rgba(255,60,60,.38); text-decoration: none; font-weight: 700; }
+footer a:hover { color: rgba(255,60,60,.8); }
+</style>
+</head>
+<body>
+
+<div class="rain" id="rain"></div>
+
+<div id="goal-overlay">
+  <div class="goal-card">
+    <div class="goal-icon">👻</div>
+    <div class="goal-ttl">幽霊、到着！！</div>
+    <div class="goal-msg" id="goal-msg">ついに窓の前に来てしまった…<br>みんなの挙手が幽霊を呼んだ！！<br>👻💀👻</div>
+    <button class="goal-cls" onclick="closeGoal()">😱 とじる</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="hd">
+    <a href="class_homepage.html" class="back-btn">← ホームへ</a>
+    <div class="hd-badge">👻 挙手キャンペーン</div>
+    <div class="hd-title" id="hd-title">挙手チャレンジ</div>
+    <div class="hd-sub">✋ 挙手するたびに幽霊が近づく 👻</div>
+  </div>
+
+  <!-- 窓 -->
+  <div class="window-card">
+    <div class="window-label" id="bloom-label">🖐 手形：0個 ／ あと —回で到着</div>
+
+    <svg id="window-svg" viewBox="0 0 320 270" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="glassGrad" cx="38%" cy="32%" r="72%">
+          <stop offset="0%"   stop-color="#18203e" stop-opacity=".95"/>
+          <stop offset="100%" stop-color="#04060e" stop-opacity="1"/>
+        </radialGradient>
+        <radialGradient id="moonGrad" cx="40%" cy="35%" r="60%">
+          <stop offset="0%" stop-color="#d8d870"/>
+          <stop offset="100%" stop-color="#a0a040"/>
+        </radialGradient>
+        <filter id="glow-ghost">
+          <feGaussianBlur stdDeviation="5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="blur-halo">
+          <feGaussianBlur stdDeviation="8"/>
+        </filter>
+        <clipPath id="glass-clip">
+          <rect x="24" y="20" width="272" height="230" rx="3"/>
+        </clipPath>
+      </defs>
+
+      <!-- 外側背景（夜） -->
+      <rect x="0" y="0" width="320" height="270" fill="#030410" rx="10"/>
+
+      <!-- 月 -->
+      <circle cx="258" cy="44" r="24" fill="url(#moonGrad)" opacity=".55"/>
+      <circle cx="267" cy="39" r="20" fill="#030410"/>
+      <!-- 星 -->
+      <circle cx="40"  cy="30" r="1.2" fill="#fff" opacity=".5"/>
+      <circle cx="80"  cy="18" r="1"   fill="#fff" opacity=".4"/>
+      <circle cx="200" cy="22" r="1.5" fill="#fff" opacity=".6"/>
+      <circle cx="290" cy="60" r="1"   fill="#fff" opacity=".3"/>
+      <circle cx="130" cy="12" r="1.2" fill="#fff" opacity=".5"/>
+
+      <!-- 窓枠（外） -->
+      <rect x="8"  y="8"  width="304" height="254" rx="14" fill="#180800" stroke="#2e1000" stroke-width="3"/>
+      <rect x="14" y="14" width="292" height="242" rx="9"  fill="none"    stroke="#200c00" stroke-width="5"/>
+
+      <!-- ガラス面 -->
+      <rect x="24" y="20" width="272" height="230" rx="3" fill="url(#glassGrad)"/>
+
+      <!-- ガラスのうっすら反射 -->
+      <line x1="46"  y1="26" x2="78"  y2="228" stroke="rgba(255,255,255,.025)" stroke-width="14" clip-path="url(#glass-clip)"/>
+      <line x1="85"  y1="26" x2="115" y2="228" stroke="rgba(255,255,255,.015)" stroke-width="9"  clip-path="url(#glass-clip)"/>
+
+      <!-- 雨粒（ガラス面） -->
+      <g id="rain-drops" clip-path="url(#glass-clip)" opacity=".4"></g>
+
+      <!-- 幽霊グループ -->
+      <g id="ghost-group" clip-path="url(#glass-clip)" opacity="0">
+        <!-- 後光ぼかし -->
+        <ellipse id="ghost-halo" cx="160" cy="128" rx="48" ry="65"
+                 fill="rgba(160,210,255,.18)" filter="url(#blur-halo)"/>
+        <!-- 幽霊本体 -->
+        <g id="ghost-body-g" filter="url(#glow-ghost)" transform="translate(160,140)">
+          <!-- 体 -->
+          <path d="M0,-90
+            C-44,-90 -44,-48 -44,4
+            L-44,58
+            Q-35,74 -25,58
+            Q-16,42 -8,58
+            Q0,74 8,58
+            Q16,42 25,58
+            Q35,74 44,58
+            L44,4
+            C44,-48 44,-90 0,-90 Z"
+            fill="rgba(205,228,255,.92)" id="ghost-body-path"/>
+          <!-- 目（黒） -->
+          <ellipse cx="-17" cy="-45" rx="12" ry="14" fill="rgba(0,4,28,.95)"/>
+          <ellipse cx=" 17" cy="-45" rx="12" ry="14" fill="rgba(0,4,28,.95)"/>
+          <!-- 目の光（青白） -->
+          <ellipse cx="-17" cy="-45" rx="5"  ry="6"  fill="rgba(80,190,255,.9)"/>
+          <ellipse cx=" 17" cy="-45" rx="5"  ry="6"  fill="rgba(80,190,255,.9)"/>
+          <!-- 口 -->
+          <path d="M-15,-24 Q0,-12 15,-24 Q8,-7 0,-5 Q-8,-7 -15,-24 Z"
+                fill="rgba(0,4,28,.78)"/>
+          <!-- 腕（幽霊っぽい波形） -->
+          <path d="M-44,10 Q-58,0 -62,14 Q-58,22 -50,18" stroke="rgba(205,228,255,.6)"
+                stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M44,10  Q58,0  62,14  Q58,22  50,18"  stroke="rgba(205,228,255,.6)"
+                stroke-width="5" fill="none" stroke-linecap="round"/>
+        </g>
+      </g>
+
+      <!-- 手形グループ -->
+      <g id="handprints-group" clip-path="url(#glass-clip)"></g>
+
+      <!-- 窓桟（前面に重ねる） -->
+      <rect x="155" y="20"  width="10" height="230" fill="#180800"/>
+      <rect x="24"  y="128" width="272" height="10" fill="#180800"/>
+      <!-- 桟の細いハイライト -->
+      <rect x="157" y="20"  width="2"  height="230" fill="#2e1800" opacity=".6"/>
+      <rect x="24"  y="130" width="272" height="2"   fill="#2e1800" opacity=".6"/>
+      <!-- 窓枠前面 -->
+      <rect x="8"  y="8"  width="304" height="254" rx="14" fill="none" stroke="#100600" stroke-width="9"/>
+    </svg>
+
+    <div class="window-foot" id="window-foot">窓の向こうに何かいる…？ 👀</div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="pt-panel" id="pt-panel">
+    <div class="pt-title">🔑 挙手ポイント追加（教員専用）</div>
+    <div class="pin-row" id="pin-row">
+      <input type="password" class="pin-f" id="pin-f" placeholder="暗証番号" maxlength="8"
+             onkeydown="if(event.key==='Enter')authPin()">
+      <button class="btn-auth" onclick="authPin()">認証する</button>
+      <span id="pin-msg"></span>
+    </div>
+    <div id="pt-add-area" style="display:none">
+      <div class="pt-row">
+        <input type="number" class="pt-input" id="pt-val" min="1" max="99" value="1">
+        <span style="font-size:.88rem;font-weight:700;color:rgba(255,70,70,.8)">回分</span>
+        <button class="btn-add-pt" id="btn-add-pt" onclick="handleAdd()">👻 追加する</button>
+      </div>
+      <div class="pt-hint">※ 挙手1回 = 幽霊が1歩近づきます</div>
+    </div>
+    <div id="push-status"></div>
+  </div>
+
+  <footer><a href="class_homepage.html">← ホームページへ戻る</a></footer>
+</div>
+
+<script>
+/* ============================================================
+   定数
+   ============================================================ */
+const TEACHER_PIN = '1210';
+const HOP_MS      = 280;
+const SVG_NS      = 'http://www.w3.org/2000/svg';
+
+/* ============================================================
+   手形の位置（25箇所）ガラス中心(160,135)基準
+   ============================================================ */
+const HANDPRINT_POS = [
+  { x:  0,  y:  5,  rot: 10,  sz: 1.0,  h: 0 },
+  { x: 48,  y: 22,  rot:-18,  sz: 0.88, h: 1 },
+  { x:-42,  y:-10,  rot: 26,  sz: 0.92, h: 0 },
+  { x: 78,  y:-26,  rot: -6,  sz: 0.82, h: 1 },
+  { x:-78,  y: 18,  rot: 22,  sz: 0.88, h: 0 },
+  { x: 24,  y:-48,  rot:-22,  sz: 0.78, h: 1 },
+  { x:-56,  y:-52,  rot: 18,  sz: 0.82, h: 0 },
+  { x: 90,  y:-50,  rot:-12,  sz: 0.72, h: 1 },
+  { x:-24,  y:-60,  rot: 32,  sz: 0.68, h: 0 },
+  { x:108,  y:-16,  rot:  8,  sz: 0.76, h: 1 },
+  { x: 34,  y: 52,  rot:-28,  sz: 0.82, h: 0 },
+  { x:-66,  y: 56,  rot: 12,  sz: 0.88, h: 1 },
+  { x: 96,  y: 48,  rot:-16,  sz: 0.72, h: 0 },
+  { x:-96,  y: 50,  rot: 22,  sz: 0.78, h: 1 },
+  { x: 14,  y: 68,  rot:  6,  sz: 0.68, h: 0 },
+  { x:-114, y:-26,  rot: 38,  sz: 0.66, h: 0 },
+  { x: 114, y: 14,  rot:-22,  sz: 0.62, h: 1 },
+  { x: 54,  y:-70,  rot: 12,  sz: 0.62, h: 0 },
+  { x:-84,  y:-62,  rot:-18,  sz: 0.58, h: 1 },
+  { x:100,  y:-62,  rot: 28,  sz: 0.58, h: 0 },
+  { x:-30,  y: 38,  rot:-10,  sz: 0.72, h: 0 },
+  { x: 64,  y: 70,  rot: 18,  sz: 0.62, h: 1 },
+  { x:-108, y:  8,  rot: 32,  sz: 0.66, h: 0 },
+  { x: 20,  y:-38,  rot:-20,  sz: 0.78, h: 1 },
+  { x:-50,  y: 64,  rot: 25,  sz: 0.58, h: 0 },
+];
+
+/* ============================================================
+   状態
+   ============================================================ */
+let ci           = 0;
+let curPos       = 0;
+let totalCells   = 200;
+let campName     = '挙手チャレンジ';
+let isAuth       = false;
+let isAnim       = false;
+let isGoal       = false;
+let _cachedData  = null;
+let handprintEls = [];
+
+/* ============================================================
+   データ
+   ============================================================ */
+async function loadData() {
+  try {
+    const res = await fetch('data.json');
+    if (!res.ok) return;
+    const d = await res.json();
+    _cachedData = d;
+    if (d.campaigns && d.campaigns[ci]) {
+      const c  = d.campaigns[ci];
+      curPos     = c.current   ?? 0;
+      totalCells = c.total     ?? 200;
+      campName   = c.name      || '挙手チャレンジ';
+      isGoal     = c.completed || curPos >= totalCells;
+    }
+  } catch(e) { console.error(e); }
+}
+
+async function savePos() {
+  try {
+    let d = _cachedData;
+    if (!d) { const res = await fetch('data.json'); d = res.ok ? await res.json() : {}; }
+    const completed = curPos >= totalCells;
+    if (d.campaigns && d.campaigns[ci]) {
+      d.campaigns[ci].current   = curPos;
+      d.campaigns[ci].completed = completed;
+    }
+    _cachedData = d;
+    const pin = d.adminPIN || '1210';
+    await fetch('/api/data', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin, data: d }),
+    });
+  } catch(e) { console.error(e); }
+}
+
+async function autoPush() {
+  const status = document.getElementById('push-status');
+  if (!status) return;
+  status.textContent = '⏳ 保存中...';
+  status.style.color = 'rgba(255,140,140,.8)';
+  try {
+    const d   = _cachedData || {};
+    const pin = d.adminPIN || '1210';
+    const res = await fetch('/api/git-push', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    });
+    const r = await res.json();
+    status.textContent = r.ok ? '✅ 保存完了！生徒画面に反映されます' : '❌ ' + (r.error || '失敗');
+    status.style.color = r.ok ? '#86efac' : '#fca5a5';
+  } catch(e) {
+    status.textContent = '❌ サーバーに接続できません';
+    status.style.color = '#fca5a5';
+  }
+  setTimeout(() => { if (status) status.textContent = ''; }, 5000);
+}
+
+/* ============================================================
+   手形SVG生成
+   ============================================================ */
+function makeHandprint(pos) {
+  const g  = document.createElementNS(SVG_NS, 'g');
+  const cx = 160 + pos.x;
+  const cy = 135 + pos.y;
+  const flip = pos.h === 1 ? -1 : 1;
+  g.setAttribute('transform', `translate(${cx},${cy}) rotate(${pos.rot}) scale(${pos.sz * flip},${pos.sz})`);
+  g.setAttribute('opacity', '0');
+
+  const r = 130 + (Math.random() * 40 | 0);
+  const a = 0.52 + Math.random() * 0.22;
+  const c = `rgba(${r},${8 + Math.random()*18|0},${8 + Math.random()*18|0},${a})`;
+
+  // 手のひら
+  const palm = document.createElementNS(SVG_NS, 'ellipse');
+  palm.setAttribute('rx','16'); palm.setAttribute('ry','18'); palm.setAttribute('fill', c);
+  g.appendChild(palm);
+  // 親指
+  const th = document.createElementNS(SVG_NS, 'ellipse');
+  th.setAttribute('cx','18'); th.setAttribute('cy','4');
+  th.setAttribute('rx','7'); th.setAttribute('ry','12');
+  th.setAttribute('transform','rotate(46,18,4)'); th.setAttribute('fill', c);
+  g.appendChild(th);
+  // 4本指
+  [[-4,10,-27,5.5,14],[1,2,-30,5.5,15],[6,-8,-27,5,13],[11,-16,-22,4.5,11]].forEach(([rot,fx,fy,rx,ry]) => {
+    const f = document.createElementNS(SVG_NS, 'ellipse');
+    f.setAttribute('cx', String(fx)); f.setAttribute('cy', String(fy));
+    f.setAttribute('rx', String(rx)); f.setAttribute('ry', String(ry));
+    f.setAttribute('transform', `rotate(${rot})`); f.setAttribute('fill', c);
+    g.appendChild(f);
+  });
+  return g;
+}
+
+/* ============================================================
+   窓構築
+   ============================================================ */
+function buildHandprints() {
+  const group = document.getElementById('handprints-group');
+  group.innerHTML = '';
+  handprintEls = [];
+  HANDPRINT_POS.forEach(pos => {
+    const el = makeHandprint(pos);
+    group.appendChild(el);
+    handprintEls.push(el);
+  });
+}
+
+function visibleCount(pos) {
+  return Math.round(Math.min(pos / totalCells, 1) * HANDPRINT_POS.length);
+}
+
+function refreshHandprints(animate = false) {
+  const n = visibleCount(curPos);
+  handprintEls.forEach((el, i) => {
+    if (i < n) {
+      if (el.getAttribute('opacity') === '0') {
+        el.setAttribute('opacity', '1');
+        if (animate && i === n - 1) {
+          el.classList.add('handprint-new');
+          setTimeout(() => el.classList.remove('handprint-new'), 700);
+        }
+      }
+    } else {
+      el.setAttribute('opacity', '0');
+    }
+  });
+}
+
+/* ============================================================
+   幽霊更新
+   ============================================================ */
+function updateGhost() {
+  const pct    = Math.min(curPos / totalCells, 1);
+  const opacity = Math.max(0, pct > 0.05 ? pct : 0);
+  const scale  = 0.06 + pct * 1.08;
+  const offsetY = (1 - pct) * 35;
+
+  const group = document.getElementById('ghost-group');
+  group.setAttribute('opacity', String(opacity));
+
+  const bodyG = document.getElementById('ghost-body-g');
+  bodyG.setAttribute('transform', `translate(0,${offsetY}) scale(${scale})`);
+
+  const halo = document.getElementById('ghost-halo');
+  halo.setAttribute('rx', String(50 * scale));
+  halo.setAttribute('ry', String(68 * scale));
+
+  if (pct >= 0.75 && !bodyG.style.animation) {
+    bodyG.style.animation = 'ghostFloat 2.8s ease-in-out infinite';
+  }
+}
+
+/* ============================================================
+   テキスト更新
+   ============================================================ */
+function renderLabel() {
+  const n   = visibleCount(curPos);
+  const rem = Math.max(0, totalCells - curPos);
+  document.getElementById('bloom-label').textContent = `🖐 手形：${n}個 ／ あと ${rem} 回で到着`;
+}
+
+function renderStats() {
+  const pct = Math.min(100, Math.round(curPos / totalCells * 100));
+  const rem = Math.max(0, totalCells - curPos);
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="lbl">挙手回数</div><div class="val">${curPos}</div><div class="unt">/ ${totalCells}回</div></div>
+    <div class="stat"><div class="lbl">あと</div><div class="val">${rem}</div><div class="unt">回で到着</div></div>
+    <div class="stat"><div class="lbl">進行率</div><div class="val">${pct}</div><div class="unt">%</div></div>
+  `;
+}
+
+function renderFoot() {
+  const pct = curPos / totalCells;
+  let msg = '窓の向こうに何かいる…？ 👀';
+  if (pct >= 0.15) msg = 'なんか…近づいてきてる… 😰';
+  if (pct >= 0.35) msg = 'だんだんはっきり見えてきた……👻';
+  if (pct >= 0.55) msg = '窓に手形が増えてきた…！😱';
+  if (pct >= 0.75) msg = 'すぐそこにいる…！！！👻💦';
+  if (pct >= 0.95) msg = 'もう窓の前に…！！！😱👻😱';
+  if (pct >= 1.0)  msg = '来てしまった…！！👻👻👻';
+  document.getElementById('window-foot').textContent = msg;
+}
+
+/* ============================================================
+   雨粒エフェクト（ガラス面）
+   ============================================================ */
+function initRainDrops() {
+  const g = document.getElementById('rain-drops');
+  for (let i = 0; i < 18; i++) {
+    const x = 28 + Math.random() * 264;
+    const y = 24 + Math.random() * 222;
+    const r = 1.5 + Math.random() * 2.5;
+    const el = document.createElementNS(SVG_NS, 'ellipse');
+    el.setAttribute('cx', String(x)); el.setAttribute('cy', String(y));
+    el.setAttribute('rx', String(r * 0.5)); el.setAttribute('ry', String(r));
+    el.setAttribute('fill', 'rgba(160,190,255,.18)');
+    g.appendChild(el);
+    // 小さい尾
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', String(x)); line.setAttribute('y1', String(y + r));
+    line.setAttribute('x2', String(x)); line.setAttribute('y2', String(y + r + 6 + Math.random()*8));
+    line.setAttribute('stroke', 'rgba(160,190,255,.12)'); line.setAttribute('stroke-width', '1');
+    g.appendChild(line);
+  }
+}
+
+/* ============================================================
+   雨アニメーション（背景）
+   ============================================================ */
+function initRain() {
+  const container = document.getElementById('rain');
+  for (let i = 0; i < 55; i++) {
+    const drop = document.createElement('div');
+    drop.className = 'rain-drop';
+    const h = 45 + Math.random() * 85;
+    drop.style.cssText = `
+      left:${Math.random()*100}vw;
+      height:${h}px;
+      animation-duration:${0.55 + Math.random()*.75}s;
+      animation-delay:-${Math.random()*2}s;
+      opacity:${0.25 + Math.random()*.35};
+    `;
+    container.appendChild(drop);
+  }
+}
+
+/* ============================================================
+   PIN認証
+   ============================================================ */
+function authPin() {
+  const v   = document.getElementById('pin-f').value;
+  const msg = document.getElementById('pin-msg');
+  if (v === TEACHER_PIN) {
+    isAuth = true;
+    document.getElementById('pin-row').style.display     = 'none';
+    document.getElementById('pt-add-area').style.display = 'block';
+  } else {
+    msg.className = 'pin-ng';
+    msg.textContent = '暗証番号が違います';
+    document.getElementById('pin-f').value = '';
+    document.getElementById('pin-f').focus();
+  }
+}
+
+/* ============================================================
+   ポイント追加
+   ============================================================ */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function handleAdd() {
+  if (isAnim || isGoal || !isAuth) return;
+  const n = parseInt(document.getElementById('pt-val').value, 10);
+  if (isNaN(n) || n < 1) return;
+
+  const btn = document.getElementById('btn-add-pt');
+  btn.disabled = true;
+  isAnim = true;
+
+  for (let i = 0; i < n; i++) {
+    if (curPos >= totalCells) break;
+    curPos++;
+    savePos();
+    refreshHandprints(true);
+    updateGhost();
+    renderLabel();
+    renderStats();
+    renderFoot();
+
+    if (curPos >= totalCells) {
+      isGoal = true;
+      await sleep(700);
+      document.getElementById('goal-overlay').classList.add('show');
+      break;
+    }
+    if (i < n - 1) await sleep(HOP_MS);
+  }
+
+  isAnim = false;
+  if (!isGoal) btn.disabled = false;
+  autoPush();
+}
+
+function closeGoal() {
+  document.getElementById('goal-overlay').classList.remove('show');
+}
+
+/* ============================================================
+   初期化
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', async () => {
+  ci = parseInt(new URLSearchParams(location.search).get('ci') || '0', 10);
+  await loadData();
+
+  document.title = campName + ' ― 幽霊の窓';
+  document.getElementById('hd-title').textContent = campName;
+
+  buildHandprints();
+  refreshHandprints(false);
+  updateGhost();
+  renderLabel();
+  renderStats();
+  renderFoot();
+  initRainDrops();
+  initRain();
+
+  if (isGoal) {
+    const panel = document.getElementById('pt-panel');
+    panel.innerHTML = `<div style="text-align:center;padding:18px 14px;font-size:1.05rem;font-weight:800;color:#cc1111">
+      👻 幽霊が到着済みです！みんなの挙手が呼んでしまった！ 👻
+    </div>`;
+  }
+});
+</script>
+</body>
+</html>

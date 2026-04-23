@@ -652,13 +652,16 @@ function buildCampaign(d) {
     const tot  = c.total     ?? 30;
     const done = c.completed || cur >= tot;
     const pct  = Math.min(100, Math.round(cur / tot * 100));
-    const isTree = c.type === 'tree';
+    const isTree   = c.type === 'tree';
+    const isHorror = c.type === 'horror';
 
     // キャンペーンの種類によってページを切り替え
-    const campPage = isTree ? 'campaign_tree.html' : 'campaign.html';
-    const campIcon = isTree ? '🌸' : '🌟';
-    const campUnit = isTree ? '回' : 'マス';
-    const campArrow = isTree ? '🌸 詳しく見る →' : '🚀 詳しく見る →';
+    const campPage  = isTree ? 'campaign_tree.html'
+                    : isHorror ? 'campaign_horror.html'
+                    : 'campaign.html';
+    const campIcon  = isTree ? '🌸' : isHorror ? '👻' : '🌟';
+    const campUnit  = isTree ? '回' : isHorror ? '回' : 'マス';
+    const campArrow = isTree ? '🌸 詳しく見る →' : isHorror ? '👻 詳しく見る →' : '🚀 詳しく見る →';
 
     const a = document.createElement('a');
     a.href      = `${campPage}?ci=${idx}`;
