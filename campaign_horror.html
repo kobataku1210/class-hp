@@ -9,132 +9,141 @@
 
 body {
   font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
-  min-height: 100vh;
-  background: #08060f;
+  background: #04000a;
   color: #e0e0f0;
-  overflow-x: hidden;
+  overflow: hidden;
+  height: 100vh;
   animation: flicker 9s infinite;
 }
 @keyframes flicker {
   0%,91%,95%,100% { opacity: 1; }
-  92%  { opacity: .5; }
+  92%  { opacity: .45; }
   93%  { opacity: 1; }
-  94%  { opacity: .7; }
+  94%  { opacity: .65; }
 }
 
-/* ===== 背景 ===== */
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: 0;
-  background:
-    radial-gradient(ellipse 55% 40% at 78% 12%, rgba(60,10,80,.5) 0%, transparent 65%),
-    radial-gradient(ellipse 70% 55% at 15% 85%, rgba(0,10,50,.6) 0%, transparent 70%),
-    linear-gradient(160deg, #090614 0%, #0c0e1c 45%, #07050e 100%);
+/* ===== 幽霊画像（背面透過・徐々に近づく） ===== */
+#ghost-approaching {
+  position: fixed;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%) scale(0.05);
+  width: 100vw; height: 100vh;
+  object-fit: cover;
+  object-position: center center;
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  filter: brightness(1.05) contrast(1.1);
 }
 
 /* ===== 雨 ===== */
-.rain { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.rain { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
 .rain-drop {
   position: absolute; top: -100px; width: 1px;
-  background: linear-gradient(to bottom, transparent, rgba(130,160,255,.28));
+  background: linear-gradient(to bottom, transparent, rgba(130,160,255,.22));
   animation: rainFall linear infinite;
 }
 @keyframes rainFall { to { transform: translateY(115vh); } }
 
-/* ===== ページ ===== */
-.page { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; padding: 0 16px 60px; }
+/* ===== 窓SVG（画面いっぱい） ===== */
+#window-svg {
+  position: fixed; inset: 0;
+  width: 100vw; height: 100vh;
+  z-index: 2;
+  pointer-events: none;
+}
 
-/* ===== ヘッダー ===== */
-.hd { padding: 20px 0 14px; text-align: center; position: relative; }
+/* ===== 上部UI ===== */
+#top-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+  padding: 12px 16px 20px;
+  background: linear-gradient(to bottom, rgba(4,0,10,.88) 55%, transparent 100%);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+}
 .back-btn {
-  position: absolute; top: 24px; left: 0;
   background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16);
   color: rgba(255,255,255,.65); padding: 6px 14px; border-radius: 20px;
   font-size: .78rem; font-weight: 700; text-decoration: none;
+  white-space: nowrap; flex-shrink: 0;
 }
 .back-btn:hover { background: rgba(255,255,255,.14); }
-.hd-badge {
-  display: inline-block;
-  background: rgba(120,10,10,.35); border: 1px solid rgba(180,30,30,.45);
-  padding: 3px 16px; border-radius: 16px;
-  font-size: .76rem; letter-spacing: .1em; color: #ff7070; margin-bottom: 8px;
+#hd-title {
+  font-size: clamp(1rem, 4vw, 1.6rem); font-weight: 900; color: #cc2222;
+  text-shadow: 0 0 20px rgba(200,20,20,.8);
+  letter-spacing: .06em; text-align: center; flex: 1;
 }
-.hd-title {
-  font-size: clamp(1.4rem,5vw,2rem); font-weight: 900;
-  color: #cc2222;
-  text-shadow: 0 0 24px rgba(200,20,20,.7), 0 0 8px rgba(200,20,20,.4);
-  letter-spacing: .06em; margin-bottom: 4px;
+#bloom-label {
+  font-size: .70rem; font-weight: 800;
+  color: rgba(255,70,70,.75); white-space: nowrap;
+  flex-shrink: 0; padding-top: 7px;
 }
-.hd-sub { font-size: .78rem; color: rgba(255,255,255,.38); letter-spacing: .06em; }
 
-/* ===== 窓カード ===== */
-.window-card {
-  background: linear-gradient(170deg, #1c0808 0%, #0c1022 50%, #090608 100%);
-  border-radius: 16px; padding: 12px 10px 10px;
-  box-shadow: 0 8px 40px rgba(120,0,0,.25), 0 2px 10px rgba(0,0,0,.9), inset 0 0 40px rgba(0,0,0,.6);
-  border: 1px solid rgba(100,20,20,.35); margin-bottom: 16px;
+/* ===== 下部UI ===== */
+#bottom-ui {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 560px;
+  z-index: 10;
+  background: linear-gradient(to top, rgba(4,0,10,.95) 72%, transparent 100%);
+  padding: 18px 14px 14px;
 }
-.window-label {
-  text-align: center; font-size: .75rem; font-weight: 800;
-  color: rgba(255,70,70,.7); letter-spacing: .08em; margin-bottom: 8px;
-}
-#window-svg { width: 100%; display: block; filter: drop-shadow(0 4px 20px rgba(120,0,0,.35)); }
-.window-foot {
-  text-align: center; font-size: .85rem; font-weight: 800;
-  color: rgba(200,40,40,.85); margin-top: 8px; letter-spacing: .04em;
-  text-shadow: 0 0 10px rgba(200,40,40,.4);
+
+#window-foot {
+  text-align: center; font-size: .82rem; font-weight: 800;
+  color: rgba(200,40,40,.9); margin-bottom: 10px; letter-spacing: .04em;
+  text-shadow: 0 0 10px rgba(200,40,40,.5);
 }
 
 /* ===== ステータス ===== */
-.stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+.stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 10px; }
 .stat {
-  background: rgba(18,4,4,.85); backdrop-filter: blur(6px);
-  border-radius: 14px; padding: 12px 8px; text-align: center;
+  background: rgba(10,2,2,.82); backdrop-filter: blur(10px);
+  border-radius: 12px; padding: 8px 6px; text-align: center;
   box-shadow: 0 2px 10px rgba(0,0,0,.5); border: 1px solid rgba(100,20,20,.3);
 }
-.stat .lbl { font-size: .64rem; color: rgba(255,70,70,.7); font-weight: 700; margin-bottom: 2px; }
-.stat .val { font-size: 1.45rem; font-weight: 900; color: #ff5555; line-height: 1; }
-.stat .unt { font-size: .64rem; color: rgba(255,70,70,.4); }
+.stat .lbl { font-size: .60rem; color: rgba(255,70,70,.7); font-weight: 700; margin-bottom: 2px; }
+.stat .val { font-size: 1.3rem; font-weight: 900; color: #ff5555; line-height: 1; }
+.stat .unt { font-size: .60rem; color: rgba(255,70,70,.4); }
 
 /* ===== ポイント追加パネル ===== */
 .pt-panel {
-  background: rgba(14,4,4,.88); backdrop-filter: blur(8px);
-  border-radius: 18px; padding: 20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,.6); border: 1px solid rgba(100,20,20,.3); margin-bottom: 16px;
+  background: rgba(10,2,2,.85); backdrop-filter: blur(12px);
+  border-radius: 16px; padding: 13px 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.6); border: 1px solid rgba(100,20,20,.3);
 }
-.pt-title { font-size: .9rem; font-weight: 800; color: rgba(255,70,70,.9); margin-bottom: 14px; }
-.pin-row  { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.pt-title { font-size: .86rem; font-weight: 800; color: rgba(255,70,70,.9); margin-bottom: 10px; }
+.pin-row  { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
 .pin-f {
-  padding: 9px 13px; border: 2px solid rgba(180,40,40,.35); border-radius: 10px;
-  font-size: 1rem; text-align: center; letter-spacing: .2em; width: 130px;
-  font-family: inherit; outline: none; background: rgba(0,0,0,.45); color: #ff8080;
+  padding: 8px 12px; border: 2px solid rgba(180,40,40,.35); border-radius: 10px;
+  font-size: 1rem; text-align: center; letter-spacing: .2em; width: 120px;
+  font-family: inherit; outline: none; background: rgba(0,0,0,.5); color: #ff8080;
   transition: border-color .2s;
 }
 .pin-f:focus { border-color: rgba(180,40,40,.8); }
 .btn-auth {
-  padding: 9px 18px; background: linear-gradient(135deg, #7a0000, #bb1c1c);
+  padding: 8px 16px; background: linear-gradient(135deg, #7a0000, #bb1c1c);
   color: #fff; border: none; border-radius: 10px;
-  font-size: .88rem; font-weight: 700; cursor: pointer;
+  font-size: .86rem; font-weight: 700; cursor: pointer;
 }
 .btn-auth:hover { opacity: .88; }
 .pin-ng { color: #ff5555; font-size: .82rem; }
 .pt-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .pt-input {
-  padding: 10px 13px; border: 2px solid rgba(180,40,40,.35); border-radius: 10px;
-  font-size: 1.1rem; font-weight: 700; text-align: center; width: 90px;
-  outline: none; font-family: inherit; color: #ff8080; background: rgba(0,0,0,.45);
+  padding: 9px 12px; border: 2px solid rgba(180,40,40,.35); border-radius: 10px;
+  font-size: 1.1rem; font-weight: 700; text-align: center; width: 85px;
+  outline: none; font-family: inherit; color: #ff8080; background: rgba(0,0,0,.5);
 }
 .pt-input:focus { border-color: rgba(180,40,40,.8); }
 .btn-add-pt {
-  padding: 10px 22px; background: linear-gradient(135deg, #7a0000, #bb1c1c);
+  padding: 9px 20px; background: linear-gradient(135deg, #7a0000, #bb1c1c);
   color: #fff; border: none; border-radius: 10px;
-  font-size: .95rem; font-weight: 800; cursor: pointer;
+  font-size: .92rem; font-weight: 800; cursor: pointer;
   box-shadow: 0 3px 14px rgba(120,0,0,.45); transition: opacity .15s, transform .1s;
 }
 .btn-add-pt:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
 .btn-add-pt:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
-.pt-hint { font-size: .73rem; color: rgba(255,70,70,.45); margin-top: 8px; }
-#push-status { font-size: .8rem; text-align: center; margin-top: 8px; min-height: 1.2em; }
+.pt-hint { font-size: .72rem; color: rgba(255,70,70,.45); margin-top: 6px; }
+#push-status { font-size: .78rem; text-align: center; margin-top: 6px; min-height: 1.2em; }
 
 /* ===== ゴール：扉演出 ===== */
 #goal-overlay {
@@ -143,29 +152,28 @@ body::before {
 }
 #goal-overlay.show { display: block; }
 
-/* 幽霊（扉の奥） */
+/* 幽霊（画面いっぱい） */
 #ghost-behind {
   position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(ellipse 60% 70% at 50% 60%, #1a0005 0%, #000 100%);
-  overflow: hidden;
+  background: #000; overflow: hidden;
 }
 #ghost-behind::after {
   content: '';
-  position: absolute; inset: 0;
-  background: radial-gradient(ellipse 50% 60% at 50% 55%, rgba(160,0,0,.35) 0%, transparent 70%);
+  position: absolute; inset: 0; z-index: 1;
+  background: radial-gradient(ellipse 65% 65% at 52% 50%, rgba(160,0,0,.28) 0%, transparent 70%);
   animation: ghostPulse 2s ease-in-out infinite;
 }
 @keyframes ghostPulse {
-  0%,100% { opacity: .6; }
+  0%,100% { opacity: .5; }
   50%     { opacity: 1; }
 }
 #ghost-img {
-  max-height: 92vh; max-width: 85vw;
-  object-fit: contain;
-  filter: brightness(.9) contrast(1.15) saturate(.85);
-  position: relative; z-index: 1;
-  opacity: 0; transition: opacity 1.2s ease 0.3s;
+  width: 100vw; height: 100vh;
+  object-fit: cover;
+  object-position: center center;
+  filter: brightness(.95) contrast(1.1);
+  position: relative; z-index: 0;
+  opacity: 0; transition: opacity 1.4s ease .3s;
 }
 #goal-overlay.door-open #ghost-img { opacity: 1; }
 
@@ -173,16 +181,12 @@ body::before {
 .door-half {
   position: absolute; top: 0; bottom: 0; width: 50.5%;
   background:
-    repeating-linear-gradient(
-      90deg,
+    repeating-linear-gradient(90deg,
       rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px,
-      transparent 1px, transparent 22px
-    ),
-    repeating-linear-gradient(
-      180deg,
+      transparent 1px, transparent 22px),
+    repeating-linear-gradient(180deg,
       rgba(255,255,255,.012) 0px, rgba(255,255,255,.012) 1px,
-      transparent 1px, transparent 60px
-    ),
+      transparent 1px, transparent 60px),
     linear-gradient(160deg, #2c1200 0%, #190900 45%, #0d0400 100%);
   box-shadow: inset 0 0 30px rgba(0,0,0,.6);
   transition: transform 1.6s cubic-bezier(.4,0,.1,1);
@@ -190,7 +194,6 @@ body::before {
 }
 #door-left  { left: 0;  border-right: 4px solid #0a0300; }
 #door-right { right: 0; border-left:  4px solid #0a0300; }
-/* 扉の金具 */
 #door-left::after, #door-right::before {
   content: '';
   position: absolute; top: 50%; width: 10px; height: 44px;
@@ -199,9 +202,8 @@ body::before {
 }
 #door-left::after  { right: 14px; }
 #door-right::before { left: 14px; }
-
 #goal-overlay.door-open #door-left  { transform: translateX(-100%); }
-#goal-overlay.door-open #door-right { transform: translateX(100%);  }
+#goal-overlay.door-open #door-right { transform: translateX(100%); }
 
 /* テキスト */
 #goal-text-box {
@@ -219,10 +221,7 @@ body::before {
   text-shadow: 0 0 28px rgba(220,0,0,.9), 0 0 8px rgba(220,0,0,.5);
   letter-spacing: .06em; margin-bottom: 8px;
 }
-.goal-msg {
-  font-size: .95rem; color: rgba(255,190,190,.85); line-height: 1.7;
-  text-shadow: 0 0 8px rgba(200,0,0,.4);
-}
+.goal-msg { font-size: .95rem; color: rgba(255,190,190,.88); line-height: 1.7; }
 .goal-cls {
   margin-top: 18px; padding: 12px 36px;
   background: linear-gradient(135deg, #7a0000, #bb1c1c);
@@ -235,52 +234,41 @@ body::before {
 /* 画面揺れ */
 @keyframes screenShake {
   0%,100% { transform: translate(0,0); }
-  10% { transform: translate(-6px,-4px); }
-  20% { transform: translate(7px,3px); }
-  30% { transform: translate(-5px,5px); }
-  40% { transform: translate(5px,-4px); }
-  50% { transform: translate(-4px,4px); }
-  60% { transform: translate(6px,-3px); }
-  70% { transform: translate(-5px,3px); }
-  80% { transform: translate(4px,-5px); }
-  90% { transform: translate(-3px,4px); }
+  10% { transform: translate(-7px,-5px); }
+  20% { transform: translate(8px,4px); }
+  30% { transform: translate(-6px,6px); }
+  40% { transform: translate(6px,-5px); }
+  50% { transform: translate(-5px,5px); }
+  60% { transform: translate(7px,-4px); }
+  70% { transform: translate(-6px,4px); }
+  80% { transform: translate(5px,-6px); }
+  90% { transform: translate(-4px,5px); }
 }
 
 /* ===== 手形アニメーション ===== */
 @keyframes handSlam {
-  0%   { opacity: 0; filter: blur(4px); transform: scale(1.5); }
-  35%  { opacity: .95; filter: blur(0); transform: scale(.92); }
+  0%   { opacity: 0; filter: blur(5px); transform: scale(1.6); }
+  35%  { opacity: .95; filter: blur(0); transform: scale(.90); }
   100% { opacity: 1; transform: scale(1); }
 }
-.handprint-new { animation: handSlam .55s ease-out forwards; }
-
-/* ===== 幽霊フロート（後ろ姿がゆらゆら揺れる） ===== */
-@keyframes ghostFloat {
-  0%,100% { transform-origin: center bottom; transform: translateY(0) rotate(0deg); }
-  25%     { transform: translateY(-8px) rotate(.8deg); }
-  50%     { transform: translateY(-4px) rotate(0deg); }
-  75%     { transform: translateY(-10px) rotate(-.6deg); }
-}
-
-footer { text-align: center; padding: 22px 0 0; color: rgba(255,60,60,.28); font-size: .76rem; }
-footer a { color: rgba(255,60,60,.38); text-decoration: none; font-weight: 700; }
-footer a:hover { color: rgba(255,60,60,.8); }
+.handprint-new { animation: handSlam .45s ease-out forwards; }
 </style>
 </head>
 <body>
 
+<!-- 幽霊（背面透過・徐々に近づく） -->
+<img id="ghost-approaching" src="ghost_final.PNG" alt="">
+
+<!-- 雨 -->
 <div class="rain" id="rain"></div>
 
+<!-- ゴールオーバーレイ -->
 <div id="goal-overlay">
-  <!-- 奥の幽霊 -->
   <div id="ghost-behind">
-    <img id="ghost-img" src="ghost_final.jpg" alt="">
+    <img id="ghost-img" src="ghost_final.PNG" alt="">
   </div>
-  <!-- 左扉 -->
   <div class="door-half" id="door-left"></div>
-  <!-- 右扉 -->
   <div class="door-half" id="door-right"></div>
-  <!-- テキスト -->
   <div id="goal-text-box">
     <div class="goal-ttl">👻 来てしまった…！！！</div>
     <div class="goal-msg">みんなの挙手が幽霊を呼んでしまった…！<br>💀 1000回の挙手、達成！！ 💀</div>
@@ -288,186 +276,77 @@ footer a:hover { color: rgba(255,60,60,.8); }
   </div>
 </div>
 
-<div class="page">
-  <div class="hd">
-    <a href="class_homepage.html" class="back-btn">← ホームへ</a>
-    <div class="hd-badge">👻 挙手キャンペーン</div>
-    <div class="hd-title" id="hd-title">挙手チャレンジ</div>
-    <div class="hd-sub">✋ 挙手するたびに幽霊が近づく 👻</div>
-  </div>
+<!-- 窓SVG（画面いっぱい） -->
+<svg id="window-svg" viewBox="0 0 320 270" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="glassGrad" cx="38%" cy="32%" r="72%">
+      <stop offset="0%"   stop-color="#1a2438" stop-opacity=".30"/>
+      <stop offset="100%" stop-color="#04060e" stop-opacity=".50"/>
+    </radialGradient>
+    <radialGradient id="moonGrad" cx="40%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#d8d870"/>
+      <stop offset="100%" stop-color="#a0a040"/>
+    </radialGradient>
+    <!-- 手形フィルター -->
+    <filter id="hand-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.2" result="soft"/>
+      <feMerge>
+        <feMergeNode in="soft"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <clipPath id="glass-clip">
+      <rect x="0" y="0" width="320" height="270"/>
+    </clipPath>
+  </defs>
 
-  <!-- 窓 -->
-  <div class="window-card">
-    <div class="window-label" id="bloom-label">🖐 手形：0個 ／ あと —回で到着</div>
+  <!-- 夜の空 -->
+  <rect x="0" y="0" width="320" height="270" fill="#030410"/>
+  <!-- 月 -->
+  <circle cx="275" cy="40" r="22" fill="url(#moonGrad)" opacity=".45"/>
+  <circle cx="284" cy="35" r="18" fill="#030410"/>
+  <!-- 星 -->
+  <circle cx="40"  cy="30"  r="1.2" fill="#fff" opacity=".5"/>
+  <circle cx="80"  cy="18"  r="1"   fill="#fff" opacity=".4"/>
+  <circle cx="200" cy="22"  r="1.5" fill="#fff" opacity=".6"/>
+  <circle cx="60"  cy="200" r="1.2" fill="#fff" opacity=".35"/>
+  <circle cx="130" cy="12"  r="1.2" fill="#fff" opacity=".5"/>
+  <circle cx="290" cy="90"  r="1"   fill="#fff" opacity=".3"/>
 
-    <svg id="window-svg" viewBox="0 0 320 270" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <!-- ガラス面グラデーション（やや霧がかった青白） -->
-        <radialGradient id="glassGrad" cx="38%" cy="32%" r="72%">
-          <stop offset="0%"   stop-color="#1e2840" stop-opacity=".92"/>
-          <stop offset="100%" stop-color="#060810" stop-opacity="1"/>
-        </radialGradient>
-        <radialGradient id="moonGrad" cx="40%" cy="35%" r="60%">
-          <stop offset="0%" stop-color="#d8d870"/>
-          <stop offset="100%" stop-color="#a0a040"/>
-        </radialGradient>
-        <!-- 幽霊の白い発光 -->
-        <filter id="glow-ghost" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="6" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <!-- 後光 -->
-        <filter id="blur-halo" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="10"/>
-        </filter>
-        <!-- 手形：ガラスに押しつけた白い手 -->
-        <filter id="hand-shadow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="2.2" result="soft"/>
-          <feMerge>
-            <feMergeNode in="soft"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-        <!-- ガラス曇り加工 -->
-        <filter id="glass-fog" x="0" y="0" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" result="noise"/>
-          <feColorMatrix in="noise" type="saturate" values="0" result="grayNoise"/>
-          <feBlend in="SourceGraphic" in2="grayNoise" mode="screen" result="blended"/>
-          <feComposite in="blended" in2="SourceGraphic" operator="in"/>
-        </filter>
-        <clipPath id="glass-clip">
-          <rect x="24" y="20" width="272" height="230" rx="3"/>
-        </clipPath>
-      </defs>
+  <!-- ガラス面（半透明：幽霊が透けて見える） -->
+  <rect x="0" y="0" width="320" height="270" fill="url(#glassGrad)"/>
 
-      <!-- 外側背景（夜） -->
-      <rect x="0" y="0" width="320" height="270" fill="#030410" rx="10"/>
+  <!-- ガラスの反射 -->
+  <line x1="20" y1="0" x2="50"  y2="270" stroke="rgba(255,255,255,.016)" stroke-width="18" clip-path="url(#glass-clip)"/>
+  <line x1="70" y1="0" x2="95"  y2="270" stroke="rgba(255,255,255,.010)" stroke-width="10" clip-path="url(#glass-clip)"/>
 
-      <!-- 月 -->
-      <circle cx="258" cy="44" r="24" fill="url(#moonGrad)" opacity=".55"/>
-      <circle cx="267" cy="39" r="20" fill="#030410"/>
-      <!-- 星 -->
-      <circle cx="40"  cy="30" r="1.2" fill="#fff" opacity=".5"/>
-      <circle cx="80"  cy="18" r="1"   fill="#fff" opacity=".4"/>
-      <circle cx="200" cy="22" r="1.5" fill="#fff" opacity=".6"/>
-      <circle cx="290" cy="60" r="1"   fill="#fff" opacity=".3"/>
-      <circle cx="130" cy="12" r="1.2" fill="#fff" opacity=".5"/>
+  <!-- 雨粒（ガラス面） -->
+  <g id="rain-drops" clip-path="url(#glass-clip)" opacity=".38"></g>
 
-      <!-- 窓枠（外） -->
-      <rect x="8"  y="8"  width="304" height="254" rx="14" fill="#180800" stroke="#2e1000" stroke-width="3"/>
-      <rect x="14" y="14" width="292" height="242" rx="9"  fill="none"    stroke="#200c00" stroke-width="5"/>
+  <!-- 手形グループ -->
+  <g id="handprints-group" clip-path="url(#glass-clip)"></g>
 
-      <!-- ガラス面 -->
-      <rect x="24" y="20" width="272" height="230" rx="3" fill="url(#glassGrad)"/>
+  <!-- 窓桟 -->
+  <rect x="155" y="0"   width="10" height="270" fill="rgba(12,5,0,.55)"/>
+  <rect x="0"   y="128" width="320" height="10"  fill="rgba(12,5,0,.55)"/>
+  <rect x="157" y="0"   width="2"  height="270"  fill="rgba(35,15,0,.35)"/>
+  <rect x="0"   y="130" width="320" height="2"    fill="rgba(35,15,0,.35)"/>
 
-      <!-- ガラスのうっすら反射 -->
-      <line x1="46"  y1="26" x2="78"  y2="228" stroke="rgba(255,255,255,.025)" stroke-width="14" clip-path="url(#glass-clip)"/>
-      <line x1="85"  y1="26" x2="115" y2="228" stroke="rgba(255,255,255,.015)" stroke-width="9"  clip-path="url(#glass-clip)"/>
+  <!-- 窓枠（縁） -->
+  <rect x="0" y="0" width="320" height="270" fill="none" stroke="rgba(18,7,0,.85)" stroke-width="14"/>
+</svg>
 
-      <!-- 雨粒（ガラス面） -->
-      <g id="rain-drops" clip-path="url(#glass-clip)" opacity=".4"></g>
+<!-- 上部UI -->
+<div id="top-bar">
+  <a href="class_homepage.html" class="back-btn">← ホームへ</a>
+  <div id="hd-title">挙手チャレンジ</div>
+  <div id="bloom-label">🖐 手形：0個</div>
+</div>
 
-      <!-- 幽霊グループ（白いローブ＋長い黒髪・後ろ姿） -->
-      <g id="ghost-group" clip-path="url(#glass-clip)" opacity="0">
-        <!-- 後光（白いぼんやり発光） -->
-        <ellipse id="ghost-halo" cx="160" cy="150" rx="52" ry="72"
-                 fill="rgba(220,230,255,.22)" filter="url(#blur-halo)"/>
-        <!-- 幽霊本体グループ（JS でスケール制御） -->
-        <g id="ghost-body-g" filter="url(#glow-ghost)" transform="translate(160,145)">
-
-          <!-- ===== ローブ（白） ===== -->
-          <!-- 本体：後ろから見た裾の広がったロング丈 -->
-          <path d="M -22,-55
-                   C -38,-45 -44,-20 -46,10
-                   C -48,36 -46,60 -44,76
-                   L  44,76
-                   C  46,60  48,36  46,10
-                   C  44,-20  38,-45  22,-55 Z"
-                fill="rgba(242,242,250,0.93)"/>
-          <!-- ローブの縦の影ライン（立体感） -->
-          <path d="M 0,-52 C -2,0 -2,48 0,76 L 2,76 C 2,48 2,0 0,-52 Z"
-                fill="rgba(120,130,180,0.12)"/>
-          <path d="M -14,-50 C -16,5 -16,50 -14,76 L -10,76 C -10,50 -10,5 -10,-50 Z"
-                fill="rgba(120,130,180,0.07)"/>
-          <path d="M  14,-50 C  16,5  16,50  14,76 L  10,76 C  10,50  10,5  10,-50 Z"
-                fill="rgba(120,130,180,0.07)"/>
-
-          <!-- 袖（左右にふんわり広がる） -->
-          <path d="M -46,5
-                   C -58,-2 -66,18 -62,36
-                   C -58,46 -50,42 -46,28 Z"
-                fill="rgba(238,238,248,0.90)"/>
-          <path d="M  46,5
-                   C  58,-2  66,18  62,36
-                   C  58,46  50,42  46,28 Z"
-                fill="rgba(238,238,248,0.90)"/>
-
-          <!-- 首すじ（肌色がわずかに） -->
-          <ellipse cx="0" cy="-60" rx="8" ry="9" fill="rgba(195,180,170,0.80)"/>
-
-          <!-- ===== 頭部（黒髪で覆われた後頭部） ===== -->
-          <ellipse cx="0" cy="-74" rx="17" ry="18" fill="#090912"/>
-
-          <!-- ===== 黒髪（長い直毛、後ろからサイドへ流れる） ===== -->
-          <!-- 中心付近の太い髪束（ロング） -->
-          <path d="M -13,-91 C -13,-55 -15,20 -17,75 L -9,75 C -9,20 -9,-54 -13,-91 Z" fill="#07070f"/>
-          <path d="M  -4,-93 C  -4,-55  -5,22  -6,76 L  2,76 C  2,22  0,-54  -4,-93 Z" fill="#060610"/>
-          <path d="M   4,-93 C   4,-55   5,22   6,76 L -2,76 C -2,22   0,-54   4,-93 Z" fill="#06060f"/>
-          <path d="M  13,-91 C  13,-55  15,20  17,75 L  9,75 C  9,20   9,-54  13,-91 Z" fill="#07070f"/>
-
-          <!-- サイドに広がる髪束 -->
-          <path d="M -13,-88
-                   C -28,-68 -44,-28 -46,38
-                   C -44,42 -40,41 -40,38
-                   C -40,-24 -26,-64 -13,-88 Z" fill="#060610"/>
-          <path d="M  13,-88
-                   C  28,-68  44,-28  46,38
-                   C  44,42  40,41  40,38
-                   C  40,-24  26,-64  13,-88 Z" fill="#060610"/>
-
-          <!-- 外側のほつれ毛（より広がる） -->
-          <path d="M -16,-86
-                   C -36,-62 -58,-14 -56,48
-                   C -54,52 -50,50 -50,48
-                   C -50,-10 -32,-58 -16,-86 Z" fill="#050508" opacity=".82"/>
-          <path d="M  16,-86
-                   C  36,-62  58,-14  56,48
-                   C  54,52  50,50  50,48
-                   C  50,-10  32,-58  16,-86 Z" fill="#050508" opacity=".82"/>
-
-          <!-- 最外のうっすら毛先 -->
-          <path d="M -18,-84
-                   C -42,-56 -66,-4 -64,52
-                   C -62,56 -60,55 -60,52
-                   C -60,-2 -40,-52 -18,-84 Z" fill="#030306" opacity=".60"/>
-          <path d="M  18,-84
-                   C  42,-56  66,-4  64,52
-                   C  62,56  60,55  60,52
-                   C  60,-2  40,-52  18,-84 Z" fill="#030306" opacity=".60"/>
-
-          <!-- 頭頂部（黒い） -->
-          <ellipse cx="0" cy="-80" rx="14" ry="12" fill="#08080f"/>
-        </g>
-      </g>
-
-      <!-- 手形グループ -->
-      <g id="handprints-group" clip-path="url(#glass-clip)"></g>
-
-      <!-- 窓桟（前面に重ねる） -->
-      <rect x="155" y="20"  width="10" height="230" fill="#180800"/>
-      <rect x="24"  y="128" width="272" height="10" fill="#180800"/>
-      <!-- 桟の細いハイライト -->
-      <rect x="157" y="20"  width="2"  height="230" fill="#2e1800" opacity=".6"/>
-      <rect x="24"  y="130" width="272" height="2"   fill="#2e1800" opacity=".6"/>
-      <!-- 窓枠前面 -->
-      <rect x="8"  y="8"  width="304" height="254" rx="14" fill="none" stroke="#100600" stroke-width="9"/>
-    </svg>
-
-    <div class="window-foot" id="window-foot">窓の向こうに何かいる…？ 👀</div>
-  </div>
-
+<!-- 下部UI -->
+<div id="bottom-ui">
+  <div id="window-foot">窓の向こうに何かいる…？ 👀</div>
   <div class="stats" id="stats"></div>
-
   <div class="pt-panel" id="pt-panel">
     <div class="pt-title">🔑 挙手ポイント追加（教員専用）</div>
     <div class="pin-row" id="pin-row">
@@ -478,16 +357,14 @@ footer a:hover { color: rgba(255,60,60,.8); }
     </div>
     <div id="pt-add-area" style="display:none">
       <div class="pt-row">
-        <input type="number" class="pt-input" id="pt-val" min="1" max="99" value="1">
-        <span style="font-size:.88rem;font-weight:700;color:rgba(255,70,70,.8)">回分</span>
+        <input type="number" class="pt-input" id="pt-val" min="1" max="999" value="1">
+        <span style="font-size:.86rem;font-weight:700;color:rgba(255,70,70,.8)">回分</span>
         <button class="btn-add-pt" id="btn-add-pt" onclick="handleAdd()">👻 追加する</button>
       </div>
       <div class="pt-hint">※ 挙手1回 = 幽霊が1歩近づきます</div>
     </div>
     <div id="push-status"></div>
   </div>
-
-  <footer><a href="class_homepage.html">← ホームページへ戻る</a></footer>
 </div>
 
 <script>
@@ -495,14 +372,14 @@ footer a:hover { color: rgba(255,60,60,.8); }
    定数
    ============================================================ */
 const TEACHER_PIN = '1210';
-const HOP_MS      = 60;
+const HOP_MS      = 15;
 const SVG_NS      = 'http://www.w3.org/2000/svg';
 
 /* ============================================================
-   手形の位置（25箇所）ガラス中心(160,135)基準
+   手形の位置（45箇所）ガラス中心(160,135)基準
    ============================================================ */
 const HANDPRINT_POS = [
-  // ── 最初に現れる中心寄り・大きめ ──
+  // ── 最初：中心寄り・大きめ ──
   { x:  0,  y:  5,  rot: 10,  sz: 1.00, h: 0 },
   { x: 48,  y: 22,  rot:-18,  sz: 0.88, h: 1 },
   { x:-42,  y:-10,  rot: 26,  sz: 0.92, h: 0 },
@@ -513,7 +390,7 @@ const HANDPRINT_POS = [
   { x: 34,  y: 52,  rot:-28,  sz: 0.82, h: 1 },
   { x:-66,  y: 56,  rot: 12,  sz: 0.88, h: 0 },
   { x: 20,  y:-38,  rot:-20,  sz: 0.78, h: 1 },
-  // ── 中盤：外側に広がる ──
+  // ── 中盤：外側へ ──
   { x: 90,  y:-50,  rot:-12,  sz: 0.72, h: 1 },
   { x:-24,  y:-60,  rot: 32,  sz: 0.68, h: 0 },
   { x:108,  y:-16,  rot:  8,  sz: 0.76, h: 1 },
@@ -558,7 +435,7 @@ const HANDPRINT_POS = [
    ============================================================ */
 let ci           = 0;
 let curPos       = 0;
-let totalCells   = 200;
+let totalCells   = 1000;
 let campName     = '挙手チャレンジ';
 let isAuth       = false;
 let isAnim       = false;
@@ -578,7 +455,7 @@ async function loadData() {
     if (d.campaigns && d.campaigns[ci]) {
       const c  = d.campaigns[ci];
       curPos     = c.current   ?? 0;
-      totalCells = c.total     ?? 200;
+      totalCells = c.total     ?? 1000;
       campName   = c.name      || '挙手チャレンジ';
       isGoal     = c.completed || curPos >= totalCells;
     }
@@ -626,7 +503,7 @@ async function autoPush() {
 }
 
 /* ============================================================
-   手形SVG生成（磨りガラス越しの影シルエット）
+   手形SVG生成
    ============================================================ */
 function makeHandprint(pos) {
   const g  = document.createElementNS(SVG_NS, 'g');
@@ -637,7 +514,6 @@ function makeHandprint(pos) {
   g.setAttribute('opacity', '0');
   g.setAttribute('filter', 'url(#hand-shadow)');
 
-  // 白い手形（幽霊の手がガラスに押しつけた）
   const bright = 218 + (Math.random() * 28 | 0);
   const a      = 0.62 + Math.random() * 0.25;
   const c      = `rgba(${bright},${bright},${Math.min(255, bright + 12)},${a})`;
@@ -649,31 +525,25 @@ function makeHandprint(pos) {
     g.appendChild(el);
   };
 
-  // ── 手のひら（台形気味の有機的な形）──
+  // 手のひら
   mk('path', { d: 'M-19,22 C-23,8 -21,-4 -14,-9 C-8,-13 -2,-14 4,-13 C11,-12 17,-8 20,-2 C23,6 22,16 19,22 Q10,30 0,30 Q-10,30 -19,22 Z' });
-
-  // ── 親指（短くて太い、左斜め下向き）──
+  // 親指
   mk('path', { d: 'M-21,14 Q-32,10 -33,-1 Q-31,-10 -22,-8 L-17,6 Z' });
   mk('ellipse', { cx:-27, cy:-4, rx:6.5, ry:5, transform:'rotate(-20,-27,-4)' });
-
-  // ── 人差し指 ──
+  // 人差し指
   mk('rect', { x:-16, y:-36, width:9.5, height:28, rx:4.5, transform:'rotate(-9,-11.5,-22)' });
   mk('ellipse', { cx:-14, cy:-37, rx:4.8, ry:3.8, transform:'rotate(-9,-14,-37)' });
-
-  // ── 中指（最長）──
+  // 中指（最長）
   mk('rect', { x:-4, y:-40, width:9.5, height:32, rx:4.5, transform:'rotate(-1,0.75,-24)' });
   mk('ellipse', { cx:-0.5, cy:-41, rx:4.8, ry:3.8, transform:'rotate(-1,-0.5,-41)' });
-
-  // ── 薬指 ──
+  // 薬指
   mk('rect', { x:7, y:-37, width:9, height:29, rx:4.5, transform:'rotate(7,11.5,-22.5)' });
   mk('ellipse', { cx:10, cy:-38, rx:4.5, ry:3.6, transform:'rotate(7,10,-38)' });
-
-  // ── 小指（最短）──
+  // 小指
   mk('rect', { x:17, y:-28, width:8, height:21, rx:4, transform:'rotate(16,21,-17.5)' });
   mk('ellipse', { cx:20.5, cy:-29, rx:4, ry:3.2, transform:'rotate(16,20.5,-29)' });
-
-  // ── 関節ライン（指の付け根の凹み）──
-  const jc = `rgba(${Math.max(0,bright-50)},${Math.max(0,bright-50)},${Math.min(255,bright-25)},${a*0.45})`;
+  // 関節ライン
+  const jc = `rgba(${Math.max(0,bright-50)},${Math.max(0,bright-50)},${Math.min(255,bright-25)},${(a*0.45).toFixed(2)})`;
   const jel = document.createElementNS(SVG_NS, 'path');
   jel.setAttribute('d', 'M-14,-9 Q-5,-14 4,-13 Q11,-12 18,-7');
   jel.setAttribute('stroke', jc);
@@ -713,7 +583,7 @@ function refreshHandprints(animate = false) {
         el.setAttribute('opacity', '1');
         if (animate && i === n - 1) {
           el.classList.add('handprint-new');
-          setTimeout(() => el.classList.remove('handprint-new'), 700);
+          setTimeout(() => el.classList.remove('handprint-new'), 600);
         }
       }
     } else {
@@ -723,36 +593,18 @@ function refreshHandprints(animate = false) {
 }
 
 /* ============================================================
-   幽霊更新（後ろ姿の人型・白ローブ＋長黒髪）
+   幽霊更新（画像が徐々に近づく）
    ============================================================ */
 function updateGhost() {
-  const pct     = Math.min(curPos / totalCells, 1);
-  // 5%以上で出現開始、線形に不透明になる
-  const opacity = pct < 0.05 ? 0 : Math.min(1, (pct - 0.05) / 0.25);
-  // 遠くにいる間は小さく（0.07→1.10）
-  const scale   = 0.07 + pct * 1.03;
-  // 遠ざかり感：小さい時は下にずらして「遠方」に見せる
-  const baseY   = 145;
-  const offsetY = (1 - pct) * 40;
+  const pct    = Math.min(curPos / totalCells, 1);
+  const opacity = pct < 0.04 ? 0 : Math.min(0.96, (pct - 0.04) * 1.05);
+  // 遠くにいる（小）→近づく（大）。scale 0.05 → 1.5
+  const scale  = 0.05 + pct * 1.45;
 
-  const group = document.getElementById('ghost-group');
-  group.setAttribute('opacity', String(opacity.toFixed(3)));
-
-  const bodyG = document.getElementById('ghost-body-g');
-  // translate で窓中央に固定してからスケール（座標ずれ修正）
-  bodyG.setAttribute('transform',
-    `translate(160,${(baseY + offsetY).toFixed(1)}) scale(${scale.toFixed(3)})`);
-
-  const halo = document.getElementById('ghost-halo');
-  halo.setAttribute('cx', '160');
-  halo.setAttribute('cy', String((baseY + offsetY - 20).toFixed(1)));
-  halo.setAttribute('rx', String((55 * scale).toFixed(1)));
-  halo.setAttribute('ry', String((75 * scale).toFixed(1)));
-
-  // 75%以上でふわふわ浮遊
-  if (pct >= 0.75 && !bodyG.style.animation) {
-    bodyG.style.animation = 'ghostFloat 3.0s ease-in-out infinite';
-  }
+  const el = document.getElementById('ghost-approaching');
+  if (!el) return;
+  el.style.opacity   = opacity.toFixed(3);
+  el.style.transform = `translate(-50%,-50%) scale(${scale.toFixed(3)})`;
 }
 
 /* ============================================================
@@ -777,11 +629,11 @@ function renderStats() {
 function renderFoot() {
   const pct = curPos / totalCells;
   let msg = '窓の向こうに何かいる…？ 👀';
-  if (pct >= 0.15) msg = 'なんか…近づいてきてる… 😰';
-  if (pct >= 0.35) msg = 'だんだんはっきり見えてきた……👻';
+  if (pct >= 0.10) msg = 'なんか…近づいてきてる… 😰';
+  if (pct >= 0.30) msg = 'だんだんはっきり見えてきた……👻';
   if (pct >= 0.55) msg = '窓に手形が増えてきた…！😱';
   if (pct >= 0.75) msg = 'すぐそこにいる…！！！👻💦';
-  if (pct >= 0.95) msg = 'もう窓の前に…！！！😱👻😱';
+  if (pct >= 0.92) msg = 'もう窓の前に…！！！😱👻😱';
   if (pct >= 1.0)  msg = '来てしまった…！！👻👻👻';
   document.getElementById('window-foot').textContent = msg;
 }
@@ -791,20 +643,19 @@ function renderFoot() {
    ============================================================ */
 function initRainDrops() {
   const g = document.getElementById('rain-drops');
-  for (let i = 0; i < 18; i++) {
-    const x = 28 + Math.random() * 264;
-    const y = 24 + Math.random() * 222;
+  for (let i = 0; i < 24; i++) {
+    const x = 4 + Math.random() * 312;
+    const y = 4 + Math.random() * 262;
     const r = 1.5 + Math.random() * 2.5;
     const el = document.createElementNS(SVG_NS, 'ellipse');
     el.setAttribute('cx', String(x)); el.setAttribute('cy', String(y));
     el.setAttribute('rx', String(r * 0.5)); el.setAttribute('ry', String(r));
-    el.setAttribute('fill', 'rgba(160,190,255,.18)');
+    el.setAttribute('fill', 'rgba(160,190,255,.16)');
     g.appendChild(el);
-    // 小さい尾
     const line = document.createElementNS(SVG_NS, 'line');
     line.setAttribute('x1', String(x)); line.setAttribute('y1', String(y + r));
     line.setAttribute('x2', String(x)); line.setAttribute('y2', String(y + r + 6 + Math.random()*8));
-    line.setAttribute('stroke', 'rgba(160,190,255,.12)'); line.setAttribute('stroke-width', '1');
+    line.setAttribute('stroke', 'rgba(160,190,255,.10)'); line.setAttribute('stroke-width', '1');
     g.appendChild(line);
   }
 }
@@ -823,7 +674,7 @@ function initRain() {
       height:${h}px;
       animation-duration:${0.55 + Math.random()*.75}s;
       animation-delay:-${Math.random()*2}s;
-      opacity:${0.25 + Math.random()*.35};
+      opacity:${0.22 + Math.random()*.32};
     `;
     container.appendChild(drop);
   }
@@ -888,13 +739,10 @@ async function handleAdd() {
 function showGoal() {
   const overlay = document.getElementById('goal-overlay');
   overlay.classList.add('show');
-  // 画面を揺らす
-  document.body.style.animation = 'screenShake .6s ease-out';
-  setTimeout(() => { document.body.style.animation = ''; }, 650);
-  // 扉を開ける
-  setTimeout(() => overlay.classList.add('door-open'), 600);
-  // テキストを表示
-  setTimeout(() => overlay.classList.add('text-show'), 2600);
+  document.body.style.animation = 'screenShake .7s ease-out';
+  setTimeout(() => { document.body.style.animation = ''; }, 750);
+  setTimeout(() => overlay.classList.add('door-open'), 700);
+  setTimeout(() => overlay.classList.add('text-show'), 2800);
 }
 
 function closeGoal() {
@@ -927,9 +775,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (isGoal) {
     const panel = document.getElementById('pt-panel');
-    panel.innerHTML = `<div style="text-align:center;padding:18px 14px;font-size:1.05rem;font-weight:800;color:#cc1111">
+    panel.innerHTML = `<div style="text-align:center;padding:14px;font-size:1rem;font-weight:800;color:#cc1111">
       👻 幽霊が到着済みです！ 👻
-      <br><button onclick="showGoal()" style="margin-top:12px;padding:10px 24px;background:linear-gradient(135deg,#7a0000,#bb1c1c);color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;">
+      <br><button onclick="showGoal()" style="margin-top:10px;padding:9px 22px;background:linear-gradient(135deg,#7a0000,#bb1c1c);color:#fff;border:none;border-radius:10px;font-size:.88rem;font-weight:700;cursor:pointer;">
         👁 もう一度見る
       </button>
     </div>`;
