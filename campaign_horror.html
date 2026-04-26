@@ -553,8 +553,6 @@ function makeHandprint(pos) {
   img.setAttribute('width',  String(HAND_W));
   img.setAttribute('height', String(HAND_H));
   img.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-  // 黒背景を透過（PNG背景が暗い場合に有効）
-  img.style.mixBlendMode = 'screen';
 
   g.appendChild(img);
   return g;
