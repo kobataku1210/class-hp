@@ -270,11 +270,11 @@ body {
 
 /* ===== 手形アニメーション ===== */
 @keyframes handSlam {
-  0%   { opacity: 0; filter: blur(5px); transform: scale(1.6); }
-  35%  { opacity: .95; filter: blur(0); transform: scale(.90); }
-  100% { opacity: 1; transform: scale(1); }
+  0%   { opacity: 0; }
+  40%  { opacity: .9; }
+  100% { opacity: 1; }
 }
-.handprint-new { animation: handSlam .45s ease-out forwards; }
+.handprint-new { animation: handSlam .5s ease-out forwards; }
 </style>
 </head>
 <body>
@@ -531,55 +531,32 @@ async function autoPush() {
 }
 
 /* ============================================================
-   手形SVG生成
+   手形生成（画像を使用）
    ============================================================ */
+const HAND_W = 54;  // SVG座標系での手画像の幅
+const HAND_H = 70;  // SVG座標系での手画像の高さ
+
 function makeHandprint(pos) {
-  const g  = document.createElementNS(SVG_NS, 'g');
-  const cx = 160 + pos.x;
-  const cy = 135 + pos.y;
+  const g    = document.createElementNS(SVG_NS, 'g');
+  const cx   = 160 + pos.x;
+  const cy   = 135 + pos.y;
   const flip = pos.h === 1 ? -1 : 1;
-  g.setAttribute('transform', `translate(${cx},${cy}) rotate(${pos.rot}) scale(${pos.sz * flip},${pos.sz})`);
+
+  // 画像を中心基準でスケール・回転・反転
+  g.setAttribute('transform',
+    `translate(${cx},${cy}) rotate(${pos.rot}) scale(${(pos.sz * flip).toFixed(3)},${pos.sz}) translate(${-HAND_W/2},${-HAND_H/2})`
+  );
   g.setAttribute('opacity', '0');
-  g.setAttribute('filter', 'url(#hand-shadow)');
 
-  const bright = 218 + (Math.random() * 28 | 0);
-  const a      = 0.62 + Math.random() * 0.25;
-  const c      = `rgba(${bright},${bright},${Math.min(255, bright + 12)},${a})`;
+  const img = document.createElementNS(SVG_NS, 'image');
+  img.setAttribute('href', '幽霊の手.png');
+  img.setAttribute('width',  String(HAND_W));
+  img.setAttribute('height', String(HAND_H));
+  img.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  // 黒背景を透過（PNG背景が暗い場合に有効）
+  img.style.mixBlendMode = 'screen';
 
-  const mk = (tag, attrs) => {
-    const el = document.createElementNS(SVG_NS, tag);
-    Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
-    el.setAttribute('fill', c);
-    g.appendChild(el);
-  };
-
-  // 手のひら
-  mk('path', { d: 'M-19,22 C-23,8 -21,-4 -14,-9 C-8,-13 -2,-14 4,-13 C11,-12 17,-8 20,-2 C23,6 22,16 19,22 Q10,30 0,30 Q-10,30 -19,22 Z' });
-  // 親指
-  mk('path', { d: 'M-21,14 Q-32,10 -33,-1 Q-31,-10 -22,-8 L-17,6 Z' });
-  mk('ellipse', { cx:-27, cy:-4, rx:6.5, ry:5, transform:'rotate(-20,-27,-4)' });
-  // 人差し指
-  mk('rect', { x:-16, y:-36, width:9.5, height:28, rx:4.5, transform:'rotate(-9,-11.5,-22)' });
-  mk('ellipse', { cx:-14, cy:-37, rx:4.8, ry:3.8, transform:'rotate(-9,-14,-37)' });
-  // 中指（最長）
-  mk('rect', { x:-4, y:-40, width:9.5, height:32, rx:4.5, transform:'rotate(-1,0.75,-24)' });
-  mk('ellipse', { cx:-0.5, cy:-41, rx:4.8, ry:3.8, transform:'rotate(-1,-0.5,-41)' });
-  // 薬指
-  mk('rect', { x:7, y:-37, width:9, height:29, rx:4.5, transform:'rotate(7,11.5,-22.5)' });
-  mk('ellipse', { cx:10, cy:-38, rx:4.5, ry:3.6, transform:'rotate(7,10,-38)' });
-  // 小指
-  mk('rect', { x:17, y:-28, width:8, height:21, rx:4, transform:'rotate(16,21,-17.5)' });
-  mk('ellipse', { cx:20.5, cy:-29, rx:4, ry:3.2, transform:'rotate(16,20.5,-29)' });
-  // 関節ライン
-  const jc = `rgba(${Math.max(0,bright-50)},${Math.max(0,bright-50)},${Math.min(255,bright-25)},${(a*0.45).toFixed(2)})`;
-  const jel = document.createElementNS(SVG_NS, 'path');
-  jel.setAttribute('d', 'M-14,-9 Q-5,-14 4,-13 Q11,-12 18,-7');
-  jel.setAttribute('stroke', jc);
-  jel.setAttribute('stroke-width', '2.2');
-  jel.setAttribute('fill', 'none');
-  jel.setAttribute('stroke-linecap', 'round');
-  g.appendChild(jel);
-
+  g.appendChild(img);
   return g;
 }
 
