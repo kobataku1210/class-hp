@@ -644,7 +644,7 @@ const DEFAULTS = {
    ============================================================ */
 async function loadData() {
   try {
-    const res = await fetch('data.json');
+    const res = await fetch('data.json?_=' + Date.now());
     if (!res.ok) return {};
     return await res.json();
   } catch(e) { return {}; }
