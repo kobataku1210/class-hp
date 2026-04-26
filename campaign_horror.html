@@ -80,19 +80,42 @@ body {
 }
 
 /* ===== 下部UI ===== */
-#bottom-ui {
-  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: 100%; max-width: 560px;
-  z-index: 10;
-  background: linear-gradient(to top, rgba(4,0,10,.95) 72%, transparent 100%);
-  padding: 18px 14px 14px;
+/* ===== 下部スリムバー（常時表示） ===== */
+#bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 11;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px 10px;
+  background: linear-gradient(to top, rgba(4,0,10,.92) 0%, transparent 100%);
+  pointer-events: none;
 }
-
 #window-foot {
-  text-align: center; font-size: .82rem; font-weight: 800;
-  color: rgba(200,40,40,.9); margin-bottom: 10px; letter-spacing: .04em;
+  font-size: .80rem; font-weight: 800;
+  color: rgba(200,40,40,.9); letter-spacing: .04em;
   text-shadow: 0 0 10px rgba(200,40,40,.5);
+  pointer-events: none;
 }
+#ui-toggle-btn {
+  pointer-events: auto;
+  background: rgba(100,0,0,.75); border: 1px solid rgba(180,30,30,.5);
+  color: #fff; padding: 7px 16px; border-radius: 20px;
+  font-size: .80rem; font-weight: 700; cursor: pointer;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+#ui-toggle-btn:hover { background: rgba(140,0,0,.85); }
+
+/* ===== 操作パネル（折りたたみ） ===== */
+#bottom-ui {
+  position: fixed; bottom: 0; left: 50%; z-index: 10;
+  width: 100%; max-width: 560px;
+  background: rgba(4,0,10,.96); backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(120,20,20,.4);
+  border-radius: 18px 18px 0 0;
+  padding: 14px 14px 16px;
+  transform: translateX(-50%) translateY(100%);
+  transition: transform .35s cubic-bezier(.4,0,.2,1);
+}
+#bottom-ui.open { transform: translateX(-50%) translateY(0); }
 
 /* ===== ステータス ===== */
 .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 10px; }
@@ -343,9 +366,14 @@ body {
   <div id="bloom-label">🖐 手形：0個</div>
 </div>
 
-<!-- 下部UI -->
-<div id="bottom-ui">
+<!-- 下部スリムバー（常時表示） -->
+<div id="bottom-bar">
   <div id="window-foot">窓の向こうに何かいる…？ 👀</div>
+  <button id="ui-toggle-btn" onclick="toggleUI()">🔑 操作 ▲</button>
+</div>
+
+<!-- 操作パネル（折りたたみ） -->
+<div id="bottom-ui">
   <div class="stats" id="stats"></div>
   <div class="pt-panel" id="pt-panel">
     <div class="pt-title">🔑 挙手ポイント追加（教員専用）</div>
@@ -734,6 +762,13 @@ async function handleAdd() {
   isAnim = false;
   if (!isGoal) btn.disabled = false;
   autoPush();
+}
+
+function toggleUI() {
+  const ui  = document.getElementById('bottom-ui');
+  const btn = document.getElementById('ui-toggle-btn');
+  const open = ui.classList.toggle('open');
+  btn.textContent = open ? '✕ とじる ▼' : '🔑 操作 ▲';
 }
 
 function showGoal() {
