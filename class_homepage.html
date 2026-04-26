@@ -905,6 +905,10 @@ function buildBirthdays(d) {
    ============================================================ */
 function buildNotice(d) {
   const notices = Array.isArray(d.notices) ? d.notices : DEFAULTS.notices;
+  if (notices.length === 0) {
+    document.getElementById('sec-notice').style.display = 'none';
+    return;
+  }
   const ul = document.getElementById('notice-list');
   const tagMap = {
     info:   { label: 'お知らせ', css: 'tag-info'   },
