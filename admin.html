@@ -217,6 +217,26 @@
   .pin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 480px) { .pin-grid { grid-template-columns: 1fr; } }
 
+  /* 月タブ */
+  .month-tabs {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;
+  }
+  .month-tab {
+    padding: 6px 14px;
+    border: 2px solid #bfdbfe;
+    background: #f0f8ff;
+    color: #1148a0;
+    border-radius: 20px;
+    font-size: 0.82rem; font-weight: 700; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .month-tab:hover { background: #dbeafe; }
+  .month-tab.active {
+    background: linear-gradient(135deg, #1148a0, #38b2ac);
+    color: white; border-color: transparent;
+    box-shadow: 0 3px 10px rgba(17,72,160,0.3);
+  }
+
   /* 保存バー */
   .save-bar {
     position: fixed; bottom: 0; left: 0; right: 0;
@@ -321,11 +341,15 @@
       <button class="btn-add" onclick="addNotice()">＋ お知らせを追加</button>
     </div>
 
-    <!-- 今月の予定 -->
+    <!-- 年間行事予定管理 -->
     <div class="admin-section">
-      <h2>🗓️ 今月の予定</h2>
-      <div class="dynamic-list" id="schedule-list"></div>
-      <button class="btn-add" onclick="addSchedule()">＋ 予定を追加</button>
+      <h2>🗓️ 年間行事予定管理</h2>
+      <p style="font-size:.78rem;color:#64748b;margin-bottom:14px">
+        ※ 月を選んで確認・削除できます。「今月の予定」セクションには、選択中の月の内容が自動表示されます。
+      </p>
+      <div class="month-tabs" id="month-tabs"></div>
+      <div class="dynamic-list" id="year-sched-list"></div>
+      <button class="btn-add" onclick="addYearSchedItem()">＋ この月に予定を追加</button>
     </div>
 
     <!-- ご褒美スロット -->
@@ -434,9 +458,10 @@ const DEFAULTS = {
 async function loadFormData() {
   let data = DEFAULTS;
   try {
-    const res = await fetch('data.json');
+    const res = await fetch('data.json?_=' + Date.now());
     if (res.ok) data = await res.json();
   } catch(e) {}
+  window._loadedData = data; // birthdays等を保持
 
   document.getElementById('f-className').value    = data.className    || DEFAULTS.className;
   document.getElementById('f-classGoal').value    = data.classGoal    || DEFAULTS.classGoal;
@@ -460,8 +485,7 @@ async function loadFormData() {
   document.getElementById('notices-list').innerHTML = '';
   (data.notices || DEFAULTS.notices).forEach(n => addNotice(n));
 
-  document.getElementById('schedule-list').innerHTML = '';
-  (data.schedule || DEFAULTS.schedule).forEach(r => addSchedule(r));
+  initYearSched(data);
 
   document.getElementById('rewards-list').innerHTML = '';
   const rewards = Array.isArray(data.rewards) && data.rewards.length ? data.rewards : [
@@ -604,27 +628,81 @@ function getNotices() {
 }
 
 /* ============================================================
-   動的リスト：予定
+   年間行事予定管理
    ============================================================ */
-function addSchedule(data = {}) {
+let yearSchedData = {};   // { "4": [...], "5": [...], ... }
+let activeMonth   = new Date().getMonth() + 1; // 今月
+
+const MONTH_ORDER = [4,5,6,7,8,9,10,11,12,1,2,3];
+
+function initYearSched(data) {
+  yearSchedData = {};
+  MONTH_ORDER.forEach(m => {
+    const ys = data.yearSchedule || {};
+    yearSchedData[m] = JSON.parse(JSON.stringify(ys[m] || ys[String(m)] || []));
+  });
+  renderMonthTabs();
+  switchYearMonth(activeMonth);
+}
+
+function renderMonthTabs() {
+  const tabs = document.getElementById('month-tabs');
+  tabs.innerHTML = MONTH_ORDER.map(m =>
+    `<button class="month-tab${m===activeMonth?' active':''}" data-m="${m}" onclick="switchYearMonth(${m})">${m}月</button>`
+  ).join('');
+}
+
+function switchYearMonth(m) {
+  flushCurrentMonth(); // 現在月のDOM変更を保存
+  activeMonth = m;
+  document.querySelectorAll('.month-tab').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.m) === m);
+  });
+  renderYearSchedList(m);
+}
+
+function flushCurrentMonth() {
+  const rows = [...document.querySelectorAll('#year-sched-list .list-item')];
+  yearSchedData[activeMonth] = rows.map(r => {
+    const i = r.querySelectorAll('input');
+    return { date: i[0].value.trim(), event: i[1].value.trim(), memo: i[2].value.trim() };
+  }).filter(r => r.date || r.event);
+}
+
+function renderYearSchedList(m) {
+  const list = document.getElementById('year-sched-list');
+  list.innerHTML = '';
+  (yearSchedData[m] || []).forEach(item => appendYearSchedRow(item));
+}
+
+function appendYearSchedRow(data = {}) {
   const row = document.createElement('div');
   row.className = 'list-item list-item-4';
   row.innerHTML = `
     <div><div class="item-label">日程</div>
-      <input type="text" placeholder="5月8日（金）" value="${esc(data.date||'')}"></div>
+      <input type="text" placeholder="${activeMonth}月○日(曜)" value="${esc(data.date||'')}"></div>
     <div><div class="item-label">行事・内容</div>
-      <input type="text" placeholder="定期テスト" value="${esc(data.event||'')}"></div>
+      <input type="text" placeholder="行事名" value="${esc(data.event||'')}"></div>
     <div><div class="item-label">備考</div>
-      <input type="text" placeholder="1・2時間目" value="${esc(data.memo||'')}"></div>
+      <input type="text" placeholder="備考" value="${esc(data.memo||'')}"></div>
     <button class="btn-remove" onclick="this.closest('.list-item').remove()" title="削除">✕</button>
   `;
-  document.getElementById('schedule-list').appendChild(row);
+  document.getElementById('year-sched-list').appendChild(row);
 }
-function getSchedule() {
-  return [...document.querySelectorAll('#schedule-list .list-item')].map(r => {
-    const i = r.querySelectorAll('input');
-    return { date: i[0].value.trim(), event: i[1].value.trim(), memo: i[2].value.trim() };
-  }).filter(r => r.date || r.event);
+
+function addYearSchedItem() {
+  appendYearSchedRow({});
+}
+
+function getYearSchedule() {
+  flushCurrentMonth();
+  const result = {};
+  MONTH_ORDER.forEach(m => {
+    if (yearSchedData[m] && yearSchedData[m].length > 0) {
+      result[m] = yearSchedData[m];
+    }
+  });
+  return result;
 }
 
 /* ============================================================
@@ -666,11 +744,12 @@ async function saveAll() {
     classGoal:    document.getElementById('f-classGoal').value.trim(),
     classGoalSub: document.getElementById('f-classGoalSub').value.trim(),
     classMessage: document.getElementById('f-classMessage').value,
-    events:    getEvents(),
-    campaigns: getCamps(),
-    notices:   getNotices(),
-    schedule:  getSchedule(),
-    rewards:   getRewards(),
+    events:       getEvents(),
+    campaigns:    getCamps(),
+    notices:      getNotices(),
+    yearSchedule: getYearSchedule(),
+    birthdays:    (window._loadedData && window._loadedData.birthdays) || [],
+    rewards:      getRewards(),
   };
 
   const status = document.getElementById('save-status');

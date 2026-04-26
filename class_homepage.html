@@ -924,11 +924,19 @@ function buildNotice(d) {
 }
 
 /* ============================================================
-   今月の予定
+   今月の予定（yearSchedule から今月分を自動表示）
    ============================================================ */
 function buildSchedule(d) {
-  const list  = Array.isArray(d.schedule) ? d.schedule : DEFAULTS.schedule;
-  const tbody = document.getElementById('sched-body');
+  const tbody     = document.getElementById('sched-body');
+  const thisMonth = new Date().getMonth() + 1; // 1〜12
+  const ys        = d.yearSchedule || {};
+  // JSON のキーは文字列なので両方試みる
+  const list      = ys[thisMonth] || ys[String(thisMonth)] || [];
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:20px 0">今月の予定はありません</td></tr>`;
+    return;
+  }
   list.forEach(r => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
