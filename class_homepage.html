@@ -411,6 +411,23 @@
     border-radius: 16px;
     border: 1px dashed #e2e8f0;
   }
+  /* 区切りライン */
+  .bd-separator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 22px 0 14px;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    letter-spacing: 0.06em;
+  }
+  .bd-separator::before, .bd-separator::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+  }
+  /* カード共通 */
   .bd-card {
     background: white;
     border-radius: 18px;
@@ -431,6 +448,7 @@
     border-radius: 18px 18px 0 0;
   }
   .bd-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(236,72,153,0.2); }
+  /* 今日！ */
   .bd-card.is-today {
     background: linear-gradient(135deg, #fff0f9 0%, #fffbeb 100%);
     border-color: #f9a8d4;
@@ -442,6 +460,15 @@
     background-size: 200% 100%;
     animation: bd-shine 1.8s linear infinite;
   }
+  /* カウントダウン中 */
+  .bd-card.is-soon {
+    border-color: #fcd34d;
+    box-shadow: 0 3px 20px rgba(245,158,11,0.18);
+  }
+  .bd-card.is-soon::before {
+    background: linear-gradient(90deg, #f59e0b, #ec4899);
+  }
+  /* 過去 */
   .bd-card.is-past::before { background: #e2e8f0; }
   @keyframes bd-pulse {
     0%, 100% { box-shadow: 0 4px 28px rgba(236,72,153,0.3); }
@@ -538,7 +565,7 @@
       <span class="sec-icon">🎂</span>
       今月の誕生日
     </h2>
-    <div class="bd-grid" id="bd-grid"></div>
+    <div id="bd-container"></div>
     <div class="bd-empty" id="bd-empty" style="display:none">今月はお誕生日の人はいません 🌸</div>
   </section>
 
@@ -780,48 +807,52 @@ function buildCampaign(d) {
    今月の誕生日
    ============================================================ */
 function buildBirthdays(d) {
-  const grid     = document.getElementById('bd-grid');
-  const emptyMsg = document.getElementById('bd-empty');
+  const container = document.getElementById('bd-container');
+  const emptyMsg  = document.getElementById('bd-empty');
 
   if (!Array.isArray(d.birthdays) || d.birthdays.length === 0) {
     emptyMsg.style.display = 'block';
     return;
   }
 
-  const today    = new Date();
+  const today     = new Date();
   today.setHours(0, 0, 0, 0);
   const thisYear  = today.getFullYear();
-  const thisMonth = today.getMonth() + 1; // 1〜12
+  const thisMonth = today.getMonth() + 1;
 
-  // 今月の誕生日だけ抽出して日付順に並べる
+  // 今月の誕生日にdiffを付与
   const monthBdays = d.birthdays
     .filter(b => b.month === thisMonth)
-    .sort((a, b) => a.day - b.day);
+    .map(b => {
+      const bdate = new Date(thisYear, b.month - 1, b.day);
+      bdate.setHours(0, 0, 0, 0);
+      return { ...b, diff: Math.round((bdate - today) / 86400000) };
+    });
 
   if (monthBdays.length === 0) {
     emptyMsg.style.display = 'block';
     return;
   }
 
-  monthBdays.forEach(b => {
-    const bdate = new Date(thisYear, b.month - 1, b.day);
-    bdate.setHours(0, 0, 0, 0);
-    const diff = Math.round((bdate - today) / 86400000);
+  // ①まだ誕生日が来ていない人（diff>=0）diff昇順＝カウントダウンが先頭
+  const upcoming = monthBdays.filter(b => b.diff >= 0).sort((a, b) => a.diff - b.diff);
+  // ②すでに終わった人（diff<0）日付順
+  const past     = monthBdays.filter(b => b.diff <  0).sort((a, b) => a.day - b.day);
 
+  // カード生成ヘルパー
+  function makeCard(b, isPast) {
+    const { diff } = b;
     let emoji, bodyHTML, cardCls;
 
-    if (diff < 0) {
-      // 過ぎた誕生日
+    if (isPast) {
       emoji    = '🎂';
       bodyHTML = `<div class="bd-done">🎉 おめでとう！</div>`;
       cardCls  = 'bd-card is-past';
     } else if (diff === 0) {
-      // 今日が誕生日！
       emoji    = '🎂';
       bodyHTML = `<div class="bd-today">🎂 Happy Birthday！<br>今日はあなたの日🎉</div>`;
       cardCls  = 'bd-card is-today';
     } else if (diff <= 7) {
-      // 1週間以内：カウントダウン表示
       emoji    = '🎈';
       bodyHTML = `
         <div class="bd-body">
@@ -831,7 +862,6 @@ function buildBirthdays(d) {
         </div>`;
       cardCls  = 'bd-card is-soon';
     } else {
-      // 1週間以上先：日付だけ静的表示
       emoji    = '🎂';
       bodyHTML = `<div class="bd-future">楽しみにしてね 🎈</div>`;
       cardCls  = 'bd-card';
@@ -845,8 +875,29 @@ function buildBirthdays(d) {
       <div class="bd-date">${b.month}月${b.day}日</div>
       ${bodyHTML}
     `;
-    grid.appendChild(card);
-  });
+    return card;
+  }
+
+  // ――― 1列目：まだ誕生日が来ていない人 ―――
+  if (upcoming.length > 0) {
+    const grid1 = document.createElement('div');
+    grid1.className = 'bd-grid';
+    upcoming.forEach(b => grid1.appendChild(makeCard(b, false)));
+    container.appendChild(grid1);
+  }
+
+  // ――― 2列目：誕生日が終わった人 ―――
+  if (past.length > 0) {
+    const sep = document.createElement('div');
+    sep.className = 'bd-separator';
+    sep.textContent = '今月 終了した誕生日';
+    container.appendChild(sep);
+
+    const grid2 = document.createElement('div');
+    grid2.className = 'bd-grid';
+    past.forEach(b => grid2.appendChild(makeCard(b, true)));
+    container.appendChild(grid2);
+  }
 }
 
 /* ============================================================
