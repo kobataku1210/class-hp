@@ -136,37 +136,114 @@ body::before {
 .pt-hint { font-size: .73rem; color: rgba(255,70,70,.45); margin-top: 8px; }
 #push-status { font-size: .8rem; text-align: center; margin-top: 8px; min-height: 1.2em; }
 
-/* ===== ゴールオーバーレイ ===== */
+/* ===== ゴール：扉演出 ===== */
 #goal-overlay {
   display: none; position: fixed; inset: 0; z-index: 1000;
-  background: rgba(60,0,0,.78); backdrop-filter: blur(10px);
-  align-items: center; justify-content: center;
+  background: #000;
 }
-#goal-overlay.show { display: flex; }
-.goal-card {
-  background: #0a0208; border-radius: 24px; padding: 40px 28px;
-  text-align: center; max-width: 320px; width: 90%;
-  box-shadow: 0 20px 60px rgba(0,0,0,.9), 0 0 50px rgba(120,0,0,.5);
-  border: 1px solid rgba(180,30,30,.35);
-  animation: gpop .5s cubic-bezier(.34,1.56,.64,1);
+#goal-overlay.show { display: block; }
+
+/* 幽霊（扉の奥） */
+#ghost-behind {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse 60% 70% at 50% 60%, #1a0005 0%, #000 100%);
+  overflow: hidden;
 }
-@keyframes gpop { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
-.goal-icon { font-size: 4rem; margin-bottom: 14px; animation: shake 0.5s ease-out 0.3s both; }
-@keyframes shake {
-  0%,100%{transform:translateX(0)}
-  20%{transform:translateX(-10px) rotate(-5deg)}
-  40%{transform:translateX(10px) rotate(5deg)}
-  60%{transform:translateX(-8px)}
-  80%{transform:translateX(8px)}
+#ghost-behind::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 50% 60% at 50% 55%, rgba(160,0,0,.35) 0%, transparent 70%);
+  animation: ghostPulse 2s ease-in-out infinite;
 }
-.goal-ttl { font-size: 1.85rem; font-weight: 900; color: #cc1111; margin-bottom: 8px;
-  text-shadow: 0 0 20px rgba(200,0,0,.6); }
-.goal-msg { font-size: .93rem; color: rgba(255,180,180,.8); line-height: 1.78; }
+@keyframes ghostPulse {
+  0%,100% { opacity: .6; }
+  50%     { opacity: 1; }
+}
+#ghost-img {
+  max-height: 92vh; max-width: 85vw;
+  object-fit: contain;
+  filter: brightness(.9) contrast(1.15) saturate(.85);
+  position: relative; z-index: 1;
+  opacity: 0; transition: opacity 1.2s ease 0.3s;
+}
+#goal-overlay.door-open #ghost-img { opacity: 1; }
+
+/* 扉 */
+.door-half {
+  position: absolute; top: 0; bottom: 0; width: 50.5%;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px,
+      transparent 1px, transparent 22px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(255,255,255,.012) 0px, rgba(255,255,255,.012) 1px,
+      transparent 1px, transparent 60px
+    ),
+    linear-gradient(160deg, #2c1200 0%, #190900 45%, #0d0400 100%);
+  box-shadow: inset 0 0 30px rgba(0,0,0,.6);
+  transition: transform 1.6s cubic-bezier(.4,0,.1,1);
+  z-index: 2;
+}
+#door-left  { left: 0;  border-right: 4px solid #0a0300; }
+#door-right { right: 0; border-left:  4px solid #0a0300; }
+/* 扉の金具 */
+#door-left::after, #door-right::before {
+  content: '';
+  position: absolute; top: 50%; width: 10px; height: 44px;
+  background: linear-gradient(135deg, #7a5020, #3a2010);
+  border-radius: 5px; transform: translateY(-50%);
+}
+#door-left::after  { right: 14px; }
+#door-right::before { left: 14px; }
+
+#goal-overlay.door-open #door-left  { transform: translateX(-100%); }
+#goal-overlay.door-open #door-right { transform: translateX(100%);  }
+
+/* テキスト */
+#goal-text-box {
+  position: absolute; bottom: 6vh; left: 0; right: 0;
+  text-align: center; z-index: 3;
+  opacity: 0; transform: translateY(18px);
+  transition: opacity .8s ease, transform .8s ease;
+  pointer-events: none;
+}
+#goal-overlay.text-show #goal-text-box {
+  opacity: 1; transform: translateY(0); pointer-events: auto;
+}
+.goal-ttl {
+  font-size: clamp(1.5rem,5vw,2.4rem); font-weight: 900; color: #dd1111;
+  text-shadow: 0 0 28px rgba(220,0,0,.9), 0 0 8px rgba(220,0,0,.5);
+  letter-spacing: .06em; margin-bottom: 8px;
+}
+.goal-msg {
+  font-size: .95rem; color: rgba(255,190,190,.85); line-height: 1.7;
+  text-shadow: 0 0 8px rgba(200,0,0,.4);
+}
 .goal-cls {
-  margin-top: 20px; padding: 12px 32px;
+  margin-top: 18px; padding: 12px 36px;
   background: linear-gradient(135deg, #7a0000, #bb1c1c);
-  color: #fff; border: none; border-radius: 12px;
+  color: #fff; border: none; border-radius: 14px;
   font-size: 1rem; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(120,0,0,.5);
+}
+.goal-cls:hover { opacity: .88; }
+
+/* 画面揺れ */
+@keyframes screenShake {
+  0%,100% { transform: translate(0,0); }
+  10% { transform: translate(-6px,-4px); }
+  20% { transform: translate(7px,3px); }
+  30% { transform: translate(-5px,5px); }
+  40% { transform: translate(5px,-4px); }
+  50% { transform: translate(-4px,4px); }
+  60% { transform: translate(6px,-3px); }
+  70% { transform: translate(-5px,3px); }
+  80% { transform: translate(4px,-5px); }
+  90% { transform: translate(-3px,4px); }
 }
 
 /* ===== 手形アニメーション ===== */
@@ -195,10 +272,18 @@ footer a:hover { color: rgba(255,60,60,.8); }
 <div class="rain" id="rain"></div>
 
 <div id="goal-overlay">
-  <div class="goal-card">
-    <div class="goal-icon">👻</div>
-    <div class="goal-ttl">幽霊、到着！！</div>
-    <div class="goal-msg" id="goal-msg">ついに窓の前に来てしまった…<br>みんなの挙手が幽霊を呼んだ！！<br>👻💀👻</div>
+  <!-- 奥の幽霊 -->
+  <div id="ghost-behind">
+    <img id="ghost-img" src="ghost_final.jpg" alt="">
+  </div>
+  <!-- 左扉 -->
+  <div class="door-half" id="door-left"></div>
+  <!-- 右扉 -->
+  <div class="door-half" id="door-right"></div>
+  <!-- テキスト -->
+  <div id="goal-text-box">
+    <div class="goal-ttl">👻 来てしまった…！！！</div>
+    <div class="goal-msg">みんなの挙手が幽霊を呼んでしまった…！<br>💀 1000回の挙手、達成！！ 💀</div>
     <button class="goal-cls" onclick="closeGoal()">😱 とじる</button>
   </div>
 </div>
@@ -235,12 +320,11 @@ footer a:hover { color: rgba(255,60,60,.8); }
         <filter id="blur-halo" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="10"/>
         </filter>
-        <!-- 手形：磨りガラス越しの影 -->
-        <filter id="hand-shadow" x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur stdDeviation="4.5" result="blurred"/>
+        <!-- 手形：ガラスに押しつけた白い手 -->
+        <filter id="hand-shadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.2" result="soft"/>
           <feMerge>
-            <feMergeNode in="blurred"/>
-            <feMergeNode in="blurred"/>
+            <feMergeNode in="soft"/>
             <feMergeNode in="SourceGraphic"/>
           </feMerge>
         </filter>
@@ -554,31 +638,49 @@ function makeHandprint(pos) {
   g.setAttribute('filter', 'url(#hand-shadow)');
 
   // 白い手形（幽霊の手がガラスに押しつけた）
-  const bright = 210 + (Math.random() * 35 | 0);
-  const a      = 0.55 + Math.random() * 0.30;
-  const c      = `rgba(${bright},${bright},${Math.min(255, bright + 20)},${a})`;
+  const bright = 218 + (Math.random() * 28 | 0);
+  const a      = 0.62 + Math.random() * 0.25;
+  const c      = `rgba(${bright},${bright},${Math.min(255, bright + 12)},${a})`;
 
   const mk = (tag, attrs) => {
     const el = document.createElementNS(SVG_NS, tag);
-    Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k, String(v)));
+    Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, String(v)));
     el.setAttribute('fill', c);
     g.appendChild(el);
   };
 
-  // 手のひら（やや縦長の楕円）
-  mk('ellipse', { cx: 0, cy: 6, rx: 17, ry: 20 });
+  // ── 手のひら（台形気味の有機的な形）──
+  mk('path', { d: 'M-19,22 C-23,8 -21,-4 -14,-9 C-8,-13 -2,-14 4,-13 C11,-12 17,-8 20,-2 C23,6 22,16 19,22 Q10,30 0,30 Q-10,30 -19,22 Z' });
 
-  // 親指（斜め左外側）
-  mk('ellipse', { cx: -20, cy: 0, rx: 6.5, ry: 13, transform: 'rotate(-38,-20,0)' });
+  // ── 親指（短くて太い、左斜め下向き）──
+  mk('path', { d: 'M-21,14 Q-32,10 -33,-1 Q-31,-10 -22,-8 L-17,6 Z' });
+  mk('ellipse', { cx:-27, cy:-4, rx:6.5, ry:5, transform:'rotate(-20,-27,-4)' });
 
-  // 人差し指
-  mk('ellipse', { cx: -11, cy: -23, rx: 5.5, ry: 16, transform: 'rotate(-10,-11,-23)' });
-  // 中指（一番長い）
-  mk('ellipse', { cx:  -2, cy: -27, rx: 5.5, ry: 18, transform: 'rotate(-2,-2,-27)'  });
-  // 薬指
-  mk('ellipse', { cx:   8, cy: -25, rx: 5,   ry: 17, transform: 'rotate(6,8,-25)'    });
-  // 小指
-  mk('ellipse', { cx:  17, cy: -18, rx: 4.5, ry: 13, transform: 'rotate(14,17,-18)'  });
+  // ── 人差し指 ──
+  mk('rect', { x:-16, y:-36, width:9.5, height:28, rx:4.5, transform:'rotate(-9,-11.5,-22)' });
+  mk('ellipse', { cx:-14, cy:-37, rx:4.8, ry:3.8, transform:'rotate(-9,-14,-37)' });
+
+  // ── 中指（最長）──
+  mk('rect', { x:-4, y:-40, width:9.5, height:32, rx:4.5, transform:'rotate(-1,0.75,-24)' });
+  mk('ellipse', { cx:-0.5, cy:-41, rx:4.8, ry:3.8, transform:'rotate(-1,-0.5,-41)' });
+
+  // ── 薬指 ──
+  mk('rect', { x:7, y:-37, width:9, height:29, rx:4.5, transform:'rotate(7,11.5,-22.5)' });
+  mk('ellipse', { cx:10, cy:-38, rx:4.5, ry:3.6, transform:'rotate(7,10,-38)' });
+
+  // ── 小指（最短）──
+  mk('rect', { x:17, y:-28, width:8, height:21, rx:4, transform:'rotate(16,21,-17.5)' });
+  mk('ellipse', { cx:20.5, cy:-29, rx:4, ry:3.2, transform:'rotate(16,20.5,-29)' });
+
+  // ── 関節ライン（指の付け根の凹み）──
+  const jc = `rgba(${Math.max(0,bright-50)},${Math.max(0,bright-50)},${Math.min(255,bright-25)},${a*0.45})`;
+  const jel = document.createElementNS(SVG_NS, 'path');
+  jel.setAttribute('d', 'M-14,-9 Q-5,-14 4,-13 Q11,-12 18,-7');
+  jel.setAttribute('stroke', jc);
+  jel.setAttribute('stroke-width', '2.2');
+  jel.setAttribute('fill', 'none');
+  jel.setAttribute('stroke-linecap', 'round');
+  g.appendChild(jel);
 
   return g;
 }
@@ -598,8 +700,8 @@ function buildHandprints() {
 }
 
 function visibleCount(pos) {
-  // 目標の15%（150回）で手形が全部揃う → さらにスピードUP
-  const handPct = Math.min(pos / (totalCells * 0.15), 1);
+  // 目標の80%（800回）で手形が全部揃う
+  const handPct = Math.min(pos / (totalCells * 0.80), 1);
   return Math.round(handPct * HANDPRINT_POS.length);
 }
 
@@ -771,8 +873,8 @@ async function handleAdd() {
 
     if (curPos >= totalCells) {
       isGoal = true;
-      await sleep(700);
-      document.getElementById('goal-overlay').classList.add('show');
+      await sleep(500);
+      showGoal();
       break;
     }
     if (i < n - 1) await sleep(HOP_MS);
@@ -783,8 +885,25 @@ async function handleAdd() {
   autoPush();
 }
 
+function showGoal() {
+  const overlay = document.getElementById('goal-overlay');
+  overlay.classList.add('show');
+  // 画面を揺らす
+  document.body.style.animation = 'screenShake .6s ease-out';
+  setTimeout(() => { document.body.style.animation = ''; }, 650);
+  // 扉を開ける
+  setTimeout(() => overlay.classList.add('door-open'), 600);
+  // テキストを表示
+  setTimeout(() => overlay.classList.add('text-show'), 2600);
+}
+
 function closeGoal() {
-  document.getElementById('goal-overlay').classList.remove('show');
+  const overlay = document.getElementById('goal-overlay');
+  overlay.classList.remove('text-show');
+  setTimeout(() => {
+    overlay.classList.remove('door-open');
+    setTimeout(() => overlay.classList.remove('show'), 400);
+  }, 200);
 }
 
 /* ============================================================
@@ -809,7 +928,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (isGoal) {
     const panel = document.getElementById('pt-panel');
     panel.innerHTML = `<div style="text-align:center;padding:18px 14px;font-size:1.05rem;font-weight:800;color:#cc1111">
-      👻 幽霊が到着済みです！みんなの挙手が呼んでしまった！ 👻
+      👻 幽霊が到着済みです！ 👻
+      <br><button onclick="showGoal()" style="margin-top:12px;padding:10px 24px;background:linear-gradient(135deg,#7a0000,#bb1c1c);color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;">
+        👁 もう一度見る
+      </button>
     </div>`;
   }
 });
