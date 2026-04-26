@@ -396,9 +396,89 @@
     margin-bottom: 6px;
   }
 
+  /* ===== 今月の誕生日 ===== */
+  .bd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
+  }
+  .bd-empty {
+    text-align: center;
+    padding: 28px;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    background: white;
+    border-radius: 16px;
+    border: 1px dashed #e2e8f0;
+  }
+  .bd-card {
+    background: white;
+    border-radius: 18px;
+    padding: 20px 12px 16px;
+    text-align: center;
+    box-shadow: 0 3px 16px rgba(236,72,153,0.1);
+    border: 1px solid #fbcfe8;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .bd-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #ec4899, #f59e0b);
+    border-radius: 18px 18px 0 0;
+  }
+  .bd-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(236,72,153,0.2); }
+  .bd-card.is-today {
+    background: linear-gradient(135deg, #fff0f9 0%, #fffbeb 100%);
+    border-color: #f9a8d4;
+    box-shadow: 0 4px 28px rgba(236,72,153,0.3);
+    animation: bd-pulse 2s ease-in-out infinite;
+  }
+  .bd-card.is-today::before {
+    background: linear-gradient(90deg, #ec4899, #f59e0b, #ec4899);
+    background-size: 200% 100%;
+    animation: bd-shine 1.8s linear infinite;
+  }
+  .bd-card.is-past { opacity: 0.5; }
+  .bd-card.is-past::before { background: #e2e8f0; }
+  @keyframes bd-pulse {
+    0%, 100% { box-shadow: 0 4px 28px rgba(236,72,153,0.3); }
+    50%       { box-shadow: 0 6px 38px rgba(236,72,153,0.55); }
+  }
+  @keyframes bd-shine {
+    from { background-position: 200% center; }
+    to   { background-position: -200% center; }
+  }
+  .bd-emoji   { font-size: 1.8rem; line-height: 1; margin-bottom: 8px; }
+  .bd-initial { font-size: 1.1rem; font-weight: 900; color: #374151; margin-bottom: 3px; letter-spacing: 0.06em; }
+  .bd-date    { font-size: 0.68rem; color: #94a3b8; margin-bottom: 10px; }
+  .bd-body    { display: flex; align-items: baseline; justify-content: center; gap: 2px; }
+  .bd-pre     { font-size: 0.72rem; font-weight: 700; color: #64748b; }
+  .bd-num {
+    font-size: 2.1rem; font-weight: 900; line-height: 1;
+    background: linear-gradient(135deg, #ec4899, #f59e0b);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .bd-suf     { font-size: 0.82rem; font-weight: 700; color: #64748b; }
+  .bd-future  { font-size: 0.8rem; color: #94a3b8; padding: 6px 0; }
+  .bd-today   { font-size: 0.85rem; font-weight: 900; color: #ec4899; padding: 6px 0; line-height: 1.6; }
+  .bd-done    { font-size: 0.8rem; font-weight: 700; color: #94a3b8; padding: 6px 0; }
+  /* 誕生日セクションのアイコン色はピンク系 */
+  #sec-birthday .sec-icon {
+    background: linear-gradient(135deg, #ec4899, #f59e0b);
+  }
+  #sec-birthday .sec-title {
+    color: #be185d;
+    border-bottom-color: #fbcfe8;
+  }
+
   /* ===== レスポンシブ ===== */
   @media (max-width: 600px) {
     .cd-grid { grid-template-columns: repeat(2, 1fr); }
+    .bd-grid { grid-template-columns: repeat(2, 1fr); }
     .sched-table th:last-child, .sched-table td:last-child { display: none; }
   }
 </style>
@@ -450,6 +530,17 @@
       行事カウントダウン
     </h2>
     <div class="cd-grid" id="cd-grid"></div>
+  </section>
+
+
+  <!-- ========== 今月の誕生日 ========== -->
+  <section id="sec-birthday">
+    <h2 class="sec-title">
+      <span class="sec-icon">🎂</span>
+      今月の誕生日
+    </h2>
+    <div class="bd-grid" id="bd-grid"></div>
+    <div class="bd-empty" id="bd-empty" style="display:none">今月はお誕生日の人はいません 🌸</div>
   </section>
 
 
@@ -687,6 +778,79 @@ function buildCampaign(d) {
 }
 
 /* ============================================================
+   今月の誕生日
+   ============================================================ */
+function buildBirthdays(d) {
+  const grid     = document.getElementById('bd-grid');
+  const emptyMsg = document.getElementById('bd-empty');
+
+  if (!Array.isArray(d.birthdays) || d.birthdays.length === 0) {
+    emptyMsg.style.display = 'block';
+    return;
+  }
+
+  const today    = new Date();
+  today.setHours(0, 0, 0, 0);
+  const thisYear  = today.getFullYear();
+  const thisMonth = today.getMonth() + 1; // 1〜12
+
+  // 今月の誕生日だけ抽出して日付順に並べる
+  const monthBdays = d.birthdays
+    .filter(b => b.month === thisMonth)
+    .sort((a, b) => a.day - b.day);
+
+  if (monthBdays.length === 0) {
+    emptyMsg.style.display = 'block';
+    return;
+  }
+
+  monthBdays.forEach(b => {
+    const bdate = new Date(thisYear, b.month - 1, b.day);
+    bdate.setHours(0, 0, 0, 0);
+    const diff = Math.round((bdate - today) / 86400000);
+
+    let emoji, bodyHTML, cardCls;
+
+    if (diff < 0) {
+      // 過ぎた誕生日
+      emoji    = '🎂';
+      bodyHTML = `<div class="bd-done">🎉 おめでとう！</div>`;
+      cardCls  = 'bd-card is-past';
+    } else if (diff === 0) {
+      // 今日が誕生日！
+      emoji    = '🎂';
+      bodyHTML = `<div class="bd-today">🎂 Happy Birthday！<br>今日はあなたの日🎉</div>`;
+      cardCls  = 'bd-card is-today';
+    } else if (diff <= 7) {
+      // 1週間以内：カウントダウン表示
+      emoji    = '🎈';
+      bodyHTML = `
+        <div class="bd-body">
+          <span class="bd-pre">あと</span>
+          <span class="bd-num">${diff}</span>
+          <span class="bd-suf">日</span>
+        </div>`;
+      cardCls  = 'bd-card is-soon';
+    } else {
+      // 1週間以上先：日付だけ静的表示
+      emoji    = '🎂';
+      bodyHTML = `<div class="bd-future">楽しみにしてね 🎈</div>`;
+      cardCls  = 'bd-card';
+    }
+
+    const card = document.createElement('div');
+    card.className = cardCls;
+    card.innerHTML = `
+      <div class="bd-emoji">${emoji}</div>
+      <div class="bd-initial">${b.initial}</div>
+      <div class="bd-date">${b.month}月${b.day}日</div>
+      ${bodyHTML}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+/* ============================================================
    お知らせ
    ============================================================ */
 function buildNotice(d) {
@@ -733,6 +897,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const d = await loadData();
   buildHeader(d);
   buildCountdown(d);
+  buildBirthdays(d);
   buildCampaign(d);
   buildNotice(d);
   buildSchedule(d);
