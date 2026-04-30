@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>クラスキャラ育成 デモ</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+  background: #06061a;
+  color: white;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ===== 背景の星 ===== */
+#starfield {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+}
+
+/* ===== ヘッダー ===== */
+.top-bar {
+  position: relative; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 22px;
+  background: rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.top-bar h1 {
+  font-size: 1rem; font-weight: 900; letter-spacing: 0.06em;
+  background: linear-gradient(90deg,#a78bfa,#60a5fa,#34d399);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.demo-badge {
+  background: rgba(251,191,36,0.2); border: 1px solid rgba(251,191,36,0.4);
+  color: #fbbf24; padding: 3px 12px; border-radius: 10px;
+  font-size: 0.72rem; font-weight: 800;
+}
+
+/* ===== メイン ===== */
+.main {
+  position: relative; z-index: 5;
+  max-width: 720px; margin: 0 auto;
+  padding: 30px 16px 120px;
+  display: flex; flex-direction: column; align-items: center; gap: 30px;
+}
+
+/* ===== キャラクター表示エリア ===== */
+.chara-wrap {
+  position: relative;
+  width: 260px; height: 260px;
+  display: flex; align-items: center; justify-content: center;
+}
+/* オーラ */
+.aura {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  transition: background 1.2s ease, box-shadow 1.2s ease;
+}
+/* キャラ本体 */
+#chara-emoji {
+  position: relative; z-index: 2;
+  font-size: 9rem; line-height: 1;
+  transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  filter: drop-shadow(0 0 24px var(--aura-color, #fff));
+  user-select: none;
+}
+.chara-wrap:hover #chara-emoji { transform: scale(1.08) rotate(-3deg); }
+
+/* ===== ステージ名・進化テキスト ===== */
+.stage-info { text-align: center; }
+.stage-num {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.5); margin-bottom: 4px;
+}
+.stage-name {
+  font-size: 1.8rem; font-weight: 900; letter-spacing: 0.06em;
+  transition: color 0.8s;
+}
+.stage-sub {
+  font-size: 0.82rem; color: rgba(255,255,255,0.55); margin-top: 4px;
+}
+
+/* ===== 総合プログレスバー ===== */
+.prog-section { width: 100%; max-width: 480px; }
+.prog-label {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 0.78rem; color: rgba(255,255,255,0.6); margin-bottom: 8px;
+}
+.prog-label span:last-child { font-size: 1.1rem; font-weight: 900; color: white; }
+.prog-track {
+  background: rgba(255,255,255,0.1);
+  border-radius: 8px; height: 14px; overflow: hidden;
+  position: relative;
+}
+.prog-fill {
+  height: 100%; border-radius: 8px;
+  background: linear-gradient(90deg, var(--aura-color, #a78bfa), #60a5fa);
+  transition: width 1s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+}
+.prog-fill::after {
+  content: '';
+  position: absolute; top: 0; right: 0; bottom: 0; width: 40px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
+  animation: shimmer 1.5s linear infinite;
+}
+@keyframes shimmer {
+  from { opacity: 0; }
+  50%  { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* ===== 10段階ロードマップ ===== */
+.roadmap { width: 100%; max-width: 600px; }
+.roadmap-title {
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.4); text-align: center; margin-bottom: 14px;
+}
+.roadmap-track {
+  display: flex; align-items: center; gap: 0;
+  position: relative;
+}
+.roadmap-track::before {
+  content: '';
+  position: absolute; top: 50%; left: 0; right: 0; height: 2px;
+  background: rgba(255,255,255,0.12);
+  transform: translateY(-50%); z-index: 0;
+}
+.stage-dot {
+  position: relative; z-index: 1;
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer;
+}
+.dot-circle {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; line-height: 1;
+  transition: all 0.4s;
+}
+.dot-label {
+  font-size: 0.58rem; color: rgba(255,255,255,0.35);
+  text-align: center; line-height: 1.3;
+  transition: color 0.4s;
+  white-space: nowrap;
+}
+.stage-dot.unlocked .dot-circle {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.35);
+}
+.stage-dot.unlocked .dot-label { color: rgba(255,255,255,0.6); }
+.stage-dot.current .dot-circle {
+  background: var(--aura-color, #a78bfa);
+  border-color: white;
+  box-shadow: 0 0 16px var(--aura-color, #a78bfa);
+  transform: scale(1.2);
+}
+.stage-dot.current .dot-label { color: white; font-weight: 800; }
+
+/* ===== テストスライダー ===== */
+.test-ctrl {
+  width: 100%; max-width: 480px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 20px 24px;
+}
+.test-ctrl h3 {
+  font-size: 0.75rem; font-weight: 700; color: #fbbf24;
+  letter-spacing: 0.08em; margin-bottom: 14px;
+}
+.test-ctrl input[type=range] {
+  width: 100%; accent-color: #a78bfa;
+  margin-bottom: 12px;
+}
+.test-ctrl-btns {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.test-btn {
+  flex: 1; padding: 8px 12px;
+  background: rgba(167,139,250,0.2);
+  border: 1px solid rgba(167,139,250,0.4);
+  color: #a78bfa; border-radius: 10px;
+  font-size: 0.8rem; font-weight: 700; cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.test-btn:hover { background: rgba(167,139,250,0.35); }
+.test-btn.evolve-btn {
+  background: linear-gradient(135deg, rgba(167,139,250,0.3), rgba(96,165,250,0.3));
+  border-color: #a78bfa; color: white;
+}
+
+/* ===== 進化エフェクト ===== */
+#evolve-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  pointer-events: none;
+  display: none;
+}
+.flash {
+  position: absolute; inset: 0;
+  background: white;
+  animation: flash-out 0.6s ease-out forwards;
+}
+@keyframes flash-out {
+  0%   { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+.evolve-text {
+  position: absolute;
+  top: 38%; left: 50%; transform: translate(-50%, -50%);
+  font-size: clamp(2rem, 8vw, 4rem);
+  font-weight: 900; letter-spacing: 0.12em;
+  white-space: nowrap;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b, #fff, #60a5fa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  animation: evolve-pop 1.8s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  text-shadow: none;
+  filter: drop-shadow(0 0 20px rgba(251,191,36,0.6));
+}
+.evolve-sub {
+  position: absolute;
+  top: 54%; left: 50%; transform: translateX(-50%);
+  font-size: 1.1rem; font-weight: 700; color: rgba(255,255,255,0.9);
+  white-space: nowrap;
+  animation: evolve-pop 2s 0.2s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  opacity: 0;
+}
+@keyframes evolve-pop {
+  0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.3); }
+  60%  { opacity: 1; transform: translate(-50%,-50%) scale(1.1); }
+  100% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+}
+
+/* パーティクル */
+.particle {
+  position: absolute;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  animation: particle-fly var(--dur, 1.2s) ease-out forwards;
+}
+@keyframes particle-fly {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx,0px), var(--ty,-200px)) scale(0); opacity: 0; }
+}
+
+/* ===== キャンペーン内訳 ===== */
+.camp-breakdown {
+  width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.camp-row {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 10px; padding: 10px 14px;
+  font-size: 0.82rem;
+}
+.camp-row-name { flex: 1; color: rgba(255,255,255,0.7); }
+.camp-row-pct  { font-weight: 800; color: white; min-width: 40px; text-align: right; }
+.mini-bar { flex: 2; background: rgba(255,255,255,0.1); border-radius: 4px; height: 6px; overflow: hidden; }
+.mini-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #a78bfa, #60a5fa); transition: width 0.8s; }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<!-- ヘッダー -->
+<div class="top-bar">
+  <h1>✨ 3年5組 クラスキャラ育成</h1>
+  <span class="demo-badge">🎮 デモ版</span>
+</div>
+
+<!-- メイン -->
+<div class="main">
+
+  <!-- キャラクター -->
+  <div class="chara-wrap">
+    <div class="aura" id="aura"></div>
+    <div id="chara-emoji">🥚</div>
+  </div>
+
+  <!-- ステージ名 -->
+  <div class="stage-info">
+    <div class="stage-num" id="stage-num">STAGE 1 / 10</div>
+    <div class="stage-name" id="stage-name">たまご</div>
+    <div class="stage-sub" id="stage-sub">まだ眠っている…</div>
+  </div>
+
+  <!-- 総合進捗 -->
+  <div class="prog-section">
+    <div class="prog-label">
+      <span>全キャンペーン合算</span>
+      <span id="prog-pct-text">0%</span>
+    </div>
+    <div class="prog-track">
+      <div class="prog-fill" id="prog-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- キャンペーン内訳 -->
+  <div class="camp-breakdown" id="camp-breakdown"></div>
+
+  <!-- ロードマップ -->
+  <div class="roadmap">
+    <div class="roadmap-title">— 進化ロードマップ —</div>
+    <div class="roadmap-track" id="roadmap"></div>
+  </div>
+
+  <!-- テスト操作 -->
+  <div class="test-ctrl">
+    <h3>🎮 デモ操作（実際は挙手回数が増えると自動で進化）</h3>
+    <input type="range" id="demo-slider" min="0" max="100" value="0"
+           oninput="setProgress(parseInt(this.value))">
+    <div class="test-ctrl-btns">
+      <button class="test-btn" onclick="setProgress(0)">最初</button>
+      <button class="test-btn" onclick="stepUp()">＋10%</button>
+      <button class="test-btn evolve-btn" onclick="triggerEvolveDemo()">⚡ 進化させる</button>
+      <button class="test-btn" onclick="setProgress(100)">MAX</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- 進化オーバーレイ -->
+<div id="evolve-overlay">
+  <div class="flash"></div>
+  <div class="evolve-text" id="evolve-text">進化！</div>
+  <div class="evolve-sub"  id="evolve-sub">たまご → ひよこ</div>
+</div>
+
+<script>
+/* ============================================================
+   10段階の進化定義（キャラは仮：生徒が決めたら差し替え）
+   ============================================================ */
+const STAGES = [
+  { pct:  0, name:'たまご',      sub:'まだ眠っている…',              emoji:'🥚', color:'#94a3b8' },
+  { pct: 10, name:'めざめ',      sub:'殻にひびが入ってきた',          emoji:'🐣', color:'#fbbf24' },
+  { pct: 20, name:'ひよこ',      sub:'ようやく産まれた！',            emoji:'🐥', color:'#fde68a' },
+  { pct: 30, name:'こどり',      sub:'羽が生えてきた',                emoji:'🐦', color:'#86efac' },
+  { pct: 40, name:'いろどり',    sub:'カラフルな羽が輝く',            emoji:'🦜', color:'#34d399' },
+  { pct: 50, name:'たかどり',    sub:'高く飛べるようになった',        emoji:'🦅', color:'#60a5fa' },
+  { pct: 60, name:'ひかりどり',  sub:'全身が光を放ちはじめた',       emoji:'🌟', color:'#a78bfa' },
+  { pct: 70, name:'うみたつ',    sub:'龍へと変わりはじめる…',        emoji:'🐲', color:'#c084fc' },
+  { pct: 80, name:'にじのたつ',  sub:'天に向かって飛翔する',         emoji:'🌈', color:'#f472b6' },
+  { pct: 90, name:'雲外蒼天',    sub:'雲を超えた先に、青空が広がる！',emoji:'🐉', color:'#fbbf24' },
+];
+
+/* キャンペーン仮データ（実際はdata.jsonから読む） */
+const CAMPS_DEMO = [
+  { name:'あいさつチャレンジ', current:30, total:30 },
+  { name:'挙手チャレンジ',     current:348, total:350 },
+  { name:'挙手（ホラー）',     current:0,   total:1000 },
+];
+
+let currentStage = 0;
+let currentPct   = 0;
+let isEvolving   = false;
+
+/* ============================================================
+   初期化
+   ============================================================ */
+function init() {
+  drawStars();
+  buildRoadmap();
+  buildCampBreakdown();
+  // キャンペーンから初期進捗を計算
+  const pct = calcTotalPct();
+  setProgress(pct, true);
+  document.getElementById('demo-slider').value = pct;
+}
+
+function calcTotalPct() {
+  let cur = 0, tot = 0;
+  CAMPS_DEMO.forEach(c => { cur += c.current; tot += c.total; });
+  return tot > 0 ? Math.round(cur / tot * 100) : 0;
+}
+
+/* ============================================================
+   進捗セット
+   ============================================================ */
+function setProgress(pct, silent = false) {
+  pct = Math.max(0, Math.min(100, pct));
+  document.getElementById('demo-slider').value = pct;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct-text').textContent = pct + '%';
+
+  const newStage = getStageIndex(pct);
+  const evolving = !silent && newStage > currentStage;
+
+  currentPct   = pct;
+  currentStage = newStage;
+
+  updateCharaDisplay(newStage);
+  updateRoadmap(newStage);
+
+  if (evolving) showEvolveEffect(newStage);
+}
+
+function stepUp() {
+  const next = Math.min(100, currentPct + 10);
+  setProgress(next);
+}
+
+function getStageIndex(pct) {
+  let idx = 0;
+  for (let i = STAGES.length - 1; i >= 0; i--) {
+    if (pct >= STAGES[i].pct) { idx = i; break; }
+  }
+  return idx;
+}
+
+/* ============================================================
+   キャラ表示更新
+   ============================================================ */
+function updateCharaDisplay(stageIdx) {
+  const s = STAGES[stageIdx];
+  document.getElementById('chara-emoji').textContent = s.emoji;
+  document.getElementById('stage-num').textContent   = `STAGE ${stageIdx + 1} / ${STAGES.length}`;
+  document.getElementById('stage-name').textContent  = s.name;
+  document.getElementById('stage-sub').textContent   = s.sub;
+  document.getElementById('stage-name').style.color  = s.color;
+
+  // オーラ
+  document.documentElement.style.setProperty('--aura-color', s.color);
+  const aura = document.getElementById('aura');
+  const intensity = stageIdx / (STAGES.length - 1);
+  const size = 60 + intensity * 80;
+  aura.style.background = `radial-gradient(circle, ${s.color}33 0%, ${s.color}11 50%, transparent 70%)`;
+  aura.style.boxShadow   = `0 0 ${size}px ${size/2}px ${s.color}44, inset 0 0 ${size/2}px ${s.color}22`;
+
+  // プログレスバー色
+  document.querySelector('.prog-fill').style.background =
+    `linear-gradient(90deg, ${s.color}, #60a5fa)`;
+}
+
+/* ============================================================
+   ロードマップ
+   ============================================================ */
+function buildRoadmap() {
+  const track = document.getElementById('roadmap');
+  STAGES.forEach((s, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'stage-dot';
+    dot.id = `dot-${i}`;
+    dot.onclick = () => {
+      setProgress(s.pct);
+      document.getElementById('demo-slider').value = s.pct;
+    };
+    dot.innerHTML = `
+      <div class="dot-circle">${s.emoji}</div>
+      <div class="dot-label">${s.name}</div>
+    `;
+    track.appendChild(dot);
+  });
+}
+
+function updateRoadmap(stageIdx) {
+  STAGES.forEach((_, i) => {
+    const dot = document.getElementById(`dot-${i}`);
+    dot.classList.remove('unlocked', 'current');
+    if (i < stageIdx)  dot.classList.add('unlocked');
+    if (i === stageIdx) dot.classList.add('current');
+    dot.querySelector('.dot-circle').style.borderColor =
+      i <= stageIdx ? STAGES[i].color : 'rgba(255,255,255,0.15)';
+  });
+}
+
+/* ============================================================
+   キャンペーン内訳
+   ============================================================ */
+function buildCampBreakdown() {
+  const el = document.getElementById('camp-breakdown');
+  CAMPS_DEMO.forEach(c => {
+    const pct = Math.min(100, Math.round(c.current / c.total * 100));
+    const row = document.createElement('div');
+    row.className = 'camp-row';
+    row.innerHTML = `
+      <span class="camp-row-name">${c.name}</span>
+      <div class="mini-bar"><div class="mini-fill" style="width:${pct}%"></div></div>
+      <span class="camp-row-pct">${pct}%</span>
+    `;
+    el.appendChild(row);
+  });
+}
+
+/* ============================================================
+   進化エフェクト
+   ============================================================ */
+function showEvolveEffect(stageIdx) {
+  if (isEvolving) return;
+  isEvolving = true;
+  const s    = STAGES[stageIdx];
+  const prev = STAGES[stageIdx - 1];
+
+  const overlay = document.getElementById('evolve-overlay');
+  document.getElementById('evolve-text').textContent = `✨ 進化！`;
+  document.getElementById('evolve-sub').textContent  =
+    `${prev.emoji} ${prev.name}  →  ${s.emoji} ${s.name}`;
+
+  overlay.style.display = 'block';
+  overlay.style.background = `radial-gradient(circle at 50% 50%, ${s.color}55 0%, #000000cc 100%)`;
+
+  spawnParticles(s.color);
+
+  // キャラ本体をバウンス
+  const emoji = document.getElementById('chara-emoji');
+  emoji.style.transform = 'translate(-50%,-50%) scale(1.5)';
+  setTimeout(() => { emoji.style.transform = ''; }, 600);
+
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    isEvolving = false;
+  }, 2400);
+}
+
+function triggerEvolveDemo() {
+  // 次のステージに強制ジャンプ
+  const nextStageIdx = Math.min(STAGES.length - 1, currentStage + 1);
+  const pct = STAGES[nextStageIdx].pct + (nextStageIdx < STAGES.length - 1 ? 0 : 0);
+  setProgress(pct);
+  document.getElementById('demo-slider').value = pct;
+}
+
+function spawnParticles(color) {
+  const overlay = document.getElementById('evolve-overlay');
+  const colors  = [color, '#ffffff', '#fbbf24', '#60a5fa', '#f472b6'];
+  for (let i = 0; i < 40; i++) {
+    const p  = document.createElement('div');
+    p.className = 'particle';
+    const angle = (Math.random() * 360) * Math.PI / 180;
+    const dist  = 80 + Math.random() * 220;
+    const tx    = Math.cos(angle) * dist;
+    const ty    = Math.sin(angle) * dist - 100;
+    const dur   = 0.8 + Math.random() * 0.8;
+    p.style.cssText = `
+      left: calc(50% + ${(Math.random()-0.5)*80}px);
+      top:  calc(40% + ${(Math.random()-0.5)*40}px);
+      background: ${colors[Math.floor(Math.random()*colors.length)]};
+      --tx: ${tx}px; --ty: ${ty}px; --dur: ${dur}s;
+      width: ${4 + Math.random()*10}px;
+      height: ${4 + Math.random()*10}px;
+    `;
+    overlay.appendChild(p);
+    setTimeout(() => p.remove(), dur * 1000 + 100);
+  }
+}
+
+/* ============================================================
+   星フィールド
+   ============================================================ */
+function drawStars() {
+  const canvas = document.getElementById('starfield');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  for (let i = 0; i < 200; i++) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const r = Math.random() * 1.5;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.random() * 0.6})`;
+    ctx.fill();
+  }
+}
+window.addEventListener('resize', drawStars);
+
+/* ============================================================
+   起動
+   ============================================================ */
+init();
+</script>
+</body>
+</html>
