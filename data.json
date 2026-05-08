@@ -66,9 +66,9 @@
     {
       "name": "挙手チャレンジ（ホラー）",
       "total": 1000,
-      "current": 463,
+      "current": 1000,
       "goalEmoji": "👻",
-      "completed": false,
+      "completed": true,
       "type": "horror"
     }
   ],
