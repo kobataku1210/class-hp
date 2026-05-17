@@ -7,11 +7,11 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-body {
+html, body {
   font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
   background: #07071f;
   color: white;
-  overflow-x: hidden;
+  overflow-x: auto;  /* 横はbodyレベルで対応 */
   /* 縦スクロール：下が地面、上が空 */
 }
 
@@ -95,11 +95,10 @@ body {
 #top-spacer { /* height set by JS */ }
 
 .towers-wrap {
-  overflow-x: auto;
-  overflow-y: visible;
-  -webkit-overflow-scrolling: touch;
+  /* overflow は body に任せる → ページ縦スクロールが効く */
   position: relative;
   z-index: 10;
+  min-width: max-content; /* 横はみ出し可 */
 }
 .towers-row {
   display: flex;
@@ -544,7 +543,9 @@ function maxHours() {
   return Math.max(...teams.map(t => t.hours), 0);
 }
 function maxCastleH() {
-  return BASE_H + maxHours() * SCALE + FIXED_TOP;
+  // 最低でも画面高さ分は確保して必ずスクロールできるように
+  const minH = Math.max(window.innerHeight - 80, 400);
+  return Math.max(BASE_H + maxHours() * SCALE + FIXED_TOP, minH);
 }
 function bodyH(hours) {
   return Math.round(hours * SCALE);
