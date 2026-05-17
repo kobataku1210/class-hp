@@ -300,10 +300,37 @@ html, body {
 .modal-box {
   background: linear-gradient(160deg, #12163a, #1a1f4a);
   border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 22px; padding: 32px 28px;
-  width: min(420px, 94vw);
+  border-radius: 22px; padding: 28px 24px;
+  width: min(480px, 96vw);
   box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  max-height: 90vh; overflow-y: auto;
 }
+/* 一括入力行 */
+.bulk-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 90px;
+  align-items: center; gap: 10px;
+}
+.bulk-label {
+  font-size: 0.85rem; font-weight: 800;
+  color: rgba(255,255,255,0.75);
+  white-space: nowrap;
+}
+.bulk-current {
+  font-size: 0.72rem; color: rgba(255,255,255,0.38);
+  white-space: nowrap; text-align: right;
+}
+.bulk-input {
+  padding: 9px 11px;
+  background: rgba(255,255,255,0.07);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  border-radius: 10px; color: white;
+  font-size: 0.95rem; font-family: inherit;
+  outline: none; text-align: center; width: 100%;
+  transition: border-color 0.2s;
+}
+.bulk-input:focus { border-color: #fbbf24; background: rgba(255,255,255,0.1); }
+.bulk-input::placeholder { color: rgba(255,255,255,0.2); font-size: 0.8rem; }
 .modal-box h2 { font-size: 1.05rem; font-weight: 900; color: #fbbf24; margin-bottom: 5px; }
 .modal-box p  { font-size: 0.78rem; color: rgba(255,255,255,0.45); margin-bottom: 20px; }
 .m-input, .m-select {
@@ -433,11 +460,8 @@ html, body {
     </div>
     <div id="s-input" style="display:none">
       <h2>📚 勉強時間を追加</h2>
-      <p>班と追加する時間数を入力してください</p>
-      <select class="m-select" id="team-sel"></select>
-      <input class="m-input" type="number" id="hours-in"
-             placeholder="追加する時間数（例：2.5）" min="0.5" step="0.5"
-             onkeydown="if(event.key==='Enter')submitHours()">
+      <p>追加する時間数を入力して「追加する」を押してください（空欄の班はスキップ）</p>
+      <div id="bulk-rows" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
       <div class="m-error" id="hours-err"></div>
       <div class="m-btns">
         <button class="m-cancel" onclick="closeModal()">キャンセル</button>
@@ -718,16 +742,26 @@ function openModal() {
 }
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
-  ['pin-in','hours-in'].forEach(id => { document.getElementById(id).value = ''; });
-  ['pin-err','hours-err'].forEach(id => { document.getElementById(id).textContent = ''; });
+  document.getElementById('pin-in').value = '';
+  document.getElementById('pin-err').textContent  = '';
+  document.getElementById('hours-err').textContent = '';
+  document.getElementById('bulk-rows').innerHTML   = '';
 }
 function showStep(s) {
   document.getElementById('s-pin').style.display   = s === 'pin'   ? '' : 'none';
   document.getElementById('s-input').style.display = s === 'input' ? '' : 'none';
   if (s === 'input') {
-    document.getElementById('team-sel').innerHTML =
-      teams.map((t,i) => `<option value="${i}">${t.name}（現在 ${t.hours}h）</option>`).join('');
-    setTimeout(() => document.getElementById('hours-in').focus(), 80);
+    const bulk = document.getElementById('bulk-rows');
+    bulk.innerHTML = teams.map((t, i) => `
+      <div class="bulk-row">
+        <div class="bulk-label">${t.name}</div>
+        <input class="bulk-input" type="number" id="b-in-${i}"
+               placeholder="追加時間" min="0.5" step="0.5"
+               onkeydown="if(event.key==='Enter')submitHours()">
+        <div class="bulk-current">計 ${t.hours}h</div>
+      </div>
+    `).join('');
+    setTimeout(() => document.getElementById('b-in-0').focus(), 80);
   }
 }
 function checkPin() {
@@ -741,26 +775,43 @@ function checkPin() {
   }
 }
 async function submitHours() {
-  const idx   = parseInt(document.getElementById('team-sel').value);
-  const added = parseFloat(document.getElementById('hours-in').value);
-  const err   = document.getElementById('hours-err');
-  if (isNaN(added) || added <= 0) { err.textContent = '正しい時間数を入力してください'; return; }
+  const err = document.getElementById('hours-err');
+  // 各班の入力値を収集
+  const updates = teams.map((t, i) => {
+    const v = parseFloat(document.getElementById(`b-in-${i}`)?.value || '');
+    return { idx: i, added: isNaN(v) ? 0 : v };
+  }).filter(u => u.added > 0);
+
+  if (updates.length === 0) {
+    err.textContent = '少なくとも1班に時間数を入力してください'; return;
+  }
   err.textContent = '';
-  teams[idx].hours = Math.round((teams[idx].hours + added) * 10) / 10;
+
+  // 全班に加算
+  updates.forEach(u => {
+    teams[u.idx].hours = Math.round((teams[u.idx].hours + u.added) * 10) / 10;
+  });
+
   closeModal();
   updateAllTowers();
-  showFx(idx, added);
+
+  // エフェクト：最多追加の班を代表として表示
+  const top = updates.reduce((a, b) => a.added >= b.added ? a : b);
+  const totalAdded = updates.reduce((s, u) => s + u.added, 0);
+  showFxBulk(top.idx, totalAdded, updates.length);
+
   await saveData();
 }
 
-/* =========================================================
-   エフェクト
-   ========================================================= */
-function showFx(idx, added) {
+function showFxBulk(topIdx, totalAdded, count) {
   if (isFxing) return;
   isFxing = true;
-  document.getElementById('fx-text').textContent = `📚 ＋${added}時間！`;
-  document.getElementById('fx-sub').textContent  = `${teams[idx].name} ・ 累計 ${teams[idx].hours}時間`;
+  const label = count === 1
+    ? `${teams[topIdx].name}  ＋${totalAdded}時間！`
+    : `${count}班  合計＋${totalAdded}時間！`;
+  document.getElementById('fx-text').textContent = `📚 ${label}`;
+  document.getElementById('fx-sub').textContent  =
+    `クラス累計 ${teams.reduce((s,t)=>s+t.hours,0)}時間`;
   const ov = document.getElementById('fx-overlay');
   ov.classList.add('show');
   spawnPt();
@@ -773,6 +824,10 @@ function showFx(idx, added) {
     isFxing = false;
   }, 2200);
 }
+
+/* =========================================================
+   エフェクト
+   ========================================================= */
 function spawnPt() {
   const cols = ['#fbbf24','#f87171','#60a5fa','#34d399','#a78bfa','#fff'];
   for (let i = 0; i < 50; i++) {
