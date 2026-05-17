@@ -484,7 +484,7 @@ html, body {
    ========================================================= */
 const SCALE      = 5;   // 1時間 = 5px
 const BASE_H     = 38;  // 石垣の高さ
-const FIXED_TOP  = 210; // 屋根群の固定高さ（c-top実高さ約159px + 余白51px）
+const FIXED_TOP  = 160; // 屋根群の固定高さ（roofSVG×2 + finial 約107px + 余白53px）
 const INFO_H     = 76;  // チーム情報の高さ
 
 const ROOF_COLORS = [
@@ -607,9 +607,7 @@ function renderTowers() {
           <div class="c-body-windows" id="cw-${i}"></div>
         </div>
         <div class="c-top" id="ct-${i}" style="bottom:${BASE_H + bh}px">
-          <div class="c-tier2"></div>
           ${roofSVG(color, 'main')}
-          <div class="c-tier1"></div>
           ${roofSVG(color, 'top')}
           <div class="c-finial"></div>
         </div>
