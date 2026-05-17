@@ -99,6 +99,7 @@ html, body {
   position: relative;
   z-index: 10;
   min-width: max-content; /* 横はみ出し可 */
+  padding-top: 64px; /* 頂点がヘッダーに隠れないよう上にスペースを確保 */
 }
 .towers-row {
   display: flex;
@@ -459,7 +460,7 @@ html, body {
    ========================================================= */
 const SCALE      = 5;   // 1時間 = 5px
 const BASE_H     = 38;  // 石垣の高さ
-const FIXED_TOP  = 152; // 屋根群の固定高さ
+const FIXED_TOP  = 210; // 屋根群の固定高さ（c-top実高さ約159px + 余白51px）
 const INFO_H     = 76;  // チーム情報の高さ
 
 const ROOF_COLORS = [
@@ -543,8 +544,8 @@ function maxHours() {
   return Math.max(...teams.map(t => t.hours), 0);
 }
 function maxCastleH() {
-  // 最低でも画面高さ分は確保して必ずスクロールできるように
-  const minH = Math.max(window.innerHeight - 80, 400);
+  // ページが必ずスクロールできる高さを確保（最低250px のスクロール幅）
+  const minH = Math.max(window.innerHeight - 100, 400);
   return Math.max(BASE_H + maxHours() * SCALE + FIXED_TOP, minH);
 }
 function bodyH(hours) {
