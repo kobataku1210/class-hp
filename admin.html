@@ -352,6 +352,19 @@
       <button class="btn-add" onclick="addYearSchedItem()">＋ この月に予定を追加</button>
     </div>
 
+    <!-- 班対抗 勉強タワー -->
+    <div class="admin-section">
+      <h2>🏯 班対抗 勉強タワー ― 班名設定</h2>
+      <p style="font-size:.78rem;color:#64748b;margin-bottom:14px">
+        ※ 班名を変更できます。勉強時間の入力はタワーページの「＋」ボタンから行います。
+      </p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:12px" id="tower-teams-grid"></div>
+      <a href="study_tower.html" target="_blank" class="btn-preview"
+         style="display:inline-flex;background:rgba(251,191,36,0.15);border-color:rgba(251,191,36,0.4);color:#d97706">
+        🏯 タワーページを確認 →
+      </a>
+    </div>
+
     <!-- ご褒美スロット -->
     <div class="admin-section">
       <h2>🎰 ご褒美スロット</h2>
@@ -486,6 +499,7 @@ async function loadFormData() {
   (data.notices || DEFAULTS.notices).forEach(n => addNotice(n));
 
   initYearSched(data);
+  initTowerTeams(data);
 
   document.getElementById('rewards-list').innerHTML = '';
   const rewards = Array.isArray(data.rewards) && data.rewards.length ? data.rewards : [
@@ -749,6 +763,7 @@ async function saveAll() {
     notices:      getNotices(),
     yearSchedule: getYearSchedule(),
     birthdays:    (window._loadedData && window._loadedData.birthdays) || [],
+    studyTower:   getStudyTower(),
     rewards:      getRewards(),
   };
 
@@ -800,6 +815,39 @@ async function pushGitHub() {
     status.textContent = '❌ サーバーに接続できません。サーバー起動.bat を確認してください。';
   }
   setTimeout(() => { status.textContent = ''; }, 6000);
+}
+
+/* ============================================================
+   班対抗 勉強タワー ― 班名管理
+   ============================================================ */
+function initTowerTeams(data) {
+  const grid = document.getElementById('tower-teams-grid');
+  grid.innerHTML = '';
+  const teams = (data.studyTower && data.studyTower.teams) ||
+    Array.from({length:8}, (_,i) => ({name:`${i+1}班`, hours:0}));
+  teams.forEach((t, i) => {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = `
+      <div class="item-label">${i+1}班</div>
+      <input type="text" class="form-input" style="margin-top:3px"
+             placeholder="${i+1}班" value="${esc(t.name)}" data-idx="${i}">
+    `;
+    grid.appendChild(wrap);
+  });
+}
+
+function getStudyTower() {
+  const loaded = window._loadedData;
+  const hours  = (loaded && loaded.studyTower && loaded.studyTower.teams)
+    ? loaded.studyTower.teams.map(t => t.hours)
+    : Array(8).fill(0);
+  const inputs = [...document.querySelectorAll('#tower-teams-grid input')];
+  return {
+    teams: inputs.map((inp, i) => ({
+      name:  inp.value.trim() || `${i+1}班`,
+      hours: hours[i] || 0,
+    }))
+  };
 }
 
 /* ============================================================
