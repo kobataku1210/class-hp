@@ -77,35 +77,35 @@
     "teams": [
       {
         "name": "1班",
-        "hours": 22
+        "hours": 30
       },
       {
         "name": "2班",
-        "hours": 9
-      },
-      {
-        "name": "3班",
-        "hours": 25
-      },
-      {
-        "name": "4班",
-        "hours": 16
-      },
-      {
-        "name": "5班",
-        "hours": 14
-      },
-      {
-        "name": "6班",
         "hours": 15
       },
       {
+        "name": "3班",
+        "hours": 41
+      },
+      {
+        "name": "4班",
+        "hours": 23
+      },
+      {
+        "name": "5班",
+        "hours": 30
+      },
+      {
+        "name": "6班",
+        "hours": 25
+      },
+      {
         "name": "7班",
-        "hours": 14
+        "hours": 24
       },
       {
         "name": "8班",
-        "hours": 8
+        "hours": 18
       }
     ]
   },
