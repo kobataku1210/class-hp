@@ -701,9 +701,20 @@ async function init() {
 }
 
 async function loadData() {
+  let data = null;
+  // まずローカルサーバーから取得（先生用・即時反映）
   try {
-    const res  = await fetch('data.json?_=' + Date.now());
-    const data = await res.json();
+    const res = await fetch(SERVER + '/api/data', { signal: AbortSignal.timeout(1500) });
+    if (res.ok) data = await res.json();
+  } catch(e) { /* サーバー未起動なら無視 */ }
+  // サーバーが使えない場合は GitHub Pages の静的ファイルを使用
+  if (!data) {
+    try {
+      const res = await fetch('data.json?_=' + Date.now());
+      if (res.ok) data = await res.json();
+    } catch(e) { /* 何もしない */ }
+  }
+  if (data) {
     correctPin = data.adminPIN || '1210';
     if (data.studyTower?.teams?.length) {
       teams = data.studyTower.teams;
@@ -713,7 +724,7 @@ async function loadData() {
     if (data.className) {
       document.getElementById('h-sub').textContent = data.className;
     }
-  } catch(e) {
+  } else {
     teams = Array.from({length:8}, (_,i) => ({name:`${i+1}班`, hours:0}));
   }
 }
