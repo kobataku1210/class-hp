@@ -628,6 +628,9 @@ let correctPin = '1210';
 let loggedIn   = false;
 let isFxing    = false;
 
+// GitHub Pages からでもローカルサーバーに届くよう絶対URLを使用
+const SERVER = 'http://localhost:3456';
+
 /* =========================================================
    名言データ
    ========================================================= */
@@ -1145,22 +1148,52 @@ function spawnPt() {
    保存 → GitHub へ自動プッシュ
    ========================================================= */
 async function saveData() {
+  showSaveStatus('⏳ 保存中...');
   try {
-    const res  = await fetch('data.json?_=' + Date.now());
+    // データ取得もローカルサーバー経由（最新を取得）
+    const res  = await fetch(SERVER + '/api/data');
     const data = await res.json();
     data.studyTower = { teams };
-    await fetch('/api/data', {
+
+    // ローカルに保存
+    await fetch(SERVER + '/api/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin: correctPin, data }),
     });
-    // ローカル保存後にGitHubへ反映（リロードしても消えないように）
-    await fetch('/api/git-push', {
+    // GitHub へ push → リロードしても消えない
+    await fetch(SERVER + '/api/git-push', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin: correctPin }),
     });
-  } catch(e) { console.warn('save failed', e); }
+    showSaveStatus('✅ 保存・反映しました');
+  } catch(e) {
+    console.warn('save failed', e);
+    showSaveStatus('❌ サーバーが起動していません');
+  }
+}
+
+function showSaveStatus(msg) {
+  let el = document.getElementById('save-status');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'save-status';
+    el.style.cssText = `
+      position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
+      background:rgba(0,0,0,0.75); color:#fff; padding:8px 22px;
+      border-radius:20px; font-size:0.85rem; font-weight:700;
+      z-index:350; white-space:nowrap; pointer-events:none;
+      transition: opacity 0.4s;
+    `;
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  if (!msg.startsWith('⏳')) {
+    el._t = setTimeout(() => { el.style.opacity = '0'; }, 3000);
+  }
 }
 
 /* =========================================================
