@@ -75,14 +75,38 @@
   "notices": [],
   "studyTower": {
     "teams": [
-      {"name":"1班","hours":0},
-      {"name":"2班","hours":0},
-      {"name":"3班","hours":0},
-      {"name":"4班","hours":0},
-      {"name":"5班","hours":0},
-      {"name":"6班","hours":0},
-      {"name":"7班","hours":0},
-      {"name":"8班","hours":0}
+      {
+        "name": "1班",
+        "hours": 22
+      },
+      {
+        "name": "2班",
+        "hours": 0
+      },
+      {
+        "name": "3班",
+        "hours": 0
+      },
+      {
+        "name": "4班",
+        "hours": 0
+      },
+      {
+        "name": "5班",
+        "hours": 0
+      },
+      {
+        "name": "6班",
+        "hours": 0
+      },
+      {
+        "name": "7班",
+        "hours": 0
+      },
+      {
+        "name": "8班",
+        "hours": 0
+      }
     ]
   },
   "yearSchedule": {
