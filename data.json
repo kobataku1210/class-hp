@@ -81,31 +81,31 @@
       },
       {
         "name": "2班",
-        "hours": 0
+        "hours": 9
       },
       {
         "name": "3班",
-        "hours": 0
+        "hours": 25
       },
       {
         "name": "4班",
-        "hours": 0
+        "hours": 16
       },
       {
         "name": "5班",
-        "hours": 0
+        "hours": 14
       },
       {
         "name": "6班",
-        "hours": 0
+        "hours": 15
       },
       {
         "name": "7班",
-        "hours": 0
+        "hours": 14
       },
       {
         "name": "8班",
-        "hours": 0
+        "hours": 8
       }
     ]
   },
