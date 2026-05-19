@@ -1142,7 +1142,7 @@ function spawnPt() {
 }
 
 /* =========================================================
-   保存
+   保存 → GitHub へ自動プッシュ
    ========================================================= */
 async function saveData() {
   try {
@@ -1153,6 +1153,12 @@ async function saveData() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin: correctPin, data }),
+    });
+    // ローカル保存後にGitHubへ反映（リロードしても消えないように）
+    await fetch('/api/git-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: correctPin }),
     });
   } catch(e) { console.warn('save failed', e); }
 }
