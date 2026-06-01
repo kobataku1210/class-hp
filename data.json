@@ -77,35 +77,35 @@
     "teams": [
       {
         "name": "1班",
-        "hours": 89
+        "hours": 307
       },
       {
         "name": "2班",
-        "hours": 84
+        "hours": 288
       },
       {
         "name": "3班",
-        "hours": 134
+        "hours": 338
       },
       {
         "name": "4班",
-        "hours": 119
+        "hours": 311
       },
       {
         "name": "5班",
-        "hours": 89
+        "hours": 251
       },
       {
         "name": "6班",
-        "hours": 74
+        "hours": 242
       },
       {
         "name": "7班",
-        "hours": 108
+        "hours": 273
       },
       {
         "name": "8班",
-        "hours": 85
+        "hours": 249
       }
     ]
   },
