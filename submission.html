@@ -250,9 +250,10 @@
     background-clip: text; margin-bottom: 5px;
   }
   .bm-info {
-    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    display: flex; flex-direction: column; gap: 4px;
     min-height: 20px;
   }
+  .bm-sub-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
   .bm-info span { font-size: 0.72rem; font-weight: 700; }
   .bm-arrow { color: rgba(74,222,128,0.75); font-size: 0.9rem; flex-shrink: 0; }
 
@@ -1429,13 +1430,13 @@ function updateBannerPreview() {
     : `<span style="color:rgba(253,186,116,0.95);font-weight:800">未提出 ${unsub}人</span>`;
 
   const subsHtml = subs.map(s =>
-    `<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+    `<div class="bm-sub-row">
        <span style="color:rgba(187,247,208,0.9);font-weight:800">📋 ${escHtml(s.name)}</span>
        ${deadlineHtml(s.deadline, true)}
      </div>`
   ).join('');
 
-  infoEl.innerHTML = subsHtml + `<div style="margin-top:4px">${unsubHtml}</div>`;
+  infoEl.innerHTML = subsHtml + `<div class="bm-sub-row">${unsubHtml}</div>`;
 }
 
 function saveConfig() {

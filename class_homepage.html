@@ -1135,16 +1135,16 @@ function buildGrinBanner(d) {
     : `<span style="color:rgba(253,186,116,0.95);font-weight:800">未提出 ${unsub}人</span>`;
 
   const subsHtml = subs.filter(s => s.name).map(s =>
-    `<span style="display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap">
+    `<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
        <span style="font-size:.8rem;color:rgba(187,247,208,0.9);font-weight:800">📋 ${s.name}</span>
        ${grinDeadlineStr(s.deadline)}
-     </span>`
+     </div>`
   ).join('');
 
   infoEl.innerHTML = `
-    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <div style="display:flex;flex-direction:column;gap:4px">
       ${subsHtml}
-      ${unsubHtml}
+      <div>${unsubHtml}</div>
     </div>`;
 }
 
