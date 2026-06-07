@@ -1032,6 +1032,10 @@
         "date": "2026-06-07",
         "result": "growth"
       }
-    ]
+    ],
+    "students": {
+      "maleCount": 19,
+      "femaleCount": 18
+    }
   }
 }
