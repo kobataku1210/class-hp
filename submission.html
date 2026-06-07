@@ -429,8 +429,10 @@
 
   /* 設定フォーム */
   /* 複数提出物リスト */
-  .sub-list { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
-  .sub-row  { display: flex; gap: 6px; align-items: center; }
+  .sub-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .sub-row  { display: flex; flex-direction: column; gap: 5px; }
+  .sub-row-top  { display: flex; gap: 6px; align-items: center; }
+  .sub-row-btns { display: flex; gap: 6px; }
   .sub-row .sub-name {
     flex: 1; min-width: 0; padding: 7px 10px;
     border: 1.5px solid #e2e8f0; border-radius: 8px;
@@ -494,17 +496,17 @@
 
   /* 行内 達成／失敗ボタン */
   .sub-action-btn {
-    flex-shrink: 0; width: 34px; height: 34px;
-    border-radius: 8px; font-size: 1rem;
+    flex: 1; padding: 6px 8px; border-radius: 8px;
+    font-size: 0.8rem; font-weight: 900; font-family: inherit;
     cursor: pointer; border: none;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
     transition: all 0.15s;
   }
-  .sub-action-btn:disabled { opacity: 0.35; cursor: default; transform: none !important; }
-  .sub-success { background: #dcfce7; }
-  .sub-success:not(:disabled):hover { background: #bbf7d0; transform: scale(1.12); }
-  .sub-fail    { background: #fee2e2; }
-  .sub-fail:not(:disabled):hover    { background: #fecaca; transform: scale(1.12); }
+  .sub-action-btn:disabled { opacity: 0.35; cursor: default; }
+  .sub-success { background: #dcfce7; color: #15803d; border: 1.5px solid #86efac; }
+  .sub-success:not(:disabled):hover { background: #bbf7d0; }
+  .sub-fail    { background: #fee2e2; color: #dc2626; border: 1.5px solid #fca5a5; }
+  .sub-fail:not(:disabled):hover    { background: #fecaca; }
 
   /* ===== 紙吹雪 ===== */
   .gconf {
@@ -1419,16 +1421,20 @@ function addSubRow(name, deadline, savedIdx) {
   row.className = 'sub-row';
   const idxAttr = savedIdx !== undefined ? `data-idx="${savedIdx}"` : '';
   const disabled = savedIdx !== undefined ? '' : 'disabled';
+  const clickGrow = savedIdx !== undefined ? `recordGrowthForSub(${savedIdx})` : '';
+  const clickFail = savedIdx !== undefined ? `recordFailureForSub(${savedIdx})` : '';
   row.innerHTML = `
-    <input type="text"  class="sub-name" placeholder="例: 家庭学習ノート" value="${escHtml(name)}">
-    <input type="date"  class="sub-date" value="${escHtml(deadline)}">
-    <button class="sub-remove" onclick="removeSubRow(this)" title="削除">✕</button>
-    <button class="sub-action-btn sub-success" ${idxAttr} ${disabled}
-      title="✅ 達成（全員提出・グリンを成長させる）"
-      onclick="this.dataset.idx !== undefined && recordGrowthForSub(parseInt(this.dataset.idx))">✅</button>
-    <button class="sub-action-btn sub-fail" ${idxAttr} ${disabled}
-      title="❌ 失敗（未達成として記録）"
-      onclick="this.dataset.idx !== undefined && recordFailureForSub(parseInt(this.dataset.idx))">❌</button>
+    <div class="sub-row-top">
+      <input type="text"  class="sub-name" placeholder="例: 家庭学習ノート" value="${escHtml(name)}">
+      <input type="date"  class="sub-date" value="${escHtml(deadline)}">
+      <button class="sub-remove" onclick="removeSubRow(this)" title="削除">✕</button>
+    </div>
+    <div class="sub-row-btns">
+      <button class="sub-action-btn sub-success" ${idxAttr} ${disabled}
+        onclick="${clickGrow}">✅ 達成（成長）</button>
+      <button class="sub-action-btn sub-fail" ${idxAttr} ${disabled}
+        onclick="${clickFail}">❌ 失敗（未達成）</button>
+    </div>
   `;
   // リアルタイムプレビュー
   row.querySelector('.sub-name').oninput  = updateBannerPreview;
