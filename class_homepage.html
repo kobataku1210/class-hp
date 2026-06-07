@@ -507,6 +507,70 @@
     .bd-grid { grid-template-columns: repeat(2, 1fr); }
     .sched-table th:last-child, .sched-table td:last-child { display: none; }
   }
+
+  /* ===== ローカルプレビューゾーン（localhost のみ表示） ===== */
+  #preview-zone {
+    display: none; /* JS で localhost のみ表示 */
+    margin-top: 32px;
+    border-radius: 20px;
+    overflow: hidden;
+    border: 2.5px solid rgba(251,115,0,0.55);
+    box-shadow: 0 0 0 4px rgba(251,115,0,0.1), 0 8px 32px rgba(0,0,0,0.12);
+  }
+  .pz-header {
+    background: linear-gradient(90deg, #ea580c, #dc2626);
+    padding: 11px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .pz-badge {
+    background: rgba(0,0,0,0.22); border: 1.5px solid rgba(255,255,255,0.45);
+    border-radius: 6px; padding: 2px 12px;
+    font-size: 0.72rem; font-weight: 900; color: white; letter-spacing: 0.14em;
+  }
+  .pz-title {
+    font-size: 0.88rem; font-weight: 800; color: white; flex: 1;
+  }
+  .pz-url {
+    font-size: 0.7rem; color: rgba(255,255,255,0.7);
+    background: rgba(0,0,0,0.2); border-radius: 5px;
+    padding: 2px 10px; font-family: monospace;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  .pz-tabs {
+    background: #1e1e1e;
+    display: flex; gap: 2px; padding: 6px 10px 0;
+    overflow-x: auto;
+  }
+  .pz-tab {
+    padding: 7px 16px 8px;
+    border-radius: 8px 8px 0 0;
+    font-size: 0.78rem; font-weight: 700;
+    cursor: pointer; border: none;
+    color: rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.07);
+    transition: all 0.18s; white-space: nowrap;
+    font-family: inherit;
+  }
+  .pz-tab.active {
+    background: white; color: #dc2626;
+  }
+  .pz-frame-wrap {
+    background: white;
+    position: relative;
+  }
+  .pz-frame-wrap iframe {
+    display: block; width: 100%; border: none;
+    height: 680px;
+  }
+  .pz-watermark {
+    position: absolute; bottom: 14px; right: 14px;
+    background: rgba(220,38,38,0.1); border: 2px solid rgba(220,38,38,0.3);
+    border-radius: 8px; padding: 4px 12px;
+    font-size: 0.7rem; font-weight: 800; color: rgba(220,38,38,0.6);
+    letter-spacing: 0.12em; pointer-events: none;
+  }
 </style>
 </head>
 <body>
@@ -986,7 +1050,66 @@ document.addEventListener('DOMContentLoaded', async () => {
   buildCampaign(d);
   buildNotice(d);
   buildSchedule(d);
+
+  // ローカルのみプレビューゾーンを表示
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    buildPreviewZone();
+  }
 });
+
+/* ============================================================
+   プレビューゾーン（localhost のみ）
+   ============================================================ */
+const PREVIEW_PAGES = [
+  { label: '🌱 グリンの成長記録', src: 'submission.html' },
+  // ↓ 新しいプレビューはここに追加
+  // { label: '🎯 新機能名',  src: 'new_feature.html' },
+];
+
+function buildPreviewZone() {
+  const zone = document.getElementById('preview-zone');
+  if (!zone) return;
+  zone.style.display = 'block';
+
+  const urlEl  = zone.querySelector('.pz-url');
+  const tabs   = zone.querySelector('.pz-tabs');
+  const iframe = zone.querySelector('.pz-frame-wrap iframe');
+
+  // タブ生成
+  PREVIEW_PAGES.forEach((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'pz-tab' + (i === 0 ? ' active' : '');
+    btn.textContent = p.label;
+    btn.onclick = () => {
+      tabs.querySelectorAll('.pz-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      iframe.src = p.src;
+      if (urlEl) urlEl.textContent = location.origin + '/' + p.src;
+    };
+    tabs.appendChild(btn);
+  });
+
+  // 初期ページ
+  if (PREVIEW_PAGES.length > 0) {
+    iframe.src = PREVIEW_PAGES[0].src;
+    if (urlEl) urlEl.textContent = location.origin + '/' + PREVIEW_PAGES[0].src;
+  }
+}
 </script>
+
+<!-- ========== ローカルプレビューゾーン ========== -->
+<section id="preview-zone">
+  <div class="pz-header">
+    <span class="pz-badge">⚠ PREVIEW</span>
+    <span class="pz-title">開発中プレビュー — ローカルのみ表示</span>
+    <span class="pz-url"></span>
+  </div>
+  <div class="pz-tabs"><!-- タブはJSで生成 --></div>
+  <div class="pz-frame-wrap">
+    <iframe title="preview"></iframe>
+    <div class="pz-watermark">⚠ PREVIEW</div>
+  </div>
+</section>
+
 </body>
 </html>
