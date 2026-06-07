@@ -1010,12 +1010,8 @@
     ]
   },
   "grinGrowth": {
-    "stage": 10,
+    "stage": 9,
     "history": [
-      {
-        "date": "2026-06-07",
-        "result": "growth"
-      },
       {
         "date": "2026-06-07",
         "result": "growth"
