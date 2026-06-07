@@ -360,6 +360,16 @@
   .unsub-count-badge.pending { background: #fef2f2; color: #dc2626; border: 1.5px solid #fca5a5; }
   .unsub-count-badge.done    { background: #dcfce7; color: #16a34a; border: 1.5px solid #86efac; }
 
+  /* 提出物ごとのセクション */
+  .sub-section { margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1.5px dashed #f1f5f9; }
+  .sub-section:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .sub-section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .sub-section-name { font-size: 0.82rem; font-weight: 900; color: #1e293b; }
+  .sub-section-dl   { font-size: 0.72rem; color: #94a3b8; font-weight: 700; }
+  .sub-section-badge { margin-left: auto; font-size: 0.72rem; font-weight: 800; padding: 2px 10px; border-radius: 99px; }
+  .sub-section-badge.done    { background: #dcfce7; color: #16a34a; border: 1.5px solid #86efac; }
+  .sub-section-badge.pending { background: #fef2f2; color: #dc2626; border: 1.5px solid #fca5a5; }
+
   .unsub-group { margin-bottom: 14px; }
   .unsub-group:last-of-type { margin-bottom: 0; }
   .unsub-group-label {
@@ -563,26 +573,14 @@
     </div>
   </div>
 
-  <!-- 未提出者リスト -->
+  <!-- 未提出者リスト（提出物ごと） -->
   <div class="record-card">
     <div class="unsub-header">
       <div class="rc-title" style="margin-bottom:0">📋 現在の未提出者</div>
       <span class="unsub-count-badge pending" id="unsub-badge">－</span>
     </div>
-    <!-- 全員提出メッセージ -->
-    <div class="unsub-all-done" id="unsub-all-done" style="display:none">
-      🎉 全員提出！<br>
-      <div class="all-done-sub">「グリンを成長させる」ボタンを押してね！</div>
-    </div>
-    <!-- 男子 -->
-    <div class="unsub-group" id="grp-male">
-      <div class="unsub-group-label male-label">👦 男子</div>
-      <div class="unsub-nums" id="unsub-male"></div>
-    </div>
-    <!-- 女子 -->
-    <div class="unsub-group" id="grp-female">
-      <div class="unsub-group-label female-label">👧 女子</div>
-      <div class="unsub-nums" id="unsub-female"></div>
+    <div id="unsub-container">
+      <!-- JS で提出物ごとに生成 -->
     </div>
   </div>
 
@@ -1214,109 +1212,169 @@ function submitPin() {
 }
 
 /* ============================================================
-   未提出者リスト
+   未提出者リスト（提出物ごと）
    ============================================================ */
 function getStudentConfig() {
   const cfg = (_data.grinGrowth || {}).students || {};
   return { male: cfg.maleCount ?? 18, female: cfg.femaleCount ?? 17 };
 }
 
+function getSubmissions() {
+  const g = _data.grinGrowth || {};
+  let subs = g.submissions;
+  // 旧データ移行：currentSubmitted → submissions[0].submitted
+  if (!subs && g.currentSubmitted) {
+    subs = [{ name: '提出物', deadline: '', submitted: g.currentSubmitted }];
+  }
+  if (!subs || subs.length === 0) return [];
+  return subs.filter(s => s.name).map(s => ({
+    ...s, submitted: s.submitted || []
+  }));
+}
+
 function renderUnsubmitted() {
-  const g   = _data.grinGrowth || {};
-  const sub = new Set(g.currentSubmitted || []);
+  const g = _data.grinGrowth || {};
   const { male, female } = getStudentConfig();
   const total = male + female;
+  const subs  = getSubmissions();
+  const container = document.getElementById('unsub-container');
+  if (!container) return;
+  container.innerHTML = '';
 
-  // 未提出の番号を計算
-  const mUnsub = [];
-  for (let i = 1; i <= male; i++)         if (!sub.has(i)) mUnsub.push(i);
-  const fUnsub = [];
-  for (let i = male + 1; i <= total; i++) if (!sub.has(i)) fUnsub.push(i);
-  const remaining = mUnsub.length + fUnsub.length;
+  // 提出物がない場合
+  if (subs.length === 0) {
+    const badge = document.getElementById('unsub-badge');
+    if (badge) { badge.textContent = '提出物未設定'; badge.className = 'unsub-count-badge pending'; }
+    container.innerHTML = '<span class="h-empty">管理パネルで提出物を設定してください</span>';
+    const growBtn = document.getElementById('btn-grow');
+    if (growBtn) { growBtn.disabled = true; growBtn.style.animation = ''; }
+    return;
+  }
 
-  // バッジ
+  // 全提出物のトータル未提出数
+  let totalRemaining = 0;
+  subs.forEach(s => {
+    const submitted = new Set(s.submitted);
+    totalRemaining += [...Array(total)].filter((_, i) => !submitted.has(i + 1)).length;
+  });
+
+  // バッジ（全提出物合計）
   const badge = document.getElementById('unsub-badge');
   if (badge) {
-    if (remaining === 0) {
+    if (totalRemaining === 0) {
       badge.textContent = '全員提出！✅'; badge.className = 'unsub-count-badge done';
     } else {
-      badge.textContent = `あと ${remaining} 人`; badge.className = 'unsub-count-badge pending';
+      badge.textContent = `あと ${totalRemaining} 件`; badge.className = 'unsub-count-badge pending';
     }
   }
 
-  // 全員提出メッセージ
-  const allDoneEl = document.getElementById('unsub-all-done');
-  const grpMale   = document.getElementById('grp-male');
-  const grpFemale = document.getElementById('grp-female');
-  if (remaining === 0) {
-    if (allDoneEl)  allDoneEl.style.display  = 'block';
-    if (grpMale)    grpMale.style.display    = 'none';
-    if (grpFemale)  grpFemale.style.display  = 'none';
-  } else {
-    if (allDoneEl)  allDoneEl.style.display  = 'none';
-    if (grpMale)    grpMale.style.display    = 'block';
-    if (grpFemale)  grpFemale.style.display  = 'block';
-  }
+  // 提出物ごとにセクションを生成
+  subs.forEach((s, subIdx) => {
+    const submitted = new Set(s.submitted);
+    const mUnsub = [], fUnsub = [];
+    for (let i = 1; i <= male; i++)         if (!submitted.has(i)) mUnsub.push(i);
+    for (let i = male + 1; i <= total; i++) if (!submitted.has(i)) fUnsub.push(i);
+    const remaining = mUnsub.length + fUnsub.length;
 
-  // 男子
-  const mEl = document.getElementById('unsub-male');
-  if (mEl) {
-    mEl.innerHTML = '';
-    if (mUnsub.length === 0) {
-      mEl.innerHTML = '<span style="color:#16a34a;font-size:0.8rem;font-weight:800">✅ 全員提出！</span>';
+    const sec = document.createElement('div');
+    sec.className = 'sub-section';
+
+    // セクションヘッダー
+    const head = document.createElement('div');
+    head.className = 'sub-section-head';
+    const dlText = s.deadline ? ` (締切 ${s.deadline.slice(5).replace('-','/')})` : '';
+    head.innerHTML = `
+      <span class="sub-section-name">📋 ${escHtml(s.name)}</span>
+      <span class="sub-section-dl">${dlText}</span>
+      <span class="sub-section-badge ${remaining === 0 ? 'done' : 'pending'}">
+        ${remaining === 0 ? '✅ 全員提出' : `あと ${remaining} 人`}
+      </span>`;
+    sec.appendChild(head);
+
+    if (remaining === 0) {
+      const done = document.createElement('div');
+      done.className = 'unsub-all-done';
+      done.innerHTML = '🎉 全員提出！<div class="all-done-sub">グリンを成長させてね！</div>';
+      sec.appendChild(done);
     } else {
-      mUnsub.forEach(n => {
-        const el = document.createElement('div');
-        el.className = 'unsub-num male-num' + (adminOpen ? ' clickable' : '');
-        el.textContent = n;
-        if (adminOpen) el.onclick = () => toggleStudentSubmit(n);
-        mEl.appendChild(el);
-      });
+      // 男子
+      if (mUnsub.length > 0) {
+        const grp = document.createElement('div');
+        grp.className = 'unsub-group';
+        grp.innerHTML = '<div class="unsub-group-label male-label">👦 男子</div>';
+        const nums = document.createElement('div');
+        nums.className = 'unsub-nums';
+        mUnsub.forEach(n => {
+          const el = document.createElement('div');
+          el.className = 'unsub-num male-num' + (adminOpen ? ' clickable' : '');
+          el.textContent = n;
+          if (adminOpen) el.onclick = () => toggleStudentSubmit(n, subIdx);
+          nums.appendChild(el);
+        });
+        grp.appendChild(nums);
+        sec.appendChild(grp);
+      } else {
+        const ok = document.createElement('div');
+        ok.className = 'unsub-group';
+        ok.innerHTML = '<div class="unsub-group-label male-label">👦 男子</div><span style="color:#16a34a;font-size:0.8rem;font-weight:800">✅ 全員提出！</span>';
+        sec.appendChild(ok);
+      }
+      // 女子
+      if (fUnsub.length > 0) {
+        const grp = document.createElement('div');
+        grp.className = 'unsub-group';
+        grp.innerHTML = '<div class="unsub-group-label female-label">👧 女子</div>';
+        const nums = document.createElement('div');
+        nums.className = 'unsub-nums';
+        fUnsub.forEach(n => {
+          const el = document.createElement('div');
+          el.className = 'unsub-num female-num' + (adminOpen ? ' clickable' : '');
+          el.textContent = n;
+          if (adminOpen) el.onclick = () => toggleStudentSubmit(n, subIdx);
+          nums.appendChild(el);
+        });
+        grp.appendChild(nums);
+        sec.appendChild(grp);
+      } else {
+        const ok = document.createElement('div');
+        ok.className = 'unsub-group';
+        ok.innerHTML = '<div class="unsub-group-label female-label">👧 女子</div><span style="color:#16a34a;font-size:0.8rem;font-weight:800">✅ 全員提出！</span>';
+        sec.appendChild(ok);
+      }
     }
-  }
+    container.appendChild(sec);
+  });
 
-  // 女子
-  const fEl = document.getElementById('unsub-female');
-  if (fEl) {
-    fEl.innerHTML = '';
-    if (fUnsub.length === 0) {
-      fEl.innerHTML = '<span style="color:#16a34a;font-size:0.8rem;font-weight:800">✅ 全員提出！</span>';
-    } else {
-      fUnsub.forEach(n => {
-        const el = document.createElement('div');
-        el.className = 'unsub-num female-num' + (adminOpen ? ' clickable' : '');
-        el.textContent = n;
-        if (adminOpen) el.onclick = () => toggleStudentSubmit(n);
-        fEl.appendChild(el);
-      });
-    }
-  }
-
-  // 全員提出時にgrowボタンを光らせる
-  const stage   = Math.min((_data.grinGrowth || {}).stage || 0, 10);
+  // grow ボタン：全提出物で全員提出のとき光らせる
+  const stage   = Math.min(g.stage || 0, 10);
   const growBtn = document.getElementById('btn-grow');
   if (growBtn) {
     growBtn.disabled = stage >= 10;
-    growBtn.style.animation = (remaining === 0 && stage < 10)
+    growBtn.style.animation = (totalRemaining === 0 && stage < 10)
       ? 'btn-glow 0.9s ease-in-out infinite alternate' : '';
   }
 }
 
-function toggleStudentSubmit(num) {
-  if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [], currentSubmitted: [] };
+function toggleStudentSubmit(num, subIdx) {
+  if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [] };
   const g = _data.grinGrowth;
-  if (!g.currentSubmitted) g.currentSubmitted = [];
-  const idx = g.currentSubmitted.indexOf(num);
-  if (idx >= 0) g.currentSubmitted.splice(idx, 1);
-  else          g.currentSubmitted.push(num);
+  if (!g.submissions || !g.submissions[subIdx]) return;
+  const sub = g.submissions[subIdx];
+  if (!sub.submitted) sub.submitted = [];
+  const idx = sub.submitted.indexOf(num);
+  if (idx >= 0) sub.submitted.splice(idx, 1);
+  else          sub.submitted.push(num);
   saveData();
   renderUnsubmitted();
+  updateBannerPreview();
 }
 
 function resetSubmission() {
-  if (!confirm('提出状況をリセットして\n新しい日の記録を開始しますか？')) return;
+  if (!confirm('すべての提出物の提出状況をリセットして\n新しい日の記録を開始しますか？')) return;
   if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [] };
-  _data.grinGrowth.currentSubmitted = [];
+  const g = _data.grinGrowth;
+  if (g.submissions) g.submissions.forEach(s => { s.submitted = []; });
+  g.currentSubmitted = []; // 旧キーもクリア
   saveData();
   renderUnsubmitted();
 }
@@ -1364,10 +1422,12 @@ function loadSubRows() {
 
 function saveSubmissionInfo() {
   if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [] };
-  const rows = document.querySelectorAll('#sub-list .sub-row');
-  _data.grinGrowth.submissions = Array.from(rows).map(r => ({
-    name:     r.querySelector('.sub-name').value.trim(),
-    deadline: r.querySelector('.sub-date').value,
+  const rows   = document.querySelectorAll('#sub-list .sub-row');
+  const oldSubs = (_data.grinGrowth.submissions || []);
+  _data.grinGrowth.submissions = Array.from(rows).map((r, i) => ({
+    name:      r.querySelector('.sub-name').value.trim(),
+    deadline:  r.querySelector('.sub-date').value,
+    submitted: oldSubs[i]?.submitted || [],  // 提出済みリストを保持
   })).filter(s => s.name); // 名前が空の行は除外
   // 旧キーは削除
   delete _data.grinGrowth.submissionName;

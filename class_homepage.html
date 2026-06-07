@@ -1134,18 +1134,19 @@ function buildGrinBanner(d) {
     ? `<span style="color:#4ade80;font-weight:800">✅ 全員提出！</span>`
     : `<span style="color:rgba(253,186,116,0.95);font-weight:800">未提出 ${unsub}人</span>`;
 
-  const subsHtml = subs.filter(s => s.name).map(s =>
-    `<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+  const subsHtml = subs.filter(s => s.name).map(s => {
+    const subUnsub = Math.max(0, total - (s.submitted || []).length);
+    const unsubTag = subUnsub === 0
+      ? `<span style="color:#4ade80;font-weight:800">✅</span>`
+      : `<span style="color:rgba(253,186,116,0.95);font-weight:800">未提出 ${subUnsub}人</span>`;
+    return `<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
        <span style="font-size:.8rem;color:rgba(187,247,208,0.9);font-weight:800">📋 ${s.name}</span>
        ${grinDeadlineStr(s.deadline)}
-     </div>`
-  ).join('');
+       ${unsubTag}
+     </div>`;
+  }).join('');
 
-  infoEl.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:4px">
-      ${subsHtml}
-      <div>${unsubHtml}</div>
-    </div>`;
+  infoEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:4px">${subsHtml}</div>`;
 }
 
 /* ============================================================
