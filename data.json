@@ -1008,5 +1008,14 @@
         "celebrated": false
       }
     ]
+  },
+  "grinGrowth": {
+    "stage": 1,
+    "history": [
+      {
+        "date": "2026-06-07",
+        "result": "growth"
+      }
+    ]
   }
 }

@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>【プレビュー】グリンの成長記録</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+    background: linear-gradient(180deg, #e0f2fe 0%, #f0fdf4 50%, #fefce8 100%);
+    min-height: 100vh;
+    color: #1e293b;
+  }
+
+  /* ===== プレビューバナー ===== */
+  #preview-banner {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    background: linear-gradient(90deg, #f59e0b, #ef4444);
+    color: white; height: 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.3);
+    font-weight: 700; font-size: 0.88rem;
+  }
+  .pv-badge {
+    background: rgba(0,0,0,0.22); border: 1.5px solid rgba(255,255,255,0.55);
+    border-radius: 6px; padding: 2px 12px; font-size: 0.78rem;
+    letter-spacing: 0.14em; margin-right: 10px;
+  }
+  .pv-close {
+    background: rgba(0,0,0,0.25); border: 1.5px solid rgba(255,255,255,0.45);
+    color: white; border-radius: 7px; padding: 4px 14px;
+    font-size: 0.78rem; cursor: pointer; font-family: inherit; font-weight: 700;
+  }
+  .pv-watermark {
+    position: fixed; bottom: 20px; right: 20px; z-index: 9000;
+    background: rgba(239,68,68,0.1); border: 2px solid rgba(239,68,68,0.32);
+    border-radius: 12px; padding: 7px 16px;
+    font-size: 0.75rem; font-weight: 800; color: rgba(239,68,68,0.65);
+    letter-spacing: 0.14em; pointer-events: none;
+  }
+
+  /* ===== レイアウト ===== */
+  .spacer { height: 48px; }
+  .wrap { max-width: 500px; margin: 0 auto; padding: 28px 16px 100px; }
+
+  /* ===== ページタイトル ===== */
+  .page-header { text-align: center; margin-bottom: 28px; }
+  .page-title {
+    font-size: 1.8rem; font-weight: 900; color: #15803d;
+    letter-spacing: 0.05em; line-height: 1.2;
+  }
+  .page-sub { font-size: 0.88rem; color: #64748b; margin-top: 6px; }
+
+  /* ===== グリンカード ===== */
+  .grin-card {
+    background: white; border-radius: 32px; padding: 28px 20px 24px;
+    margin-bottom: 18px;
+    box-shadow: 0 12px 48px rgba(0,0,0,0.12);
+    border: 2px solid #bbf7d0;
+    text-align: center; position: relative; overflow: hidden;
+  }
+  .grin-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 55%);
+    z-index: 0;
+  }
+  .grin-card > * { position: relative; z-index: 1; }
+
+  .stage-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white; border-radius: 50px; padding: 4px 18px;
+    font-size: 0.78rem; font-weight: 800; letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+  .stage-name {
+    font-size: 2rem; font-weight: 900; color: #15803d;
+    margin-bottom: 4px; letter-spacing: 0.05em;
+  }
+  .stage-desc { font-size: 0.82rem; color: #64748b; margin-bottom: 20px; }
+
+  /* グリンSVGエリア */
+  .grin-art {
+    height: 230px; display: flex; align-items: flex-end;
+    justify-content: center; margin-bottom: 20px;
+  }
+  .grin-svg { overflow: visible; }
+  .grin-svg.floating { animation: g-float 2.8s ease-in-out infinite; }
+  .grin-svg.celebrating { animation: g-celebrate 0.45s ease-in-out infinite alternate; }
+  @keyframes g-float {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
+  }
+  @keyframes g-celebrate {
+    from { transform: rotate(-8deg) scale(1); }
+    to   { transform: rotate(8deg) scale(1.06); }
+  }
+
+  /* 進捗ステップ */
+  .progress-steps {
+    display: flex; justify-content: center; align-items: center; gap: 6px;
+    margin-bottom: 10px;
+  }
+  .pstep {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 2.5px solid #bbf7d0; background: #f0fdf4;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700; color: #86efac;
+    transition: all 0.5s cubic-bezier(.34,1.56,.64,1);
+  }
+  .pstep.done { background: #22c55e; border-color: #16a34a; color: white; font-size: 0.9rem; }
+  .pstep.cur  { background: #86efac; border-color: #22c55e; color: #15803d;
+    animation: pstep-pulse 1.6s ease-in-out infinite; }
+  .pstep-arrow { color: #bbf7d0; font-size: 0.8rem; }
+  @keyframes pstep-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.22)} }
+
+  .progress-text {
+    font-size: 0.88rem; font-weight: 700; color: #64748b;
+  }
+  .progress-text strong { color: #15803d; font-size: 1rem; }
+
+  /* ===== 記録セクション ===== */
+  .record-card {
+    background: white; border-radius: 22px; padding: 18px 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.07);
+    border: 1.5px solid #e2e8f0;
+  }
+  .rc-title {
+    font-size: 0.82rem; font-weight: 800; color: #64748b;
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 12px;
+  }
+  .history-flex { display: flex; flex-wrap: wrap; gap: 8px; }
+  .h-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .h-dot {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+  }
+  .h-dot.growth { background: #dcfce7; border: 2px solid #86efac; }
+  .h-dot.rest   { background: #f8fafc; border: 2px solid #e2e8f0; }
+  .h-date { font-size: 0.62rem; color: #94a3b8; font-weight: 700; }
+  .h-empty { color: #94a3b8; font-size: 0.85rem; padding: 4px 0; }
+
+  /* ===== 管理パネル ===== */
+  .admin-card {
+    background: white; border-radius: 22px; padding: 18px 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.07);
+    border: 1.5px solid #e2e8f0;
+  }
+  .admin-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0;
+  }
+  .admin-label { font-size: 0.82rem; font-weight: 800; color: #64748b; }
+  .lock-btn {
+    background: #f1f5f9; border: 1.5px solid #cbd5e1;
+    border-radius: 9px; padding: 5px 14px;
+    font-size: 0.8rem; font-weight: 800; cursor: pointer;
+    color: #64748b; font-family: inherit; transition: all 0.2s;
+  }
+  .lock-btn.open { background: #f0fdf4; border-color: #86efac; color: #16a34a; }
+
+  .admin-body { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  .btn-grow {
+    background: linear-gradient(135deg, #22c55e, #15803d);
+    color: white; border: none; border-radius: 16px;
+    padding: 18px 12px; font-size: 1.05rem; font-weight: 900;
+    cursor: pointer; font-family: inherit; letter-spacing: 0.03em;
+    box-shadow: 0 6px 20px rgba(34,197,94,0.38); transition: all 0.2s;
+    line-height: 1.3;
+  }
+  .btn-grow:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(34,197,94,0.48); }
+  .btn-grow:disabled { opacity: 0.45; cursor: default; transform: none; }
+
+  .btn-rest {
+    background: #f8fafc; color: #64748b;
+    border: 1.5px solid #e2e8f0; border-radius: 16px;
+    padding: 13px 12px; font-size: 0.9rem; font-weight: 700;
+    cursor: pointer; font-family: inherit; transition: all 0.2s;
+  }
+  .btn-rest:hover:not(:disabled) { background: #f1f5f9; }
+  .btn-rest:disabled { opacity: 0.45; cursor: default; }
+
+  .save-status {
+    text-align: center; font-size: 0.78rem; color: #64748b;
+    min-height: 20px; margin-top: 4px;
+  }
+
+  /* ===== 完成オーバーレイ ===== */
+  #done-overlay {
+    display: none; position: fixed; inset: 0; z-index: 600;
+    background: rgba(0,0,0,0.65); backdrop-filter: blur(5px);
+    align-items: center; justify-content: center;
+  }
+  #done-overlay.show { display: flex; }
+  .done-inner {
+    background: white; border-radius: 32px; padding: 44px 28px;
+    max-width: 360px; width: 90%; text-align: center;
+    box-shadow: 0 28px 80px rgba(0,0,0,0.35);
+    animation: done-pop 0.6s cubic-bezier(.34,1.56,.64,1) both;
+    position: relative; overflow: hidden;
+  }
+  .done-inner::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, #f0fdf4, #white);
+    z-index: 0;
+  }
+  .done-inner > * { position: relative; z-index: 1; }
+  @keyframes done-pop {
+    from { opacity: 0; transform: scale(0.5) translateY(60px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .done-grin { margin-bottom: 12px; }
+  .done-title {
+    font-size: 2rem; font-weight: 900; margin-bottom: 8px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .done-msg { font-size: 0.95rem; color: #64748b; line-height: 1.7; margin-bottom: 24px; }
+  .done-close {
+    background: linear-gradient(135deg, #22c55e, #15803d); color: white;
+    border: none; border-radius: 50px; padding: 14px 48px;
+    font-size: 1.05rem; font-weight: 900; cursor: pointer; font-family: inherit;
+    box-shadow: 0 6px 20px rgba(34,197,94,0.4);
+  }
+
+  /* ===== 紙吹雪 ===== */
+  .gconf {
+    position: fixed; top: -14px; pointer-events: none; z-index: 700;
+    opacity: 0; animation: gconf-fall linear forwards;
+  }
+  @keyframes gconf-fall {
+    0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+    80%  { opacity: 0.9; }
+    100% { opacity: 0; transform: translateY(108vh) rotate(1080deg); }
+  }
+</style>
+</head>
+<body>
+
+<!-- プレビューバナー -->
+<div id="preview-banner">
+  <div style="display:flex;align-items:center">
+    <span class="pv-badge">PREVIEW</span>
+    <span>これはプレビュー画面です。学級HPにはまだ反映されていません。</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:0.75rem;opacity:0.85">内容を確認して先生に伝えてください</span>
+    <button class="pv-close" onclick="document.getElementById('preview-banner').style.display='none';document.querySelector('.spacer').style.height='0'">✕ 閉じる</button>
+  </div>
+</div>
+<div class="spacer"></div>
+
+<div class="wrap">
+  <!-- ページタイトル -->
+  <div class="page-header">
+    <div class="page-title">🌱 グリンの成長記録</div>
+    <div class="page-sub">みんなで提出して、グリンを育てよう！</div>
+  </div>
+
+  <!-- グリンカード -->
+  <div class="grin-card">
+    <div class="stage-badge" id="stage-badge">STAGE 0 / 5</div>
+    <div class="stage-name" id="stage-name">種</div>
+    <div class="stage-desc" id="stage-desc">グリンはまだ眠っています…</div>
+    <div class="grin-art">
+      <svg class="grin-svg" id="grin-svg" width="210" height="210" viewBox="0 0 210 210"></svg>
+    </div>
+    <div class="progress-steps" id="progress-steps"></div>
+    <div class="progress-text" id="progress-text"></div>
+  </div>
+
+  <!-- 記録 -->
+  <div class="record-card">
+    <div class="rc-title">📅 これまでの記録</div>
+    <div class="history-flex" id="history-grid">
+      <span class="h-empty">まだ記録はありません</span>
+    </div>
+  </div>
+
+  <!-- 管理パネル -->
+  <div class="admin-card">
+    <div class="admin-head">
+      <span class="admin-label">🔧 先生用コントロール</span>
+      <button class="lock-btn" id="lock-btn" onclick="toggleAdmin()">🔒 管理</button>
+    </div>
+    <div id="admin-body" style="display:none" class="admin-body">
+      <button class="btn-grow" id="btn-grow" onclick="recordGrowth()">
+        ✅ 全員提出！<br>グリンを成長させる 🌱
+      </button>
+      <button class="btn-rest" id="btn-rest" onclick="recordRest()">
+        💤 今日は成長おやすみ
+      </button>
+      <div class="save-status" id="save-status"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 完成オーバーレイ -->
+<div id="done-overlay">
+  <div class="done-inner">
+    <div class="done-grin">
+      <svg width="140" height="140" viewBox="0 0 210 210" id="done-svg"></svg>
+    </div>
+    <div class="done-title">グリン 大きくなったよ！</div>
+    <div class="done-msg">みんなの頑張りでグリンが<br>立派に育ちました🎊<br><br>お楽しみイベントの時間です！</div>
+    <button class="done-close" onclick="closeDone()">やったー！🎉</button>
+  </div>
+</div>
+
+<!-- プレビュー透かし -->
+<div class="pv-watermark">⚠ PREVIEW</div>
+
+<script>
+/* ============================================================
+   設定
+   ============================================================ */
+const SERVER = 'http://localhost:3456';
+let _data = {};
+let _adminPin = '';
+let adminOpen = false;
+
+/* ============================================================
+   ステージ定義
+   ============================================================ */
+const STAGES = [
+  { name: '種',            desc: 'グリンはまだ眠っています…',         emoji: '🌰' },
+  { name: '芽',            desc: 'ちょっとだけ顔を出したよ！',        emoji: '🌱' },
+  { name: 'つる',          desc: '葉っぱが出てきたよ！元気いっぱい！', emoji: '🌿' },
+  { name: 'つぼみ',        desc: 'もうすぐ咲きそう…ドキドキ！',       emoji: '🌼' },
+  { name: '花',            desc: '咲いたよ！きれいだね！',            emoji: '🌸' },
+  { name: '大きなグリン！', desc: '完成！みんなありがとう！🎊',         emoji: '🌺' },
+];
+
+/* ============================================================
+   SVGアート（各ステージ）
+   ============================================================ */
+function grinSVG(stage) {
+  // 共通の土
+  const soil = `
+    <ellipse cx="105" cy="195" rx="78" ry="20" fill="#A0852E"/>
+    <ellipse cx="105" cy="189" rx="76" ry="14" fill="#C4A44A"/>
+    <ellipse cx="105" cy="184" rx="60" ry="8"  fill="#D4B060" opacity="0.6"/>
+  `;
+
+  if (stage === 0) return `
+    ${soil}
+    <!-- 種 -->
+    <ellipse cx="105" cy="163" rx="32" ry="26" fill="#7B5E14"/>
+    <ellipse cx="105" cy="159" rx="29" ry="23" fill="#9B7A22"/>
+    <ellipse cx="96"  cy="151" rx="11" ry="8"  fill="rgba(255,255,255,0.15)" transform="rotate(-18,96,151)"/>
+    <!-- 眠り目 -->
+    <path d="M93,158 Q99,153 105,158" stroke="#5A3E0A" fill="none" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M107,158 Q113,153 119,158" stroke="#5A3E0A" fill="none" stroke-width="2.2" stroke-linecap="round"/>
+    <!-- ZZZ -->
+    <text x="122" y="150" font-size="11" fill="#9B7A22" opacity="0.7" font-family="sans-serif">z</text>
+    <text x="128" y="143" font-size="8"  fill="#9B7A22" opacity="0.5" font-family="sans-serif">z</text>
+  `;
+
+  if (stage === 1) return `
+    ${soil}
+    <!-- 茎 -->
+    <rect x="102" y="150" width="7" height="36" rx="3.5" fill="#22c55e"/>
+    <!-- 小さな体 -->
+    <ellipse cx="105" cy="136" rx="26" ry="23" fill="#4ade80"/>
+    <ellipse cx="105" cy="131" rx="23" ry="19" fill="#86efac"/>
+    <ellipse cx="98"  cy="124" rx="9"  ry="6"  fill="rgba(255,255,255,0.25)" transform="rotate(-18,98,124)"/>
+    <!-- 目 -->
+    <circle cx="98"  cy="130" r="5.5" fill="white"/>
+    <circle cx="113" cy="130" r="5.5" fill="white"/>
+    <circle cx="99.5" cy="131.5" r="3"  fill="#1a1a1a"/>
+    <circle cx="114.5" cy="131.5" r="3"  fill="#1a1a1a"/>
+    <circle cx="100.5" cy="130"   r="1.2" fill="white"/>
+    <circle cx="115.5" cy="130"   r="1.2" fill="white"/>
+    <!-- 口(びっくり) -->
+    <ellipse cx="105" cy="142" rx="4" ry="3" fill="#16a34a"/>
+    <!-- 一枚の葉 -->
+    <ellipse cx="128" cy="153" rx="14" ry="8" fill="#22c55e" transform="rotate(-42,128,153)"/>
+    <line x1="116" y1="161" x2="130" y2="147" stroke="#16a34a" stroke-width="1.2"/>
+  `;
+
+  if (stage === 2) return `
+    ${soil}
+    <!-- ゆらゆる茎 -->
+    <path d="M105,183 Q98,165 105,145 Q112,125 105,110" stroke="#16a34a" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <!-- 体 -->
+    <ellipse cx="105" cy="103" rx="33" ry="31" fill="#4ade80"/>
+    <ellipse cx="105" cy="97"  rx="30" ry="26" fill="#86efac"/>
+    <ellipse cx="96"  cy="90"  rx="11" ry="7"  fill="rgba(255,255,255,0.22)" transform="rotate(-18,96,90)"/>
+    <!-- 目 -->
+    <circle cx="94"  cy="95"  r="7"   fill="white"/>
+    <circle cx="116" cy="95"  r="7"   fill="white"/>
+    <circle cx="96"  cy="97"  r="4"   fill="#1a1a1a"/>
+    <circle cx="118" cy="97"  r="4"   fill="#1a1a1a"/>
+    <circle cx="97.2" cy="94.8" r="1.7" fill="white"/>
+    <circle cx="119.2" cy="94.8" r="1.7" fill="white"/>
+    <!-- 笑顔 -->
+    <path d="M94,111 Q105,122 116,111" stroke="#16a34a" fill="none" stroke-width="2.8" stroke-linecap="round"/>
+    <!-- ほっぺ -->
+    <ellipse cx="83"  cy="108" rx="9" ry="5.5" fill="rgba(252,165,165,0.5)"/>
+    <ellipse cx="127" cy="108" rx="9" ry="5.5" fill="rgba(252,165,165,0.5)"/>
+    <!-- 左葉(腕) -->
+    <ellipse cx="72"  cy="117" rx="17" ry="9" fill="#22c55e" transform="rotate(28,72,117)"/>
+    <path d="M87,126 Q79,121 71,118" stroke="#16a34a" fill="none" stroke-width="1.5"/>
+    <!-- 右葉(腕) -->
+    <ellipse cx="138" cy="117" rx="17" ry="9" fill="#22c55e" transform="rotate(-28,138,117)"/>
+    <path d="M123,126 Q131,121 139,118" stroke="#16a34a" fill="none" stroke-width="1.5"/>
+    <!-- 小さな葉 -->
+    <ellipse cx="68"  cy="143" rx="12" ry="6.5" fill="#4ade80" transform="rotate(14,68,143)"/>
+    <ellipse cx="144" cy="140" rx="11" ry="6"   fill="#4ade80" transform="rotate(-18,144,140)"/>
+  `;
+
+  if (stage === 3) return `
+    ${soil}
+    <!-- 脚 -->
+    <path d="M96,184 Q93,162 96,144" stroke="#16a34a" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M114,184 Q117,162 114,144" stroke="#16a34a" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <!-- 体 -->
+    <ellipse cx="105" cy="127" rx="40" ry="37" fill="#4ade80"/>
+    <ellipse cx="105" cy="120" rx="36" ry="31" fill="#86efac"/>
+    <ellipse cx="94"  cy="111" rx="12" ry="8"  fill="rgba(255,255,255,0.2)" transform="rotate(-18,94,111)"/>
+    <!-- 目(キラキラ) -->
+    <circle cx="92"  cy="116" r="9"   fill="white"/>
+    <circle cx="118" cy="116" r="9"   fill="white"/>
+    <circle cx="94.5" cy="118.5" r="5.5" fill="#1a1a1a"/>
+    <circle cx="120.5" cy="118.5" r="5.5" fill="#1a1a1a"/>
+    <circle cx="96"  cy="116"   r="2.3" fill="white"/>
+    <circle cx="122" cy="116"   r="2.3" fill="white"/>
+    <!-- わくわく口 -->
+    <path d="M91,134 Q105,148 119,134" stroke="#16a34a" fill="none" stroke-width="3.2" stroke-linecap="round"/>
+    <!-- ほっぺ -->
+    <ellipse cx="78"  cy="130" rx="11" ry="6.5" fill="rgba(252,165,165,0.5)"/>
+    <ellipse cx="132" cy="130" rx="11" ry="6.5" fill="rgba(252,165,165,0.5)"/>
+    <!-- 腕 -->
+    <path d="M68,128 Q58,112 68,100" stroke="#22c55e" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <ellipse cx="66"  cy="97"  rx="14" ry="9" fill="#22c55e" transform="rotate(-22,66,97)"/>
+    <path d="M142,128 Q152,112 142,100" stroke="#22c55e" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <ellipse cx="144" cy="97"  rx="14" ry="9" fill="#22c55e" transform="rotate(22,144,97)"/>
+    <!-- つぼみの茎 -->
+    <rect x="102" y="70" width="7" height="26" rx="3.5" fill="#16a34a"/>
+    <!-- 閉じたつぼみ -->
+    <ellipse cx="105" cy="61" rx="15" ry="22" fill="#86efac"/>
+    <path d="M90,61 Q105,40 120,61" fill="#22c55e"/>
+    <path d="M90,65 Q105,86 120,65" fill="#4ade80" opacity="0.8"/>
+    <ellipse cx="105" cy="47" rx="7"  ry="9"  fill="#22c55e"/>
+    <ellipse cx="105" cy="46" rx="4"  ry="5"  fill="#86efac" opacity="0.7"/>
+  `;
+
+  if (stage === 4) return `
+    ${soil}
+    <!-- 脚 -->
+    <path d="M93,184 Q90,162 93,146" stroke="#16a34a" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <path d="M117,184 Q120,162 117,146" stroke="#16a34a" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <!-- 体 -->
+    <ellipse cx="105" cy="124" rx="45" ry="42" fill="#4ade80"/>
+    <ellipse cx="105" cy="116" rx="41" ry="35" fill="#86efac"/>
+    <ellipse cx="92"  cy="106" rx="14" ry="9"  fill="rgba(255,255,255,0.2)" transform="rotate(-18,92,106)"/>
+    <!-- 大きな目 -->
+    <circle cx="90"  cy="111" r="11"  fill="white"/>
+    <circle cx="120" cy="111" r="11"  fill="white"/>
+    <circle cx="93"  cy="114" r="7"   fill="#1a1a1a"/>
+    <circle cx="123" cy="114" r="7"   fill="#1a1a1a"/>
+    <circle cx="95"  cy="111" r="3"   fill="white"/>
+    <circle cx="125" cy="111" r="3"   fill="white"/>
+    <!-- 大笑い -->
+    <path d="M87,133 Q105,152 123,133" stroke="#16a34a" fill="none" stroke-width="3.8" stroke-linecap="round"/>
+    <!-- ほっぺ(大) -->
+    <ellipse cx="74"  cy="128" rx="13" ry="8"  fill="rgba(252,165,165,0.55)"/>
+    <ellipse cx="136" cy="128" rx="13" ry="8"  fill="rgba(252,165,165,0.55)"/>
+    <!-- 腕(広げる) -->
+    <path d="M62,122 Q48,104 56,88" stroke="#22c55e" stroke-width="11" fill="none" stroke-linecap="round"/>
+    <ellipse cx="53"  cy="84"  rx="16" ry="10" fill="#22c55e" transform="rotate(-26,53,84)"/>
+    <ellipse cx="43"  cy="76"  rx="12" ry="7"  fill="#4ade80" transform="rotate(-20,43,76)"/>
+    <path d="M148,122 Q162,104 154,88" stroke="#22c55e" stroke-width="11" fill="none" stroke-linecap="round"/>
+    <ellipse cx="157" cy="84"  rx="16" ry="10" fill="#22c55e" transform="rotate(26,157,84)"/>
+    <ellipse cx="167" cy="76"  rx="12" ry="7"  fill="#4ade80" transform="rotate(20,167,76)"/>
+    <!-- 花の茎 -->
+    <rect x="102" y="60" width="7" height="26" rx="3.5" fill="#16a34a"/>
+    <!-- 花びら(ピンク) -->
+    <ellipse cx="105" cy="42" rx="10" ry="16" fill="#f9a8d4"/>
+    <ellipse cx="105" cy="42" rx="10" ry="16" fill="#f9a8d4" transform="rotate(60,105,58)"/>
+    <ellipse cx="105" cy="42" rx="10" ry="16" fill="#fde68a" transform="rotate(120,105,58)"/>
+    <ellipse cx="105" cy="42" rx="10" ry="16" fill="#f9a8d4" transform="rotate(180,105,58)"/>
+    <ellipse cx="105" cy="42" rx="10" ry="16" fill="#fde68a" transform="rotate(240,105,58)"/>
+    <ellipse cx="105" cy="42" rx="10" ry="16" fill="#f9a8d4" transform="rotate(300,105,58)"/>
+    <!-- 花の中心 -->
+    <circle cx="105" cy="58" r="14" fill="#fbbf24"/>
+    <circle cx="105" cy="58" r="10" fill="#f59e0b"/>
+    <circle cx="102" cy="56" r="2"  fill="#92400e"/>
+    <circle cx="108" cy="56" r="2"  fill="#92400e"/>
+    <circle cx="105" cy="62" r="2"  fill="#92400e"/>
+  `;
+
+  // stage === 5
+  return `
+    <!-- キラキラ -->
+    <text x="14"  y="44"  font-size="18">✨</text>
+    <text x="170" y="50"  font-size="15">⭐</text>
+    <text x="162" y="88"  font-size="13">✨</text>
+    <text x="18"  y="92"  font-size="11">⭐</text>
+    <text x="12"  y="135" font-size="10">💫</text>
+    <text x="175" y="130" font-size="10">💫</text>
+    ${soil}
+    <!-- 脚 -->
+    <path d="M90,184 Q87,162 90,146" stroke="#16a34a" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M120,184 Q123,162 120,146" stroke="#16a34a" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <!-- 体(金色オーラ) -->
+    <ellipse cx="105" cy="118" rx="52" ry="48" fill="#fbbf24" opacity="0.25"/>
+    <ellipse cx="105" cy="118" rx="49" ry="45" fill="#4ade80"/>
+    <ellipse cx="105" cy="109" rx="44" ry="37" fill="#86efac"/>
+    <ellipse cx="90"  cy="98"  rx="14" ry="9"  fill="rgba(255,255,255,0.25)" transform="rotate(-18,90,98)"/>
+    <!-- 王冠 -->
+    <polygon points="75,97 84,80 105,93 126,80 135,97" fill="#fbbf24" stroke="#f59e0b" stroke-width="1.5" stroke-linejoin="round"/>
+    <circle cx="84"  cy="80"  r="4" fill="#ef4444"/>
+    <circle cx="105" cy="93"  r="4" fill="#3b82f6"/>
+    <circle cx="126" cy="80"  r="4" fill="#ef4444"/>
+    <!-- 目(超キラキラ) -->
+    <circle cx="88"  cy="108" r="13" fill="white"/>
+    <circle cx="122" cy="108" r="13" fill="white"/>
+    <circle cx="91.5" cy="112" r="8.5" fill="#1a1a1a"/>
+    <circle cx="125.5" cy="112" r="8.5" fill="#1a1a1a"/>
+    <circle cx="94"  cy="107" r="4"   fill="white"/>
+    <circle cx="128" cy="107" r="4"   fill="white"/>
+    <circle cx="88"  cy="116" r="1.5" fill="white"/>
+    <circle cx="122" cy="116" r="1.5" fill="white"/>
+    <!-- 満面の笑み -->
+    <path d="M83,130 Q105,160 127,130" stroke="#16a34a" fill="none" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M86,133 Q105,155 124,133 Q105,162 86,133" fill="white"/>
+    <!-- ほっぺ(大) -->
+    <ellipse cx="70"  cy="126" rx="15" ry="9"  fill="rgba(252,165,165,0.6)"/>
+    <ellipse cx="140" cy="126" rx="15" ry="9"  fill="rgba(252,165,165,0.6)"/>
+    <!-- 腕(全開) -->
+    <path d="M57,116 Q40,96 30,76" stroke="#22c55e" stroke-width="12" fill="none" stroke-linecap="round"/>
+    <ellipse cx="27"  cy="72"  rx="17" ry="11" fill="#22c55e" transform="rotate(-28,27,72)"/>
+    <ellipse cx="16"  cy="62"  rx="12" ry="7.5" fill="#4ade80" transform="rotate(-20,16,62)"/>
+    <path d="M153,116 Q170,96 180,76" stroke="#22c55e" stroke-width="12" fill="none" stroke-linecap="round"/>
+    <ellipse cx="183" cy="72"  rx="17" ry="11" fill="#22c55e" transform="rotate(28,183,72)"/>
+    <ellipse cx="194" cy="62"  rx="12" ry="7.5" fill="#4ade80" transform="rotate(20,194,62)"/>
+    <!-- 中央の大きな花 -->
+    <rect x="102" y="54" width="7" height="26" rx="3.5" fill="#16a34a"/>
+    <ellipse cx="105" cy="36" rx="10" ry="16" fill="#f9a8d4"/>
+    <ellipse cx="105" cy="36" rx="10" ry="16" fill="#f9a8d4" transform="rotate(60,105,52)"/>
+    <ellipse cx="105" cy="36" rx="10" ry="16" fill="#fde68a" transform="rotate(120,105,52)"/>
+    <ellipse cx="105" cy="36" rx="10" ry="16" fill="#f9a8d4" transform="rotate(180,105,52)"/>
+    <ellipse cx="105" cy="36" rx="10" ry="16" fill="#fde68a" transform="rotate(240,105,52)"/>
+    <ellipse cx="105" cy="36" rx="10" ry="16" fill="#f9a8d4" transform="rotate(300,105,52)"/>
+    <circle cx="105" cy="52" r="14" fill="#fbbf24"/>
+    <circle cx="105" cy="52" r="10" fill="#f59e0b"/>
+    <circle cx="101" cy="50" r="2"  fill="#92400e"/>
+    <circle cx="109" cy="50" r="2"  fill="#92400e"/>
+    <circle cx="105" cy="56" r="2"  fill="#92400e"/>
+    <!-- 左の小花 -->
+    <rect x="70"  y="72"  width="5" height="18" rx="2.5" fill="#16a34a"/>
+    <ellipse cx="72" cy="58" rx="7" ry="11" fill="#c4b5fd"/>
+    <ellipse cx="72" cy="58" rx="7" ry="11" fill="#c4b5fd" transform="rotate(60,72,69)"/>
+    <ellipse cx="72" cy="58" rx="7" ry="11" fill="#a5f3fc" transform="rotate(120,72,69)"/>
+    <ellipse cx="72" cy="58" rx="7" ry="11" fill="#a5f3fc" transform="rotate(180,72,69)"/>
+    <circle cx="72" cy="69" r="8"   fill="#fbbf24"/>
+    <!-- 右の小花 -->
+    <rect x="135" y="72"  width="5" height="18" rx="2.5" fill="#16a34a"/>
+    <ellipse cx="137" cy="58" rx="7" ry="11" fill="#c4b5fd"/>
+    <ellipse cx="137" cy="58" rx="7" ry="11" fill="#c4b5fd" transform="rotate(60,137,69)"/>
+    <ellipse cx="137" cy="58" rx="7" ry="11" fill="#a5f3fc" transform="rotate(120,137,69)"/>
+    <ellipse cx="137" cy="58" rx="7" ry="11" fill="#a5f3fc" transform="rotate(180,137,69)"/>
+    <circle cx="137" cy="69" r="8"   fill="#fbbf24"/>
+  `;
+}
+
+/* ============================================================
+   データ読み込み
+   ============================================================ */
+async function loadData() {
+  let d = null;
+  try {
+    const r = await fetch(SERVER + '/api/data', { signal: AbortSignal.timeout(1500) });
+    if (r.ok) d = await r.json();
+  } catch(e) {}
+  if (!d) {
+    try {
+      const r = await fetch('data.json?_=' + Date.now());
+      if (r.ok) d = await r.json();
+    } catch(e) {}
+  }
+  return d || {};
+}
+
+/* ============================================================
+   描画
+   ============================================================ */
+function render() {
+  const g = _data.grinGrowth || { stage: 0, history: [] };
+  const stage   = Math.min(g.stage || 0, 5);
+  const history = g.history || [];
+  const s = STAGES[stage];
+
+  // バッジ・名前・説明
+  document.getElementById('stage-badge').textContent = `STAGE ${stage} / 5`;
+  document.getElementById('stage-name').textContent  = s.name;
+  document.getElementById('stage-desc').textContent  = s.desc;
+
+  // SVG
+  const svgEl = document.getElementById('grin-svg');
+  svgEl.innerHTML = grinSVG(stage);
+  svgEl.className = 'grin-svg' +
+    (stage === 0 ? '' : stage === 5 ? ' celebrating' : ' floating');
+
+  // 完成時 done-svg も更新
+  const doneSvg = document.getElementById('done-svg');
+  if (doneSvg) doneSvg.innerHTML = grinSVG(5);
+
+  // 進捗ステップ
+  const stepsEl = document.getElementById('progress-steps');
+  stepsEl.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    if (i > 0) {
+      const arr = document.createElement('span');
+      arr.className = 'pstep-arrow'; arr.textContent = '→';
+      stepsEl.appendChild(arr);
+    }
+    const dot = document.createElement('div');
+    dot.className = 'pstep' + (i < stage ? ' done' : i === stage ? ' cur' : '');
+    dot.textContent = i < stage ? '✓' : STAGES[i + 1]?.emoji || '';
+    stepsEl.appendChild(dot);
+  }
+
+  // 進捗テキスト
+  const ptEl = document.getElementById('progress-text');
+  if (stage >= 5) {
+    ptEl.innerHTML = '🎊 グリン、完成おめでとう！';
+  } else {
+    ptEl.innerHTML = `あと <strong>${5 - stage} 回</strong> の全員提出で「${STAGES[stage + 1].name}」へ！`;
+  }
+
+  // 履歴
+  const hgEl = document.getElementById('history-grid');
+  hgEl.innerHTML = '';
+  if (history.length === 0) {
+    hgEl.innerHTML = '<span class="h-empty">まだ記録はありません</span>';
+  } else {
+    [...history].reverse().slice(0, 18).forEach(h => {
+      const item = document.createElement('div');
+      item.className = 'h-item';
+      const dot  = document.createElement('div');
+      dot.className = 'h-dot ' + (h.result === 'growth' ? 'growth' : 'rest');
+      dot.textContent = h.result === 'growth' ? '🌱' : '💤';
+      const date = document.createElement('div');
+      date.className = 'h-date';
+      date.textContent = (h.date || '').slice(5).replace('-', '/');
+      item.appendChild(dot);
+      item.appendChild(date);
+      hgEl.appendChild(item);
+    });
+  }
+
+  // 管理ボタン
+  const growBtn = document.getElementById('btn-grow');
+  if (growBtn) growBtn.disabled = stage >= 5;
+}
+
+/* ============================================================
+   管理パネル
+   ============================================================ */
+function toggleAdmin() {
+  if (adminOpen) {
+    adminOpen = false;
+    document.getElementById('lock-btn').textContent = '🔒 管理';
+    document.getElementById('lock-btn').classList.remove('open');
+    document.getElementById('admin-body').style.display = 'none';
+    return;
+  }
+  const pin = prompt('管理者の暗証番号を入力してください');
+  if (!pin) return;
+  const correct = _data.adminPIN || '1210';
+  if (pin === correct) {
+    adminOpen = true;
+    _adminPin = pin;
+    document.getElementById('lock-btn').textContent = '🔓 管理中';
+    document.getElementById('lock-btn').classList.add('open');
+    document.getElementById('admin-body').style.display = 'flex';
+  } else {
+    alert('暗証番号が違います');
+  }
+}
+
+/* ============================================================
+   成長記録・おやすみ記録
+   ============================================================ */
+function recordGrowth() {
+  if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [] };
+  const g = _data.grinGrowth;
+  if (!g.history) g.history = [];
+  if ((g.stage || 0) >= 5) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  g.stage = (g.stage || 0) + 1;
+  g.history.push({ date: today, result: 'growth' });
+
+  saveData();
+  render();
+
+  if (g.stage >= 5) {
+    setTimeout(() => {
+      document.getElementById('done-overlay').classList.add('show');
+      spawnConfetti();
+    }, 700);
+  }
+}
+
+function recordRest() {
+  if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [] };
+  const g = _data.grinGrowth;
+  if (!g.history) g.history = [];
+  const today = new Date().toISOString().slice(0, 10);
+  g.history.push({ date: today, result: 'rest' });
+  saveData();
+  render();
+}
+
+function closeDone() {
+  document.getElementById('done-overlay').classList.remove('show');
+  document.querySelectorAll('.gconf').forEach(el => el.remove());
+}
+
+/* ============================================================
+   保存
+   ============================================================ */
+async function saveData() {
+  const stEl = document.getElementById('save-status');
+  if (stEl) stEl.textContent = '⏳ 保存中...';
+  const pin = _adminPin || _data.adminPIN || '1210';
+  try {
+    await fetch(SERVER + '/api/data', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin, data: _data }),
+    });
+    await fetch(SERVER + '/api/git-push', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    });
+    if (stEl) { stEl.textContent = '✅ 保存しました'; setTimeout(() => stEl.textContent = '', 3000); }
+  } catch(e) {
+    if (stEl) stEl.textContent = '❌ サーバーが起動していません';
+  }
+}
+
+/* ============================================================
+   紙吹雪
+   ============================================================ */
+const CONF_COLS = ['#22c55e','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899','#fbbf24','#06b6d4'];
+function spawnConfetti() {
+  for (let i = 0; i < 130; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'gconf';
+      el.style.cssText = `
+        left:${Math.random()*100}vw;
+        background:${CONF_COLS[Math.floor(Math.random()*CONF_COLS.length)]};
+        animation-duration:${1.6+Math.random()*2.4}s;
+        width:${7+Math.random()*8}px;
+        height:${9+Math.random()*10}px;
+        border-radius:${Math.random()>.5?'50%':'3px'};
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4500);
+    }, i * 16);
+  }
+}
+
+/* ============================================================
+   初期化
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', async () => {
+  _data = await loadData();
+  render();
+});
+</script>
+</body>
+</html>
