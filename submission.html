@@ -209,6 +209,53 @@
     min-height: 20px; margin-top: 4px;
   }
 
+  /* ===== バナープレビュー ===== */
+  .banner-preview-wrap {
+    margin-top: 16px;
+    border-top: 1.5px dashed #e2e8f0;
+    padding-top: 14px;
+  }
+  .banner-preview-label {
+    font-size: 0.7rem; font-weight: 800; color: #94a3b8;
+    letter-spacing: 0.08em; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .banner-preview-label::before {
+    content: ''; display: inline-block;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #4ade80;
+    animation: blink-dot 1.2s ease-in-out infinite;
+  }
+  @keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  /* 学級HPのバナーを再現するミニビュー */
+  .banner-mock {
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(135deg, #052e16 0%, #14532d 40%, #052e16 100%);
+    border: 2px solid rgba(74,222,128,0.38);
+    border-radius: 16px; padding: 14px 16px;
+    text-decoration: none; cursor: default;
+  }
+  .bm-left { flex: 1; min-width: 0; }
+  .bm-badge {
+    display: inline-block;
+    background: rgba(74,222,128,0.18); border: 1.5px solid rgba(74,222,128,0.45);
+    border-radius: 6px; padding: 1px 10px;
+    font-size: 0.65rem; font-weight: 900; color: #4ade80;
+    letter-spacing: 0.12em; margin-bottom: 5px;
+  }
+  .bm-title {
+    font-size: 0.95rem; font-weight: 900;
+    background: linear-gradient(135deg,#4ade80,#86efac,#4ade80);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; margin-bottom: 5px;
+  }
+  .bm-info {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    min-height: 20px;
+  }
+  .bm-info span { font-size: 0.72rem; font-weight: 700; }
+  .bm-arrow { color: rgba(74,222,128,0.75); font-size: 0.9rem; flex-shrink: 0; }
+
   /* ===== 完成オーバーレイ ===== */
   #done-overlay {
     display: none; position: fixed; inset: 0; z-index: 600;
@@ -396,6 +443,21 @@
           💤 今日は成長おやすみ
         </button>
         <div class="save-status" id="save-status"></div>
+
+        <!-- 学級HPバナープレビュー -->
+        <div class="banner-preview-wrap" id="banner-preview-wrap" style="display:none">
+          <div class="banner-preview-label">学級HPのバナーはこう見えます</div>
+          <div class="banner-mock">
+            <div class="bm-left">
+              <div class="bm-badge" id="bm-badge">🌱 GRIN GROWTH  STAGE 0/10</div>
+              <div class="bm-title">グリンの成長記録</div>
+              <div class="bm-info" id="bm-info">
+                <span style="color:rgba(187,247,208,0.85)">全員提出でグリンを育てよう！🌱</span>
+              </div>
+            </div>
+            <div class="bm-arrow">▶</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1010,6 +1072,10 @@ function toggleAdmin() {
     const dlInp = document.getElementById('cfg-deadline');
     if (snInp) snInp.value = g0.submissionName || '';
     if (dlInp) dlInp.value = g0.deadline       || '';
+    // リアルタイムプレビュー（入力のたびに更新）
+    if (snInp) snInp.oninput  = updateBannerPreview;
+    if (dlInp) dlInp.onchange = updateBannerPreview;
+    updateBannerPreview();
     renderUnsubmitted();
   } else {
     alert('暗証番号が違います');
@@ -1130,7 +1196,66 @@ function saveSubmissionInfo() {
   _data.grinGrowth.deadline       = document.getElementById('cfg-deadline')?.value || '';
   saveData();
   const el = document.getElementById('save-status');
-  if (el) { el.textContent = '✅ 提出物情報を保存しました'; setTimeout(() => { el.textContent = ''; }, 2500); }
+  if (el) { el.textContent = '✅ 保存しました（学級HPに反映されます）'; setTimeout(() => { el.textContent = ''; }, 2500); }
+  updateBannerPreview();
+}
+
+/* ============================================================
+   学級HPバナープレビュー（リアルタイム）
+   ============================================================ */
+function updateBannerPreview() {
+  const wrap = document.getElementById('banner-preview-wrap');
+  if (!wrap) return;
+
+  const g        = _data.grinGrowth || {};
+  const stage    = Math.min(g.stage || 0, 10);
+  const subName  = (document.getElementById('cfg-subname')?.value || g.submissionName || '').trim();
+  const deadline = document.getElementById('cfg-deadline')?.value || g.deadline || '';
+  const students = g.students || {};
+  const maleCount   = students.maleCount   ?? 18;
+  const femaleCount = students.femaleCount ?? 17;
+  const total   = maleCount + femaleCount;
+  const submitted = (g.currentSubmitted || []).length;
+  const unsub   = Math.max(0, total - submitted);
+
+  // バッジ更新
+  const badge = document.getElementById('bm-badge');
+  if (badge) badge.textContent = `🌱 GRIN GROWTH  STAGE ${stage}/10`;
+
+  // info 欄を組み立て
+  const infoEl = document.getElementById('bm-info');
+  if (!infoEl) return;
+
+  if (!subName) {
+    wrap.style.display = 'none';   // 提出物未入力なら隠す
+    return;
+  }
+  wrap.style.display = 'block';
+
+  // 締め切り色
+  let dlHtml = '';
+  if (deadline) {
+    const dlDate = new Date(deadline + 'T00:00:00');
+    const today  = new Date(); today.setHours(0,0,0,0);
+    const diff   = Math.round((dlDate - today) / 86400000);
+    const mm = dlDate.getMonth() + 1;
+    const dd = dlDate.getDate();
+    const dow = ['日','月','火','水','木','金','土'][dlDate.getDay()];
+    if      (diff < 0)  dlHtml = `<span style="color:rgba(252,165,165,0.9);font-weight:800">⚠ 締切 ${mm}/${dd}(${dow}) 超過</span>`;
+    else if (diff === 0) dlHtml = `<span style="color:rgba(253,224,71,0.95);font-weight:800">🔥 締切 今日！</span>`;
+    else if (diff === 1) dlHtml = `<span style="color:rgba(253,224,71,0.9);font-weight:800">⏰ 締切 明日(${dow})</span>`;
+    else                dlHtml = `<span style="color:rgba(187,247,208,0.8)">📅 締切 ${mm}/${dd}(${dow}) あと${diff}日</span>`;
+  }
+
+  const unsubHtml = unsub === 0
+    ? `<span style="color:#4ade80;font-weight:800">✅ 全員提出！</span>`
+    : `<span style="color:rgba(253,186,116,0.95);font-weight:800">未提出 ${unsub}人</span>`;
+
+  infoEl.innerHTML = `
+    <span style="color:rgba(187,247,208,0.9);font-weight:800">📋 ${subName}</span>
+    ${dlHtml}
+    ${unsubHtml}
+  `;
 }
 
 function saveConfig() {
