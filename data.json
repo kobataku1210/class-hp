@@ -1017,6 +1017,12 @@
       "femaleCount": 18
     },
     "currentSubmitted": [],
-    "submissions": []
+    "submissions": [
+      {
+        "name": "結核問診表",
+        "deadline": "2026-06-05",
+        "submitted": []
+      }
+    ]
   }
 }
