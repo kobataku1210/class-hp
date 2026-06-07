@@ -1709,10 +1709,56 @@ function spawnConfetti() {
 }
 
 /* ============================================================
+   締切超過の自動判定
+   ============================================================ */
+async function checkExpiredSubmissions() {
+  const g = _data.grinGrowth;
+  if (!g || !g.submissions || g.submissions.length === 0) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const { male, female } = getStudentConfig();
+  const total = male + female;
+
+  const toRemove = [];
+  let changed = false;
+
+  g.submissions.forEach((s, i) => {
+    if (!s.deadline) return;
+    const dl = new Date(s.deadline + 'T00:00:00');
+    // 締切日の翌日以降（締切当日はまだセーフ）
+    if (dl >= today) return;
+
+    const submitted = new Set(s.submitted || []);
+    const remaining = [...Array(total)].filter((_, j) => !submitted.has(j + 1)).length;
+
+    if (remaining > 0) {
+      // 未達成：締切日付で💤✕を記録
+      if (!g.history) g.history = [];
+      g.history.push({ date: s.deadline, result: 'rest' });
+      toRemove.push(i);
+      changed = true;
+    }
+    // remaining === 0 は全員提出済み → 先生が成長ボタンを押すまで残す
+  });
+
+  // インデックスがずれないよう後ろから削除
+  for (let i = toRemove.length - 1; i >= 0; i--) {
+    g.submissions.splice(toRemove[i], 1);
+  }
+
+  if (changed) {
+    await saveData();
+  }
+}
+
+/* ============================================================
    初期化
    ============================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
   _data = await loadData();
+  await checkExpiredSubmissions();  // 締切超過チェック（自動未達成記録）
   render();
 });
 </script>
