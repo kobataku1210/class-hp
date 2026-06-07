@@ -1049,8 +1049,12 @@
       "maleCount": 19,
       "femaleCount": 18
     },
-    "submissionName": "test3",
-    "deadline": "2026-06-10",
-    "currentSubmitted": []
+    "currentSubmitted": [],
+    "submissions": [
+      {
+        "name": "test3",
+        "deadline": "2026-06-10"
+      }
+    ]
   }
 }
