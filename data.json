@@ -996,6 +996,17 @@
   "submissions": {
     "totalStudents": 35,
     "streak": 0,
-    "assignments": []
+    "assignments": [
+      {
+        "id": "1780804806343",
+        "title": "test",
+        "deadline": "2026-06-04",
+        "submitted": [
+          8,
+          9
+        ],
+        "celebrated": false
+      }
+    ]
   }
 }
