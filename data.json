@@ -1010,8 +1010,12 @@
     ]
   },
   "grinGrowth": {
-    "stage": 5,
+    "stage": 6,
     "history": [
+      {
+        "date": "2026-06-07",
+        "result": "growth"
+      },
       {
         "date": "2026-06-07",
         "result": "growth"
@@ -1038,6 +1042,7 @@
       "femaleCount": 18
     },
     "submissionName": "test",
-    "deadline": "2026-06-10"
+    "deadline": "2026-06-10",
+    "currentSubmitted": []
   }
 }
