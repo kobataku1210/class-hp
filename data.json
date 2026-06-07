@@ -1106,7 +1106,8 @@
         "name": "test3",
         "deadline": "2026-06-20",
         "submitted": [
-          1
+          1,
+          2
         ]
       },
       {
