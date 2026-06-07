@@ -992,5 +992,18 @@
       "emoji": "🎁",
       "text": "海野Tのディズニーグッズ"
     }
-  ]
+  ],
+  "submissions": {
+    "totalStudents": 35,
+    "streak": 0,
+    "assignments": [
+      {
+        "id": "1780804806343",
+        "title": "test",
+        "deadline": "2026-06-04",
+        "submitted": [],
+        "celebrated": false
+      }
+    ]
+  }
 }
