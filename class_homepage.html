@@ -575,6 +575,19 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     max-width: 200px;
   }
+  /* 生徒用反映ボタン */
+  .pz-push-btn {
+    flex-shrink: 0;
+    padding: 6px 16px; border-radius: 8px; border: none;
+    background: #16a34a; color: white;
+    font-size: 0.8rem; font-weight: 900; font-family: inherit;
+    cursor: pointer; transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .pz-push-btn:hover:not(:disabled) { background: #15803d; transform: translateY(-1px); }
+  .pz-push-btn:disabled { opacity: 0.6; cursor: default; transform: none; }
+  .pz-push-btn.success { background: #15803d; }
+  .pz-push-btn.error   { background: #dc2626; }
   .pz-tabs {
     background: #1e1e1e;
     display: flex; gap: 2px; padding: 6px 10px 0;
@@ -1188,6 +1201,36 @@ const PREVIEW_PAGES = [
   // { label: '🎯 新機能名',  src: 'new_feature.html' },
 ];
 
+async function pushToStudents() {
+  const btn = document.getElementById('pz-push-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ 反映中...';
+  btn.className = 'pz-push-btn';
+  try {
+    const pin = 'admin'; // git-push は PIN 不要でも通る
+    const r = await fetch('http://localhost:3456/api/git-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: '1210' }),
+    });
+    if (r.ok) {
+      btn.textContent = '✅ 反映しました！';
+      btn.classList.add('success');
+    } else {
+      throw new Error();
+    }
+  } catch(e) {
+    btn.textContent = '❌ サーバー未起動';
+    btn.classList.add('error');
+  }
+  btn.disabled = false;
+  setTimeout(() => {
+    btn.textContent = '🚀 生徒用画面に反映';
+    btn.className = 'pz-push-btn';
+  }, 3000);
+}
+
 function buildPreviewZone() {
   const zone = document.getElementById('preview-zone');
   if (!zone) return;
@@ -1225,6 +1268,7 @@ function buildPreviewZone() {
     <span class="pz-badge">⚠ PREVIEW</span>
     <span class="pz-title">開発中プレビュー — ローカルのみ表示</span>
     <span class="pz-url"></span>
+    <button class="pz-push-btn" id="pz-push-btn" onclick="pushToStudents()">🚀 生徒用画面に反映</button>
   </div>
   <div class="pz-tabs"><!-- タブはJSで生成 --></div>
   <div class="pz-frame-wrap">
