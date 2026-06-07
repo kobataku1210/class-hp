@@ -1436,6 +1436,7 @@ function saveSubmissionInfo() {
   const el = document.getElementById('save-status');
   if (el) { el.textContent = '✅ 保存しました（学級HPに反映されます）'; setTimeout(() => { el.textContent = ''; }, 2500); }
   updateBannerPreview();
+  renderUnsubmitted();  // 未提出セクションも即時更新
 }
 
 /* ============================================================
