@@ -389,6 +389,42 @@
   .all-done-sub { font-size: 0.82rem; color: #64748b; font-weight: 400; margin-top: 4px; }
 
   /* 設定フォーム */
+  /* 複数提出物リスト */
+  .sub-list { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
+  .sub-row  { display: flex; gap: 6px; align-items: center; }
+  .sub-row .sub-name {
+    flex: 1; min-width: 0; padding: 7px 10px;
+    border: 1.5px solid #e2e8f0; border-radius: 8px;
+    font-size: 0.83rem; font-family: inherit;
+  }
+  .sub-row .sub-date {
+    width: 136px; flex-shrink: 0; padding: 6px 7px;
+    border: 1.5px solid #e2e8f0; border-radius: 8px;
+    font-size: 0.8rem; font-family: inherit;
+  }
+  .sub-row .sub-remove {
+    width: 28px; height: 28px; flex-shrink: 0;
+    border: 1.5px solid #fca5a5; background: #fef2f2;
+    border-radius: 7px; color: #ef4444; font-size: 0.85rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-weight: 900; line-height: 1;
+  }
+  .sub-row .sub-remove:hover { background: #fee2e2; }
+  .sub-actions { display: flex; gap: 8px; margin-top: 9px; }
+  .sub-add-btn {
+    flex: 1; padding: 7px; border-radius: 9px;
+    border: 1.5px dashed #86efac; background: #f0fdf4;
+    color: #16a34a; font-size: 0.82rem; font-weight: 800;
+    cursor: pointer; font-family: inherit;
+  }
+  .sub-add-btn:hover { background: #dcfce7; }
+  .sub-save-btn {
+    flex: 1; padding: 7px; border-radius: 9px;
+    border: none; background: #1e293b;
+    color: white; font-size: 0.82rem; font-weight: 800;
+    cursor: pointer; font-family: inherit;
+  }
+
   .config-form {
     background: #f8fafc; border: 1.5px dashed #cbd5e1;
     border-radius: 12px; padding: 12px 14px; margin-bottom: 12px;
@@ -461,16 +497,15 @@
         <button class="lock-btn" id="lock-btn" onclick="toggleAdmin()">🔒 管理</button>
       </div>
       <div id="admin-body" style="display:none" class="admin-body">
-        <!-- 提出物設定 -->
+        <!-- 提出物設定（複数対応） -->
         <div class="config-form">
           <label>📋 現在の提出物</label>
-          <div class="config-row">
-            <input type="text" id="cfg-subname" placeholder="例: 家庭学習ノート"
-              style="flex:1;min-width:0;padding:6px 10px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:0.85rem;font-family:inherit">
-            <label style="white-space:nowrap">締切</label>
-            <input type="date" id="cfg-deadline"
-              style="width:100%;padding:5px 8px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:0.83rem;font-family:inherit;margin-top:4px">
-            <button onclick="saveSubmissionInfo()">保存</button>
+          <div id="sub-list" class="sub-list">
+            <!-- JS で行を追加 -->
+          </div>
+          <div class="sub-actions">
+            <button class="sub-add-btn" onclick="addSubRow('','')">＋ 提出物を追加</button>
+            <button class="sub-save-btn" onclick="saveSubmissionInfo()">💾 保存</button>
           </div>
         </div>
         <!-- 人数設定 -->
@@ -1164,15 +1199,8 @@ function submitPin() {
     const fInp = document.getElementById('cfg-female');
     if (mInp) mInp.value = cfg.maleCount   ?? 18;
     if (fInp) fInp.value = cfg.femaleCount ?? 17;
-    // 提出物設定フィールドに現在値をセット
-    const g0 = _data.grinGrowth || {};
-    const snInp = document.getElementById('cfg-subname');
-    const dlInp = document.getElementById('cfg-deadline');
-    if (snInp) snInp.value = g0.submissionName || '';
-    if (dlInp) dlInp.value = g0.deadline       || '';
-    // リアルタイムプレビュー（入力のたびに更新）
-    if (snInp) snInp.oninput  = updateBannerPreview;
-    if (dlInp) dlInp.onchange = updateBannerPreview;
+    // 提出物リストを読み込み（複数対応）
+    loadSubRows();
     updateBannerPreview();
     renderUnsubmitted();
   } else {
@@ -1292,10 +1320,57 @@ function resetSubmission() {
   renderUnsubmitted();
 }
 
+/* ============================================================
+   複数提出物リスト管理
+   ============================================================ */
+function addSubRow(name, deadline) {
+  const list = document.getElementById('sub-list');
+  if (!list) return;
+  const row = document.createElement('div');
+  row.className = 'sub-row';
+  row.innerHTML = `
+    <input type="text"  class="sub-name" placeholder="例: 家庭学習ノート" value="${escHtml(name)}">
+    <input type="date"  class="sub-date" value="${escHtml(deadline)}">
+    <button class="sub-remove" onclick="removeSubRow(this)" title="削除">✕</button>
+  `;
+  // リアルタイムプレビュー
+  row.querySelector('.sub-name').oninput  = updateBannerPreview;
+  row.querySelector('.sub-date').onchange = updateBannerPreview;
+  list.appendChild(row);
+  updateBannerPreview();
+}
+
+function removeSubRow(btn) {
+  btn.closest('.sub-row').remove();
+  updateBannerPreview();
+}
+
+function escHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function loadSubRows() {
+  const list = document.getElementById('sub-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const g = _data.grinGrowth || {};
+  // 旧フォーマット (submissionName/deadline) を新形式に移行
+  let subs = g.submissions;
+  if (!subs && g.submissionName) subs = [{ name: g.submissionName, deadline: g.deadline || '' }];
+  if (!subs || subs.length === 0) { addSubRow('', ''); return; }
+  subs.forEach(s => addSubRow(s.name || '', s.deadline || ''));
+}
+
 function saveSubmissionInfo() {
   if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [] };
-  _data.grinGrowth.submissionName = (document.getElementById('cfg-subname')?.value || '').trim();
-  _data.grinGrowth.deadline       = document.getElementById('cfg-deadline')?.value || '';
+  const rows = document.querySelectorAll('#sub-list .sub-row');
+  _data.grinGrowth.submissions = Array.from(rows).map(r => ({
+    name:     r.querySelector('.sub-name').value.trim(),
+    deadline: r.querySelector('.sub-date').value,
+  })).filter(s => s.name); // 名前が空の行は除外
+  // 旧キーは削除
+  delete _data.grinGrowth.submissionName;
+  delete _data.grinGrowth.deadline;
   saveData();
   const el = document.getElementById('save-status');
   if (el) { el.textContent = '✅ 保存しました（学級HPに反映されます）'; setTimeout(() => { el.textContent = ''; }, 2500); }
@@ -1305,59 +1380,62 @@ function saveSubmissionInfo() {
 /* ============================================================
    学級HPバナープレビュー（リアルタイム）
    ============================================================ */
+function deadlineHtml(deadline, dark) {
+  if (!deadline) return '';
+  const dlDate = new Date(deadline + 'T00:00:00');
+  const today  = new Date(); today.setHours(0,0,0,0);
+  const diff   = Math.round((dlDate - today) / 86400000);
+  const mm = dlDate.getMonth() + 1;
+  const dd = dlDate.getDate();
+  const dow = ['日','月','火','水','木','金','土'][dlDate.getDay()];
+  // dark=true: 学級HP（暗背景）用, dark=false: プレビュー内ライト背景用
+  const c = dark
+    ? { over:'rgba(252,165,165,0.9)', today:'rgba(253,224,71,0.95)', soon:'rgba(253,224,71,0.9)', normal:'rgba(187,247,208,0.8)' }
+    : { over:'#ef4444',               today:'#f59e0b',               soon:'#d97706',              normal:'#64748b' };
+  if      (diff < 0)   return `<span style="color:${c.over};font-weight:800">⚠ 締切 ${mm}/${dd}(${dow}) 超過</span>`;
+  else if (diff === 0) return `<span style="color:${c.today};font-weight:800">🔥 今日締切！</span>`;
+  else if (diff === 1) return `<span style="color:${c.soon};font-weight:800">⏰ 明日(${dow})締切</span>`;
+  else                 return `<span style="color:${c.normal}">📅 ${mm}/${dd}(${dow}) あと${diff}日</span>`;
+}
+
 function updateBannerPreview() {
   const wrap = document.getElementById('banner-preview-wrap');
   if (!wrap) return;
 
-  const g        = _data.grinGrowth || {};
-  const stage    = Math.min(g.stage || 0, 10);
-  const subName  = (document.getElementById('cfg-subname')?.value || g.submissionName || '').trim();
-  const deadline = document.getElementById('cfg-deadline')?.value || g.deadline || '';
+  const g = _data.grinGrowth || {};
+  const stage = Math.min(g.stage || 0, 10);
   const students = g.students || {};
-  const maleCount   = students.maleCount   ?? 18;
-  const femaleCount = students.femaleCount ?? 17;
-  const total   = maleCount + femaleCount;
-  const submitted = (g.currentSubmitted || []).length;
-  const unsub   = Math.max(0, total - submitted);
+  const total   = (students.maleCount ?? 18) + (students.femaleCount ?? 17);
+  const unsub   = Math.max(0, total - (g.currentSubmitted || []).length);
 
-  // バッジ更新
+  // 現在入力中の行を収集
+  const rows = document.querySelectorAll('#sub-list .sub-row');
+  const subs = Array.from(rows).map(r => ({
+    name:     r.querySelector('.sub-name').value.trim(),
+    deadline: r.querySelector('.sub-date').value,
+  })).filter(s => s.name);
+
   const badge = document.getElementById('bm-badge');
   if (badge) badge.textContent = `🌱 GRIN GROWTH  STAGE ${stage}/10`;
 
-  // info 欄を組み立て
   const infoEl = document.getElementById('bm-info');
   if (!infoEl) return;
 
-  if (!subName) {
-    wrap.style.display = 'none';   // 提出物未入力なら隠す
-    return;
-  }
+  if (subs.length === 0) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
-
-  // 締め切り色
-  let dlHtml = '';
-  if (deadline) {
-    const dlDate = new Date(deadline + 'T00:00:00');
-    const today  = new Date(); today.setHours(0,0,0,0);
-    const diff   = Math.round((dlDate - today) / 86400000);
-    const mm = dlDate.getMonth() + 1;
-    const dd = dlDate.getDate();
-    const dow = ['日','月','火','水','木','金','土'][dlDate.getDay()];
-    if      (diff < 0)  dlHtml = `<span style="color:rgba(252,165,165,0.9);font-weight:800">⚠ 締切 ${mm}/${dd}(${dow}) 超過</span>`;
-    else if (diff === 0) dlHtml = `<span style="color:rgba(253,224,71,0.95);font-weight:800">🔥 締切 今日！</span>`;
-    else if (diff === 1) dlHtml = `<span style="color:rgba(253,224,71,0.9);font-weight:800">⏰ 締切 明日(${dow})</span>`;
-    else                dlHtml = `<span style="color:rgba(187,247,208,0.8)">📅 締切 ${mm}/${dd}(${dow}) あと${diff}日</span>`;
-  }
 
   const unsubHtml = unsub === 0
     ? `<span style="color:#4ade80;font-weight:800">✅ 全員提出！</span>`
     : `<span style="color:rgba(253,186,116,0.95);font-weight:800">未提出 ${unsub}人</span>`;
 
-  infoEl.innerHTML = `
-    <span style="color:rgba(187,247,208,0.9);font-weight:800">📋 ${subName}</span>
-    ${dlHtml}
-    ${unsubHtml}
-  `;
+  const subsHtml = subs.map(s =>
+    `<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+       <span style="color:rgba(187,247,208,0.9);font-weight:800">📋 ${escHtml(s.name)}</span>
+       ${deadlineHtml(s.deadline, true)}
+     </div>`
+  ).join('');
+
+  infoEl.innerHTML = subsHtml + `<div style="margin-top:4px">${unsubHtml}</div>`;
 }
 
 function saveConfig() {
