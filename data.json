@@ -1027,7 +1027,9 @@
       {
         "name": "修学旅行参加同意書",
         "deadline": "2026-06-12",
-        "submitted": []
+        "submitted": [
+          1
+        ]
       }
     ],
     "achieveCount": 1
