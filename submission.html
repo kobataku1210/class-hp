@@ -1383,7 +1383,7 @@ function renderUnsubmitted() {
         fUnsub.forEach(n => {
           const el = document.createElement('div');
           el.className = 'unsub-num female-num' + (adminOpen ? ' clickable' : '');
-          el.textContent = n;
+          el.textContent = n - male;  // 女子は1始まりで表示
           if (adminOpen) el.onclick = () => toggleStudentSubmit(n, subIdx);
           nums.appendChild(el);
         });
