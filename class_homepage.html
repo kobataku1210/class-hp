@@ -656,14 +656,18 @@
     </a>
 
     <!-- グリンの成長記録 -->
-    <a href="submission.html" class="reward-banner" style="
+    <a href="submission.html" class="reward-banner" id="grin-banner" style="
       margin-top:14px;
       background: linear-gradient(135deg, #052e16 0%, #14532d 40%, #052e16 100%);
       border-color: rgba(74,222,128,0.38);
     ">
-      <div class="rb-badge" style="background:rgba(74,222,128,0.18);border-color:rgba(74,222,128,0.45);color:#4ade80">🌱 GRIN GROWTH</div>
-      <div class="rb-title" style="background:linear-gradient(135deg,#4ade80,#86efac,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">グリンの成長記録</div>
-      <div class="rb-sub" style="color:rgba(187,247,208,0.85)">全員提出でグリンを育てよう！🌱 10段階で完成！</div>
+      <div style="flex:1;min-width:0">
+        <div class="rb-badge" id="grin-badge" style="background:rgba(74,222,128,0.18);border-color:rgba(74,222,128,0.45);color:#4ade80">🌱 GRIN GROWTH</div>
+        <div class="rb-title" style="background:linear-gradient(135deg,#4ade80,#86efac,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">グリンの成長記録</div>
+        <div id="grin-sub-info" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <span class="rb-sub" style="color:rgba(187,247,208,0.85)">全員提出でグリンを育てよう！🌱 10段階で完成！</span>
+        </div>
+      </div>
       <div class="rb-arrow" style="color:rgba(74,222,128,0.75)">▶</div>
     </a>
   </section>
@@ -1040,6 +1044,64 @@ function buildSchedule(d) {
 }
 
 /* ============================================================
+   グリンバナー更新
+   ============================================================ */
+function buildGrinBanner(d) {
+  const g    = d.grinGrowth || {};
+  const stage = Math.min(g.stage || 0, 10);
+  const sub  = (g.submissionName || '').trim();
+  const dl   = g.deadline || '';
+  const students = g.students || {};
+  const maleCount   = students.maleCount   ?? 18;
+  const femaleCount = students.femaleCount ?? 17;
+  const total     = maleCount + femaleCount;
+  const submitted = (g.currentSubmitted || []).length;
+  const unsub     = Math.max(0, total - submitted);
+
+  // バッジにステージ表示
+  const badge = document.getElementById('grin-badge');
+  if (badge) badge.textContent = `🌱 GRIN GROWTH  STAGE ${stage}/10`;
+
+  const infoEl = document.getElementById('grin-sub-info');
+  if (!infoEl) return;
+
+  if (!sub) {
+    // 提出物が未設定のときはデフォルト文言
+    infoEl.innerHTML = `<span style="font-size:.8rem;color:rgba(187,247,208,0.85)">全員提出でグリンを育てよう！🌱 10段階で完成！</span>`;
+    return;
+  }
+
+  // 締め切り表示
+  let dlStr = '';
+  if (dl) {
+    const dlDate = new Date(dl + 'T00:00:00');
+    const today  = new Date(); today.setHours(0,0,0,0);
+    const diff   = Math.round((dlDate - today) / 86400000);
+    const mm = dlDate.getMonth() + 1;
+    const dd = dlDate.getDate();
+    const dow = ['日','月','火','水','木','金','土'][dlDate.getDay()];
+    if (diff < 0)       dlStr = `<span style="color:rgba(252,165,165,0.9);font-weight:800">⚠ 締切 ${mm}/${dd}(${dow}) 超過</span>`;
+    else if (diff === 0) dlStr = `<span style="color:rgba(253,224,71,0.95);font-weight:800">🔥 締切 今日！</span>`;
+    else if (diff === 1) dlStr = `<span style="color:rgba(253,224,71,0.9);font-weight:800">⏰ 締切 明日(${dow})</span>`;
+    else                dlStr = `<span style="color:rgba(187,247,208,0.8)">📅 締切 ${mm}/${dd}(${dow}) あと${diff}日</span>`;
+  }
+
+  // 未提出表示
+  let unsubStr = '';
+  if (unsub === 0) {
+    unsubStr = `<span style="color:#4ade80;font-weight:800">✅ 全員提出！</span>`;
+  } else {
+    unsubStr = `<span style="color:rgba(253,186,116,0.95);font-weight:800">未提出 ${unsub}人</span>`;
+  }
+
+  infoEl.innerHTML = `
+    <span style="font-size:.82rem;color:rgba(187,247,208,0.9);font-weight:800">📋 ${sub}</span>
+    ${dlStr}
+    ${unsubStr}
+  `;
+}
+
+/* ============================================================
    初期化
    ============================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1050,6 +1112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   buildCampaign(d);
   buildNotice(d);
   buildSchedule(d);
+  buildGrinBanner(d);
 
   // ローカルのみプレビューゾーンを表示
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {

@@ -356,6 +356,18 @@
       <button class="lock-btn" id="lock-btn" onclick="toggleAdmin()">🔒 管理</button>
     </div>
     <div id="admin-body" style="display:none" class="admin-body">
+      <!-- 提出物設定 -->
+      <div class="config-form">
+        <label>📋 現在の提出物</label>
+        <div class="config-row">
+          <input type="text" id="cfg-subname" placeholder="例: 家庭学習ノート"
+            style="flex:1;min-width:130px;padding:6px 10px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:0.85rem;font-family:inherit">
+          <label style="white-space:nowrap">締切</label>
+          <input type="date" id="cfg-deadline"
+            style="padding:5px 8px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:0.83rem;font-family:inherit">
+          <button onclick="saveSubmissionInfo()">保存</button>
+        </div>
+      </div>
       <!-- 人数設定 -->
       <div class="config-form">
         <label>👥 クラス人数の設定</label>
@@ -948,6 +960,12 @@ function toggleAdmin() {
     const fInp = document.getElementById('cfg-female');
     if (mInp) mInp.value = cfg.maleCount   ?? 18;
     if (fInp) fInp.value = cfg.femaleCount ?? 17;
+    // 提出物設定フィールドに現在値をセット
+    const g0 = _data.grinGrowth || {};
+    const snInp = document.getElementById('cfg-subname');
+    const dlInp = document.getElementById('cfg-deadline');
+    if (snInp) snInp.value = g0.submissionName || '';
+    if (dlInp) dlInp.value = g0.deadline       || '';
     renderUnsubmitted();
   } else {
     alert('暗証番号が違います');
@@ -1060,6 +1078,15 @@ function resetSubmission() {
   _data.grinGrowth.currentSubmitted = [];
   saveData();
   renderUnsubmitted();
+}
+
+function saveSubmissionInfo() {
+  if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [] };
+  _data.grinGrowth.submissionName = (document.getElementById('cfg-subname')?.value || '').trim();
+  _data.grinGrowth.deadline       = document.getElementById('cfg-deadline')?.value || '';
+  saveData();
+  const el = document.getElementById('save-status');
+  if (el) { el.textContent = '✅ 提出物情報を保存しました'; setTimeout(() => { el.textContent = ''; }, 2500); }
 }
 
 function saveConfig() {
