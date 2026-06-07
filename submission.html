@@ -159,9 +159,19 @@
     width: 36px; height: 36px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
     font-size: 1.1rem;
+    position: relative;
   }
   .h-dot.growth { background: #dcfce7; border: 2px solid #86efac; }
-  .h-dot.rest   { background: #f8fafc; border: 2px solid #e2e8f0; }
+  .h-dot.rest   { background: #fef2f2; border: 2px solid #fca5a5; }
+  /* 未達成の ✕ オーバーレイ */
+  .h-dot-x {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.15rem; font-weight: 900;
+    color: #ef4444; line-height: 1;
+    text-shadow: 0 0 3px white, 0 0 5px white;
+    pointer-events: none;
+  }
   .h-date { font-size: 0.62rem; color: #94a3b8; font-weight: 700; }
   .h-empty { color: #94a3b8; font-size: 0.85rem; padding: 4px 0; }
 
@@ -1167,6 +1177,13 @@ function render() {
       const dot  = document.createElement('div');
       dot.className = 'h-dot ' + (h.result === 'growth' ? 'growth' : 'rest');
       dot.textContent = h.result === 'growth' ? '🌱' : '💤';
+      // 未達成（おやすみ）の場合は ✕ を重ねる
+      if (h.result !== 'growth') {
+        const x = document.createElement('span');
+        x.className = 'h-dot-x';
+        x.textContent = '✕';
+        dot.appendChild(x);
+      }
       const date = document.createElement('div');
       date.className = 'h-date';
       date.textContent = (h.date || '').slice(5).replace('-', '/');
@@ -1611,9 +1628,9 @@ function recordGrowthForSub(subIdx) {
   g.stage = (g.stage || 0) + 1;
   g.history.push({ date: today, result: 'growth' });
 
-  // この提出物だけ提出済みリストをリセット
-  if (g.submissions && g.submissions[subIdx]) {
-    g.submissions[subIdx].submitted = [];
+  // この提出物をリストから削除
+  if (g.submissions) {
+    g.submissions.splice(subIdx, 1);
   }
   g.currentSubmitted = [];
 
