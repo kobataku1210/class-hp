@@ -16,7 +16,7 @@
 
   /* ===== レイアウト ===== */
   .spacer { height: 0; display: none; }
-  .wrap { max-width: 500px; margin: 0 auto; padding: 28px 16px 100px; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 28px 20px 100px; }
 
   /* ===== ページタイトル ===== */
   .page-header { text-align: center; margin-bottom: 28px; }
@@ -31,16 +31,33 @@
   .grin-admin-row {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: 20px;
     margin-bottom: 18px;
   }
-  .grin-admin-row > .grin-card  { flex: 0 0 auto; width: 248px; margin-bottom: 0; }
-  .grin-admin-row > .admin-card { flex: 1; min-width: 0; margin-bottom: 0; }
+  /* グリンカード：左固定幅 */
+  .grin-admin-row > .grin-card {
+    flex: 0 0 300px;
+    width: 300px;
+    margin-bottom: 0;
+  }
+  /* 管理パネル：右側に広がる */
+  .grin-admin-row > .admin-card {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+    /* 管理パネルを上部に固定してスクロールしても見えるように */
+    position: sticky;
+    top: 16px;
+  }
+  /* 下の記録・未提出は左のグリンカードと揃える幅に制限 */
+  .sub-records { max-width: 300px; }
+
   /* 狭い画面では縦積み */
-  @media (max-width: 479px) {
+  @media (max-width: 600px) {
     .grin-admin-row { flex-direction: column; }
     .grin-admin-row > .grin-card,
-    .grin-admin-row > .admin-card { width: 100%; }
+    .grin-admin-row > .admin-card { width: 100%; flex: none; position: static; }
+    .sub-records { max-width: 100%; }
   }
 
   .grin-card {
@@ -384,6 +401,9 @@
 
   </div><!-- /grin-admin-row -->
 
+  <!-- 記録・未提出（左カラム幅に揃える） -->
+  <div class="sub-records">
+
   <!-- 記録 -->
   <div class="record-card">
     <div class="rc-title">📅 これまでの記録</div>
@@ -415,6 +435,7 @@
     </div>
   </div>
 
+  </div><!-- /sub-records -->
 
 </div>
 
