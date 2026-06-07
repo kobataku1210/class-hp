@@ -1332,17 +1332,10 @@ function renderUnsubmitted() {
     head.innerHTML = `
       <span class="sub-section-name">📋 ${escHtml(s.name)}</span>
       <span class="sub-section-dl">${dlText}</span>
-      <span class="sub-section-badge ${remaining === 0 ? 'done' : 'pending'}">
-        ${remaining === 0 ? '✅ 全員提出' : `あと ${remaining} 人`}
-      </span>`;
+      <span class="sub-section-badge pending">あと ${remaining} 人</span>`;
     sec.appendChild(head);
 
-    if (remaining === 0) {
-      const done = document.createElement('div');
-      done.className = 'unsub-all-done';
-      done.innerHTML = '🎉 全員提出！<div class="all-done-sub">グリンを成長させてね！</div>';
-      sec.appendChild(done);
-    } else {
+    {
       // 男子
       if (mUnsub.length > 0) {
         const grp = document.createElement('div');
