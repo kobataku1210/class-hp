@@ -1132,9 +1132,11 @@ function render() {
   const doneSvg = document.getElementById('done-svg');
   if (doneSvg) doneSvg.innerHTML = grinSVG(10);
 
-  // 進捗バー (10段階)
+  // 進捗バー (10段階・1段階につき全員提出2回)
+  const achieveCount = g.achieveCount || 0;
+  const inLevel = (stage >= 10) ? 0 : (achieveCount % 2);   // 次の段階に向けて達成済みの回数(0 or 1)
   const stepsEl = document.getElementById('progress-steps');
-  const pct = stage * 10;
+  const pct = Math.min(100, (stage + inLevel / 2) * 10);
   stepsEl.innerHTML = `
     <div class="pbar-wrap">
       <div class="pbar-fill" style="width:${pct}%"></div>
@@ -1149,7 +1151,8 @@ function render() {
   if (stage >= 10) {
     ptEl.innerHTML = '🎊 グリン、完成おめでとう！';
   } else {
-    ptEl.innerHTML = `あと <strong>${10 - stage} 回</strong> の全員提出で「${STAGES[stage + 1].name}」へ！`;
+    const need = 2 - inLevel;  // 次の段階までに必要な全員提出の回数(1 or 2)
+    ptEl.innerHTML = `あと <strong>${need} 回</strong> の全員提出で「${STAGES[stage + 1].name}」へ！`;
   }
 
   // 履歴
@@ -1560,20 +1563,23 @@ function saveConfig() {
    成長記録・おやすみ記録
    ============================================================ */
 function recordGrowth() {
-  if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [] };
+  if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [], achieveCount: 0 };
   const g = _data.grinGrowth;
   if (!g.history) g.history = [];
   if ((g.stage || 0) >= 10) return;
 
   const today = new Date().toISOString().slice(0, 10);
-  g.stage = (g.stage || 0) + 1;
-  g.history.push({ date: today, result: 'growth' });
+  // 達成2回ごとに1段階成長
+  g.achieveCount = (g.achieveCount || 0) + 1;
+  const leveledUp = (g.achieveCount % 2 === 0);
+  if (leveledUp) g.stage = (g.stage || 0) + 1;
+  g.history.push({ date: today, result: 'growth', leveledUp });
   g.currentSubmitted = []; // 記録後にリセット
 
   saveData();
   render();
 
-  if (g.stage >= 10) {
+  if (leveledUp && g.stage >= 10) {
     setTimeout(() => {
       document.getElementById('done-overlay').classList.add('show');
       spawnConfetti();
@@ -1614,14 +1620,20 @@ function updateSubRowGrowBtns() {
 
 /* 提出物ごとの成長ボタン用 */
 function recordGrowthForSub(subIdx) {
-  if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [] };
+  if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [], achieveCount: 0 };
   const g = _data.grinGrowth;
   if (!g.history) g.history = [];
   if ((g.stage || 0) >= 10) return;
 
   const today = new Date().toISOString().slice(0, 10);
-  g.stage = (g.stage || 0) + 1;
-  g.history.push({ date: today, result: 'growth' });
+
+  // 達成回数をカウントし、2回ごとに1段階成長
+  g.achieveCount = (g.achieveCount || 0) + 1;
+  const leveledUp = (g.achieveCount % 2 === 0);
+  if (leveledUp) {
+    g.stage = (g.stage || 0) + 1;
+  }
+  g.history.push({ date: today, result: 'growth', leveledUp });
 
   // この提出物をリストから削除
   if (g.submissions) {
@@ -1634,7 +1646,7 @@ function recordGrowthForSub(subIdx) {
   // 管理パネルの提出物リスト行も再描画（削除した行を消す）
   if (adminOpen) { loadSubRows(); updateBannerPreview(); }
 
-  if (g.stage >= 10) {
+  if (leveledUp && g.stage >= 10) {
     setTimeout(() => {
       document.getElementById('done-overlay').classList.add('show');
       spawnConfetti();
