@@ -1015,6 +1015,10 @@
       {
         "date": "2026-06-07",
         "result": "growth"
+      },
+      {
+        "date": "2026-06-07",
+        "result": "rest"
       }
     ],
     "students": {
