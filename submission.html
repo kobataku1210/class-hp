@@ -1124,10 +1124,35 @@ function toggleAdmin() {
     document.getElementById('admin-body').style.display = 'none';
     return;
   }
-  const pin = prompt('管理者の暗証番号を入力してください');
-  if (!pin) return;
+  // カスタムPINモーダルを表示
+  const modal = document.getElementById('pin-modal');
+  const inp   = document.getElementById('pin-input');
+  const err   = document.getElementById('pin-err');
+  if (!modal) return;
+  inp.value = ''; err.textContent = '';
+  modal.classList.add('show');
+  setTimeout(() => inp.focus(), 80);
+}
+
+function closePinModal() {
+  document.getElementById('pin-modal').classList.remove('show');
+}
+
+function togglePinEye() {
+  const inp = document.getElementById('pin-input');
+  const eye = document.getElementById('pin-eye');
+  if (inp.type === 'password') { inp.type = 'text';     eye.textContent = '🙈'; }
+  else                         { inp.type = 'password'; eye.textContent = '👁'; }
+}
+
+function submitPin() {
+  const inp     = document.getElementById('pin-input');
+  const err     = document.getElementById('pin-err');
+  const pin     = inp.value;
   const correct = _data.adminPIN || '1210';
+
   if (pin === correct) {
+    closePinModal();
     adminOpen = true;
     _adminPin = pin;
     document.getElementById('lock-btn').textContent = '🔓 管理中';
@@ -1151,7 +1176,11 @@ function toggleAdmin() {
     updateBannerPreview();
     renderUnsubmitted();
   } else {
-    alert('暗証番号が違います');
+    // 失敗アニメ
+    inp.classList.add('error');
+    err.textContent = '暗証番号が違います';
+    setTimeout(() => inp.classList.remove('error'), 400);
+    inp.value = ''; inp.focus();
   }
 }
 
