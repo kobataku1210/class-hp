@@ -1010,68 +1010,13 @@
     ]
   },
   "grinGrowth": {
-    "stage": 1,
-    "history": [
-      {
-        "date": "2026-06-07",
-        "result": "growth"
-      },
-      {
-        "date": "2026-06-07",
-        "result": "rest"
-      },
-      {
-        "date": "2026-06-05",
-        "result": "rest"
-      }
-    ],
+    "stage": 0,
+    "history": [],
     "students": {
       "maleCount": 19,
       "femaleCount": 18
     },
     "currentSubmitted": [],
-    "submissions": [
-      {
-        "name": "test4",
-        "deadline": "2026-07-01",
-        "submitted": [
-          1,
-          6,
-          10,
-          34,
-          35,
-          36,
-          19,
-          17,
-          18,
-          16,
-          14,
-          13,
-          12,
-          11,
-          15,
-          8,
-          9,
-          4,
-          23,
-          27,
-          28,
-          31,
-          32,
-          33,
-          37,
-          30,
-          26,
-          29,
-          25,
-          7
-        ]
-      },
-      {
-        "name": "r",
-        "deadline": "2026-06-16",
-        "submitted": []
-      }
-    ]
+    "submissions": []
   }
 }
