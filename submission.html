@@ -554,6 +554,26 @@
 
 </div>
 
+<!-- PIN モーダル -->
+<div id="pin-modal">
+  <div class="pin-box">
+    <div class="pin-icon">🔒</div>
+    <div class="pin-title">管理者ログイン</div>
+    <div class="pin-sub">暗証番号を入力してください</div>
+    <div class="pin-input-wrap">
+      <input id="pin-input" type="password" inputmode="numeric"
+             maxlength="20" placeholder="●●●●"
+             onkeydown="if(event.key==='Enter')submitPin()">
+      <button class="pin-eye" id="pin-eye" onclick="togglePinEye()" title="表示/非表示">👁</button>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+    <div class="pin-btns">
+      <button class="pin-cancel" onclick="closePinModal()">キャンセル</button>
+      <button class="pin-ok"     onclick="submitPin()">ログイン</button>
+    </div>
+  </div>
+</div>
+
 <!-- 完成オーバーレイ -->
 <div id="done-overlay">
   <div class="done-inner">
