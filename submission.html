@@ -482,26 +482,26 @@
     to   { box-shadow: 0 6px 32px rgba(34,197,94,0.75), 0 0 0 4px rgba(34,197,94,0.2); }
   }
 
-  /* 提出物ごとの成長ボタン */
-  .btn-grow-sub {
-    width: 100%; margin-top: 14px; padding: 13px 10px;
-    border-radius: 14px; font-size: 0.88rem; font-weight: 900;
-    cursor: pointer; font-family: inherit; line-height: 1.4;
-    transition: all 0.2s; border: none;
+  /* 行内の成長ボタン */
+  .sub-grow-btn {
+    flex-shrink: 0; width: 84px; height: 34px;
+    border-radius: 8px; font-size: 0.72rem; font-weight: 900;
+    cursor: pointer; font-family: inherit; line-height: 1.25;
+    transition: all 0.2s; border: none; white-space: nowrap;
+    padding: 0 6px;
   }
-  .btn-grow-sub:not(:disabled) {
+  .sub-grow-btn:not(:disabled) {
     background: linear-gradient(135deg, #22c55e, #15803d);
     color: white;
-    box-shadow: 0 4px 16px rgba(34,197,94,0.35);
+    box-shadow: 0 3px 10px rgba(34,197,94,0.4);
   }
-  .btn-grow-sub:not(:disabled):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(34,197,94,0.5);
+  .sub-grow-btn:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 16px rgba(34,197,94,0.55);
   }
-  .btn-grow-sub:disabled {
+  .sub-grow-btn:disabled {
     background: #f1f5f9; color: #94a3b8;
     border: 1.5px solid #e2e8f0; cursor: default;
-    font-size: 0.82rem;
   }
 
   /* ===== 紙吹雪 ===== */
@@ -1238,7 +1238,7 @@ function submitPin() {
     // 提出物リストを読み込み（複数対応）
     loadSubRows();
     updateBannerPreview();
-    renderUnsubmitted();
+    renderUnsubmitted();       // → 内部で updateSubRowGrowBtns() も呼ばれる
   } else {
     // 失敗アニメ
     inp.classList.add('error');
@@ -1379,28 +1379,11 @@ function renderUnsubmitted() {
         sec.appendChild(ok);
       }
     }
-    // 成長ボタン（管理モード時のみ表示）
-    if (adminOpen) {
-      const growSubBtn = document.createElement('button');
-      growSubBtn.className = 'btn-grow-sub';
-      const stageNow = Math.min(g.stage || 0, 10);
-      if (remaining === 0 && stageNow < 10) {
-        growSubBtn.innerHTML = '✅ 全員提出！<br>グリンを成長させる 🌱';
-        growSubBtn.disabled = false;
-        growSubBtn.style.animation = 'btn-glow 0.9s ease-in-out infinite alternate';
-        growSubBtn.onclick = () => recordGrowthForSub(subIdx);
-      } else if (stageNow >= 10) {
-        growSubBtn.innerHTML = '🎊 グリン 完成！';
-        growSubBtn.disabled = true;
-      } else {
-        growSubBtn.innerHTML = `あと <strong>${remaining}</strong> 人で<br>グリンを成長できる 🌱`;
-        growSubBtn.disabled = true;
-      }
-      sec.appendChild(growSubBtn);
-    }
-
     container.appendChild(sec);
   });
+
+  // 管理パネル行の成長ボタンを同期更新
+  updateSubRowGrowBtns();
 }
 
 function toggleStudentSubmit(num, subIdx) {
@@ -1430,7 +1413,7 @@ function resetSubmission() {
 /* ============================================================
    複数提出物リスト管理
    ============================================================ */
-function addSubRow(name, deadline) {
+function addSubRow(name, deadline, savedIdx) {
   const list = document.getElementById('sub-list');
   if (!list) return;
   const row = document.createElement('div');
@@ -1439,6 +1422,10 @@ function addSubRow(name, deadline) {
     <input type="text"  class="sub-name" placeholder="例: 家庭学習ノート" value="${escHtml(name)}">
     <input type="date"  class="sub-date" value="${escHtml(deadline)}">
     <button class="sub-remove" onclick="removeSubRow(this)" title="削除">✕</button>
+    <button class="sub-grow-btn" disabled
+      ${savedIdx !== undefined ? `data-idx="${savedIdx}"` : ''}
+      title="全員提出で押せます">🌱 ―
+    </button>
   `;
   // リアルタイムプレビュー
   row.querySelector('.sub-name').oninput  = updateBannerPreview;
@@ -1465,7 +1452,7 @@ function loadSubRows() {
   let subs = g.submissions;
   if (!subs && g.submissionName) subs = [{ name: g.submissionName, deadline: g.deadline || '' }];
   if (!subs || subs.length === 0) { addSubRow('', ''); return; }
-  subs.forEach(s => addSubRow(s.name || '', s.deadline || ''));
+  subs.forEach((s, i) => addSubRow(s.name || '', s.deadline || '', i));
 }
 
 function saveSubmissionInfo() {
@@ -1582,6 +1569,37 @@ function recordGrowth() {
   }
 }
 
+/* 管理パネル行の成長ボタンを更新 */
+function updateSubRowGrowBtns() {
+  const subs  = getSubmissions();
+  const { male, female } = getStudentConfig();
+  const total = male + female;
+  const stage = Math.min((_data.grinGrowth || {}).stage || 0, 10);
+
+  document.querySelectorAll('.sub-grow-btn[data-idx]').forEach(btn => {
+    const idx = parseInt(btn.dataset.idx);
+    const sub = subs[idx];
+    if (!sub) return;
+    const submitted  = new Set(sub.submitted || []);
+    const remaining  = [...Array(total)].filter((_, i) => !submitted.has(i + 1)).length;
+
+    if (stage >= 10) {
+      btn.textContent = '🎊 完成';
+      btn.disabled = true;
+      btn.style.animation = '';
+    } else if (remaining === 0) {
+      btn.innerHTML = '✅ 成長！<br>🌱';
+      btn.disabled = false;
+      btn.style.animation = 'btn-glow 0.9s ease-in-out infinite alternate';
+      btn.onclick = () => recordGrowthForSub(idx);
+    } else {
+      btn.innerHTML = `🌱 あと${remaining}人`;
+      btn.disabled = true;
+      btn.style.animation = '';
+    }
+  });
+}
+
 /* 提出物ごとの成長ボタン用 */
 function recordGrowthForSub(subIdx) {
   if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [] };
@@ -1600,7 +1618,7 @@ function recordGrowthForSub(subIdx) {
   g.currentSubmitted = [];
 
   saveData();
-  render();
+  render();          // render() の中で renderUnsubmitted() → updateSubRowGrowBtns() が呼ばれる
 
   if (g.stage >= 10) {
     setTimeout(() => {
