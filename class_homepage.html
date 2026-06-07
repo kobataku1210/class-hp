@@ -507,6 +507,126 @@
     .bd-grid { grid-template-columns: repeat(2, 1fr); }
     .sched-table th:last-child, .sched-table td:last-child { display: none; }
   }
+
+  /* ===== 提出物チェック ===== */
+  #sec-submissions .sec-icon { background: linear-gradient(135deg,#7c3aed,#db2777); }
+  #sec-submissions .sec-title { color: #6d28d9; border-bottom-color: #ddd6fe; }
+  .sub-admin-btn {
+    margin-left: auto;
+    background: rgba(255,255,255,0.85);
+    border: 1.5px solid #c4b5fd;
+    border-radius: 8px; padding: 4px 12px;
+    font-size: 0.78rem; cursor: pointer; color: #7c3aed;
+    font-weight: 700; transition: all 0.2s; font-family: inherit;
+  }
+  .sub-admin-btn.unlocked { color: #16a34a; border-color: #86efac; background: #f0fdf4; }
+  .sub-streak {
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(135deg,#fff7ed,#fef3c7);
+    border: 1.5px solid #fbbf24; border-radius: 12px;
+    padding: 10px 16px; margin-bottom: 12px;
+  }
+  .sub-streak-num { font-size: 1.6rem; font-weight: 900; color: #d97706; }
+  .sub-streak-label { font-size: 0.85rem; font-weight: 700; color: #b45309; line-height: 1.3; }
+  .sub-empty { text-align:center; color:#94a3b8; padding:24px 0; font-size:0.9rem; }
+  .sub-card {
+    background: white; border-radius: 16px; padding: 16px;
+    margin-bottom: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    border: 1.5px solid #e2e8f0;
+  }
+  .sub-card.is-done { border-color: #86efac; background: linear-gradient(135deg,#f0fdf4,#fff); }
+  .sub-card-head { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .sub-title { font-size:1rem; font-weight:700; color:#1e293b; flex:1; min-width:0; }
+  .sub-deadline { font-size:0.75rem; color:#64748b; background:#f1f5f9; border-radius:6px; padding:3px 8px; white-space:nowrap; }
+  .sub-deadline.near { background:#fef2f2; color:#dc2626; font-weight:700; }
+  .sub-done-badge { font-size:0.75rem; background:#dcfce7; color:#16a34a; border-radius:6px; padding:3px 8px; font-weight:700; }
+  .sub-pbar-wrap { height:8px; background:#e2e8f0; border-radius:99px; overflow:hidden; margin-bottom:5px; }
+  .sub-pbar-fill { height:100%; background:linear-gradient(90deg,#7c3aed,#3b82f6); border-radius:99px; transition:width 0.5s cubic-bezier(.4,0,.2,1); }
+  .sub-card.is-done .sub-pbar-fill { background: linear-gradient(90deg,#22c55e,#16a34a); }
+  .sub-count { font-size:0.78rem; color:#64748b; margin-bottom:12px; }
+  .sub-grid { display:flex; flex-wrap:wrap; gap:5px; }
+  .sub-num {
+    width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+    border-radius:7px; font-size:0.78rem; font-weight:700;
+    background:#f1f5f9; color:#94a3b8; border:1.5px solid #e2e8f0;
+    transition:all 0.2s; user-select:none;
+  }
+  .sub-num.done { background:#dcfce7; color:#16a34a; border-color:#86efac; }
+  .sub-num.clickable { cursor:pointer; }
+  .sub-num.clickable:hover { transform:scale(1.15); box-shadow:0 2px 8px rgba(0,0,0,0.14); }
+  .sub-delete-btn {
+    margin-top:12px; background:none; border:1.5px solid #fca5a5;
+    color:#ef4444; border-radius:8px; padding:5px 14px;
+    font-size:0.76rem; cursor:pointer; font-weight:700;
+    font-family:inherit; transition:all 0.2s;
+  }
+  .sub-delete-btn:hover { background:#fef2f2; }
+  .sub-add-form {
+    background:#f8faff; border:1.5px dashed #93c5fd;
+    border-radius:14px; padding:14px 16px; margin-bottom:14px;
+  }
+  .sub-add-form label { font-size:0.78rem; color:#64748b; font-weight:700; display:block; margin-bottom:4px; }
+  .sub-add-form input {
+    width:100%; border:1.5px solid #cbd5e1; border-radius:8px;
+    padding:7px 10px; font-size:0.88rem; margin-bottom:8px;
+    font-family:inherit; outline:none;
+  }
+  .sub-add-form input:focus { border-color:#7c3aed; }
+  .sub-add-row { display:flex; gap:8px; }
+  .sub-add-row input { margin-bottom:0; flex:1; }
+  .sub-add-btn {
+    background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white;
+    border:none; border-radius:8px; padding:7px 16px;
+    font-size:0.88rem; font-weight:700; cursor:pointer;
+    font-family:inherit; white-space:nowrap;
+  }
+  /* 全員提出お祝いオーバーレイ */
+  #sub-overlay {
+    display:none; position:fixed; inset:0; z-index:500;
+    background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center;
+  }
+  #sub-overlay.show { display:flex; }
+  .sub-ov-inner {
+    background:white; border-radius:28px; padding:36px 28px;
+    max-width:360px; width:90%; text-align:center;
+    box-shadow:0 24px 72px rgba(0,0,0,0.3);
+    animation:sub-ov-pop 0.5s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @keyframes sub-ov-pop {
+    from { opacity:0; transform:scale(0.6) translateY(50px); }
+    to   { opacity:1; transform:none; }
+  }
+  .sub-ov-emoji { font-size:4rem; margin-bottom:4px; }
+  .sub-ov-title {
+    font-size:1.8rem; font-weight:900;
+    background:linear-gradient(135deg,#f59e0b,#ef4444);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text; margin-bottom:6px;
+  }
+  .sub-ov-assignment { font-size:0.9rem; color:#64748b; margin-bottom:14px; }
+  .sub-ov-streak {
+    display:inline-flex; align-items:center; gap:8px;
+    background:linear-gradient(135deg,#fef3c7,#fff7ed);
+    border:2px solid #fbbf24; border-radius:50px;
+    padding:8px 24px; font-size:1rem; font-weight:800;
+    color:#b45309; margin-bottom:22px;
+  }
+  .sub-ov-close {
+    background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white;
+    border:none; border-radius:50px; padding:12px 40px;
+    font-size:1rem; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  .sub-conf {
+    position:fixed; top:-14px; pointer-events:none; z-index:600;
+    width:10px; height:14px; border-radius:2px;
+    opacity:0; animation:sub-conf-fall linear forwards;
+  }
+  @keyframes sub-conf-fall {
+    0%   { opacity:1; transform:translateY(0) rotate(0deg); }
+    80%  { opacity:1; }
+    100% { opacity:0; transform:translateY(105vh) rotate(900deg); }
+  }
 </style>
 </head>
 <body>
@@ -591,6 +711,29 @@
       <div class="rb-arrow" style="color:rgba(251,191,36,0.7)">▶</div>
     </a>
   </section>
+
+  <!-- ========== 提出物チェック ========== -->
+  <section id="sec-submissions">
+    <h2 class="sec-title">
+      <span class="sec-icon">📋</span>
+      提出物チェック
+      <button class="sub-admin-btn" id="sub-admin-btn" onclick="toggleSubAdmin()">🔒 管理</button>
+    </h2>
+    <div id="sub-container"></div>
+  </section>
+
+  <!-- 全員提出お祝いオーバーレイ -->
+  <div id="sub-overlay">
+    <div class="sub-ov-inner">
+      <div class="sub-ov-emoji">🎉</div>
+      <div class="sub-ov-title">全員提出達成！</div>
+      <div class="sub-ov-assignment" id="sub-ov-assignment"></div>
+      <div class="sub-ov-streak" id="sub-ov-streak">
+        <span>🔥</span><span id="sub-ov-streak-num"></span><span>回連続達成！</span>
+      </div>
+      <button class="sub-ov-close" onclick="closeSubOverlay()">やったー！ ✨</button>
+    </div>
+  </div>
 
   <!-- ========== ご褒美スロット ========== -->
   <section>
@@ -678,14 +821,28 @@ const DEFAULTS = {
 };
 
 /* ============================================================
-   データ読み込み（data.json から取得）
+   サーバー設定
+   ============================================================ */
+const SERVER = 'http://localhost:3456';
+
+/* ============================================================
+   データ読み込み（ローカルサーバー優先 → GitHub Pages フォールバック）
    ============================================================ */
 async function loadData() {
+  let data = null;
+  // まずローカルサーバーから（即時反映・先生用）
   try {
-    const res = await fetch('data.json?_=' + Date.now());
-    if (!res.ok) return {};
-    return await res.json();
-  } catch(e) { return {}; }
+    const res = await fetch(SERVER + '/api/data', { signal: AbortSignal.timeout(1500) });
+    if (res.ok) data = await res.json();
+  } catch(e) { /* サーバー未起動なら無視 */ }
+  // フォールバック: GitHub Pages の静的ファイル
+  if (!data) {
+    try {
+      const res = await fetch('data.json?_=' + Date.now());
+      if (res.ok) data = await res.json();
+    } catch(e) { /* 何もしない */ }
+  }
+  return data || {};
 }
 function merge(val, def) {
   return (val !== undefined && val !== null && val !== '') ? val : def;
@@ -974,7 +1131,251 @@ document.addEventListener('DOMContentLoaded', async () => {
   buildCampaign(d);
   buildNotice(d);
   buildSchedule(d);
+  buildSubmissions(d);
 });
+
+/* ============================================================
+   提出物チェック
+   ============================================================ */
+let _fullData          = {};
+let _adminPin          = '';
+let subAdminUnlocked   = false;
+
+function getSubData() {
+  const s = _fullData.submissions || {};
+  return {
+    totalStudents: s.totalStudents ?? 35,
+    streak:        s.streak        ?? 0,
+    assignments:   Array.isArray(s.assignments) ? s.assignments : [],
+  };
+}
+
+function buildSubmissions(d) {
+  _fullData = d;
+  renderSubmissions();
+}
+
+function renderSubmissions() {
+  const container = document.getElementById('sub-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const s = getSubData();
+
+  // ストリーク表示
+  if (s.streak > 0) {
+    const el = document.createElement('div');
+    el.className = 'sub-streak';
+    el.innerHTML = `<span style="font-size:1.8rem">🔥</span><span class="sub-streak-num">${s.streak}</span><span class="sub-streak-label">回連続<br>全員提出達成！</span>`;
+    container.appendChild(el);
+  }
+
+  // 管理者用: 追加フォーム
+  if (subAdminUnlocked) {
+    const form = document.createElement('div');
+    form.className = 'sub-add-form';
+    form.innerHTML = `
+      <label>📝 新しい提出物を追加</label>
+      <input type="text" id="sub-new-title" placeholder="例：数学ワーク p.45-46" />
+      <div class="sub-add-row">
+        <input type="date" id="sub-new-deadline" />
+        <button class="sub-add-btn" onclick="addAssignment()">＋ 追加</button>
+      </div>
+    `;
+    container.appendChild(form);
+  }
+
+  // 提出物一覧（新しい順）
+  const sorted = [...s.assignments].reverse();
+
+  if (sorted.length === 0 && !subAdminUnlocked) {
+    const empty = document.createElement('div');
+    empty.className = 'sub-empty';
+    empty.textContent = '現在、提出物はありません ✅';
+    container.appendChild(empty);
+    return;
+  }
+
+  sorted.forEach(a => {
+    const submittedSet = new Set(a.submitted || []);
+    const count  = submittedSet.size;
+    const total  = s.totalStudents;
+    const pct    = Math.min(100, Math.round(count / total * 100));
+    const isDone = count >= total;
+
+    // 期限
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dl    = a.deadline ? new Date(a.deadline + 'T00:00:00') : null;
+    const daysLeft = dl ? Math.round((dl - today) / 86400000) : null;
+    let deadlineStr = '';
+    let deadlineCls = 'sub-deadline';
+    if (dl) {
+      const wk = ['日','月','火','水','木','金','土'][dl.getDay()];
+      deadlineStr = `期限 ${dl.getMonth()+1}/${dl.getDate()}（${wk}）`;
+      if (daysLeft !== null && daysLeft <= 2 && !isDone) deadlineCls += ' near';
+    }
+
+    // 番号グリッド
+    let gridHTML = '<div class="sub-grid">';
+    for (let i = 1; i <= total; i++) {
+      const done = submittedSet.has(i);
+      const click = subAdminUnlocked ? `onclick="toggleSubmission('${a.id}',${i})"` : '';
+      gridHTML += `<div class="sub-num${done?' done':''}${subAdminUnlocked?' clickable':''}" ${click}>${i}</div>`;
+    }
+    gridHTML += '</div>';
+
+    const card = document.createElement('div');
+    card.className = 'sub-card' + (isDone ? ' is-done' : '');
+    card.innerHTML = `
+      <div class="sub-card-head">
+        <div class="sub-title">${a.title || '（タイトルなし）'}</div>
+        ${isDone
+          ? '<span class="sub-done-badge">✅ 全員提出！</span>'
+          : (deadlineStr ? `<span class="${deadlineCls}">${deadlineStr}</span>` : '')}
+      </div>
+      <div class="sub-pbar-wrap"><div class="sub-pbar-fill" style="width:${pct}%"></div></div>
+      <div class="sub-count"><strong>${count}</strong> / ${total} 人提出（${pct}%）${(!isDone && daysLeft !== null) ? `・あと<strong>${daysLeft}</strong>日` : ''}</div>
+      ${gridHTML}
+      ${subAdminUnlocked ? `<button class="sub-delete-btn" onclick="deleteAssignment('${a.id}')">🗑 この提出物を削除</button>` : ''}
+    `;
+    container.appendChild(card);
+  });
+}
+
+function toggleSubAdmin() {
+  if (subAdminUnlocked) {
+    subAdminUnlocked = false;
+    const btn = document.getElementById('sub-admin-btn');
+    btn.textContent = '🔒 管理';
+    btn.classList.remove('unlocked');
+    renderSubmissions();
+    return;
+  }
+  const pin = prompt('管理者の暗証番号を入力してください');
+  if (!pin) return;
+  const correct = _fullData.adminPIN || '1210';
+  if (pin === correct) {
+    subAdminUnlocked = true;
+    _adminPin = pin;
+    const btn = document.getElementById('sub-admin-btn');
+    btn.textContent = '🔓 管理中';
+    btn.classList.add('unlocked');
+    renderSubmissions();
+  } else {
+    alert('暗証番号が違います');
+  }
+}
+
+function toggleSubmission(assignmentId, num) {
+  if (!_fullData.submissions) _fullData.submissions = { totalStudents: 35, streak: 0, assignments: [] };
+  const s = _fullData.submissions;
+  if (!s.assignments) s.assignments = [];
+
+  const a = s.assignments.find(x => x.id === assignmentId);
+  if (!a) return;
+  if (!a.submitted) a.submitted = [];
+
+  const wasDone = a.submitted.length >= (s.totalStudents ?? 35);
+  const idx = a.submitted.indexOf(num);
+  if (idx >= 0) {
+    a.submitted.splice(idx, 1);
+    a.celebrated = false; // 未達成に戻したらフラグリセット
+  } else {
+    a.submitted.push(num);
+  }
+  a.submitted.sort((x, y) => x - y);
+
+  const nowDone = a.submitted.length >= (s.totalStudents ?? 35);
+  if (nowDone && !wasDone && !a.celebrated) {
+    a.celebrated = true;
+    s.streak = (s.streak || 0) + 1;
+    saveSubmissions();
+    renderSubmissions();
+    celebrateAllSubmitted(a, s.streak);
+  } else {
+    saveSubmissions();
+    renderSubmissions();
+  }
+}
+
+function addAssignment() {
+  const titleEl = document.getElementById('sub-new-title');
+  const dlEl    = document.getElementById('sub-new-deadline');
+  const title   = titleEl ? titleEl.value.trim() : '';
+  if (!title) { alert('タイトルを入力してください'); return; }
+
+  if (!_fullData.submissions) _fullData.submissions = { totalStudents: 35, streak: 0, assignments: [] };
+  const s = _fullData.submissions;
+  if (!s.assignments) s.assignments = [];
+
+  s.assignments.push({
+    id:         Date.now().toString(),
+    title,
+    deadline:   dlEl ? dlEl.value : '',
+    submitted:  [],
+    celebrated: false,
+  });
+  saveSubmissions();
+  renderSubmissions();
+}
+
+function deleteAssignment(assignmentId) {
+  if (!confirm('この提出物を削除しますか？')) return;
+  const s = _fullData.submissions;
+  if (!s || !s.assignments) return;
+  s.assignments = s.assignments.filter(a => a.id !== assignmentId);
+  saveSubmissions();
+  renderSubmissions();
+}
+
+async function saveSubmissions() {
+  const pin = _adminPin || _fullData.adminPIN || '1210';
+  try {
+    await fetch(SERVER + '/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin, data: _fullData }),
+    });
+    await fetch(SERVER + '/api/git-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    });
+  } catch(e) { console.warn('saveSubmissions failed', e); }
+}
+
+function celebrateAllSubmitted(assignment, streak) {
+  document.getElementById('sub-ov-assignment').textContent = `「${assignment.title}」全員提出達成！`;
+  document.getElementById('sub-ov-streak-num').textContent = streak;
+  document.getElementById('sub-overlay').classList.add('show');
+  spawnSubConfetti();
+}
+
+function closeSubOverlay() {
+  document.getElementById('sub-overlay').classList.remove('show');
+  document.querySelectorAll('.sub-conf').forEach(el => el.remove());
+}
+
+const SUB_CONF_COLORS = ['#f59e0b','#ef4444','#3b82f6','#22c55e','#8b5cf6','#ec4899','#06b6d4','#fbbf24','#10b981'];
+function spawnSubConfetti() {
+  for (let i = 0; i < 120; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'sub-conf';
+      el.style.left = (Math.random() * 100) + 'vw';
+      el.style.background = SUB_CONF_COLORS[Math.floor(Math.random() * SUB_CONF_COLORS.length)];
+      el.style.animationDuration = (1.5 + Math.random() * 2.5) + 's';
+      el.style.width  = (7 + Math.random() * 7) + 'px';
+      el.style.height = (9 + Math.random() * 9) + 'px';
+      el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      el.style.opacity = '0';
+      document.body.appendChild(el);
+      // アニメーション開始（次フレームで）
+      requestAnimationFrame(() => { el.style.animationPlayState = 'running'; });
+      setTimeout(() => el.remove(), 4200);
+    }, i * 18);
+  }
+}
 </script>
 </body>
 </html>
