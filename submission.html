@@ -27,6 +27,22 @@
   .page-sub { font-size: 0.88rem; color: #64748b; margin-top: 6px; }
 
   /* ===== グリンカード ===== */
+  /* キャラ＋管理の横並びラッパー */
+  .grin-admin-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .grin-admin-row > .grin-card  { flex: 0 0 auto; width: 248px; margin-bottom: 0; }
+  .grin-admin-row > .admin-card { flex: 1; min-width: 0; margin-bottom: 0; }
+  /* 狭い画面では縦積み */
+  @media (max-width: 479px) {
+    .grin-admin-row { flex-direction: column; }
+    .grin-admin-row > .grin-card,
+    .grin-admin-row > .admin-card { width: 100%; }
+  }
+
   .grin-card {
     background: white; border-radius: 32px; padding: 28px 20px 24px;
     margin-bottom: 18px;
@@ -306,17 +322,67 @@
     <div class="page-sub">みんなで提出して、グリンを育てよう！</div>
   </div>
 
-  <!-- グリンカード -->
-  <div class="grin-card">
-    <div class="stage-badge" id="stage-badge">STAGE 0 / 10</div>
-    <div class="stage-name" id="stage-name">種</div>
-    <div class="stage-desc" id="stage-desc">グリンはまだ眠っています…</div>
-    <div class="grin-art">
-      <svg class="grin-svg" id="grin-svg" width="210" height="210" viewBox="0 0 210 210"></svg>
+  <!-- グリン＋管理パネル横並び -->
+  <div class="grin-admin-row">
+
+    <!-- グリンカード（左） -->
+    <div class="grin-card">
+      <div class="stage-badge" id="stage-badge">STAGE 0 / 10</div>
+      <div class="stage-name" id="stage-name">種</div>
+      <div class="stage-desc" id="stage-desc">グリンはまだ眠っています…</div>
+      <div class="grin-art">
+        <svg class="grin-svg" id="grin-svg" width="210" height="210" viewBox="0 0 210 210"></svg>
+      </div>
+      <div class="progress-steps" id="progress-steps"></div>
+      <div class="progress-text" id="progress-text"></div>
     </div>
-    <div class="progress-steps" id="progress-steps"></div>
-    <div class="progress-text" id="progress-text"></div>
-  </div>
+
+    <!-- 管理パネル（右） -->
+    <div class="admin-card">
+      <div class="admin-head">
+        <span class="admin-label">🔧 先生用コントロール</span>
+        <button class="lock-btn" id="lock-btn" onclick="toggleAdmin()">🔒 管理</button>
+      </div>
+      <div id="admin-body" style="display:none" class="admin-body">
+        <!-- 提出物設定 -->
+        <div class="config-form">
+          <label>📋 現在の提出物</label>
+          <div class="config-row">
+            <input type="text" id="cfg-subname" placeholder="例: 家庭学習ノート"
+              style="flex:1;min-width:0;padding:6px 10px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:0.85rem;font-family:inherit">
+            <label style="white-space:nowrap">締切</label>
+            <input type="date" id="cfg-deadline"
+              style="width:100%;padding:5px 8px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:0.83rem;font-family:inherit;margin-top:4px">
+            <button onclick="saveSubmissionInfo()">保存</button>
+          </div>
+        </div>
+        <!-- 人数設定 -->
+        <div class="config-form">
+          <label>👥 クラス人数の設定</label>
+          <div class="config-row">
+            <label>👦</label>
+            <input type="number" id="cfg-male" min="0" max="40" value="18" style="width:52px">
+            <label>人 👧</label>
+            <input type="number" id="cfg-female" min="0" max="40" value="17" style="width:52px">
+            <label>人</label>
+            <button onclick="saveConfig()">保存</button>
+          </div>
+        </div>
+        <!-- 提出リセット -->
+        <button class="btn-reset-sub" onclick="resetSubmission()">
+          🔄 リセット
+        </button>
+        <button class="btn-grow" id="btn-grow" onclick="recordGrowth()">
+          ✅ 全員提出！<br>グリンを成長させる 🌱
+        </button>
+        <button class="btn-rest" id="btn-rest" onclick="recordRest()">
+          💤 今日は成長おやすみ
+        </button>
+        <div class="save-status" id="save-status"></div>
+      </div>
+    </div>
+
+  </div><!-- /grin-admin-row -->
 
   <!-- 記録 -->
   <div class="record-card">
@@ -349,50 +415,7 @@
     </div>
   </div>
 
-  <!-- 管理パネル -->
-  <div class="admin-card">
-    <div class="admin-head">
-      <span class="admin-label">🔧 先生用コントロール</span>
-      <button class="lock-btn" id="lock-btn" onclick="toggleAdmin()">🔒 管理</button>
-    </div>
-    <div id="admin-body" style="display:none" class="admin-body">
-      <!-- 提出物設定 -->
-      <div class="config-form">
-        <label>📋 現在の提出物</label>
-        <div class="config-row">
-          <input type="text" id="cfg-subname" placeholder="例: 家庭学習ノート"
-            style="flex:1;min-width:130px;padding:6px 10px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:0.85rem;font-family:inherit">
-          <label style="white-space:nowrap">締切</label>
-          <input type="date" id="cfg-deadline"
-            style="padding:5px 8px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:0.83rem;font-family:inherit">
-          <button onclick="saveSubmissionInfo()">保存</button>
-        </div>
-      </div>
-      <!-- 人数設定 -->
-      <div class="config-form">
-        <label>👥 クラス人数の設定</label>
-        <div class="config-row">
-          <label>👦 男子</label>
-          <input type="number" id="cfg-male" min="0" max="40" value="18">
-          <label>人 &nbsp; 👧 女子</label>
-          <input type="number" id="cfg-female" min="0" max="40" value="17">
-          <label>人</label>
-          <button onclick="saveConfig()">保存</button>
-        </div>
-      </div>
-      <!-- 提出リセット -->
-      <button class="btn-reset-sub" onclick="resetSubmission()">
-        🔄 提出状況をリセット（新しい日の記録を開始）
-      </button>
-      <button class="btn-grow" id="btn-grow" onclick="recordGrowth()">
-        ✅ 全員提出！<br>グリンを成長させる 🌱
-      </button>
-      <button class="btn-rest" id="btn-rest" onclick="recordRest()">
-        💤 今日は成長おやすみ
-      </button>
-      <div class="save-status" id="save-status"></div>
-    </div>
-  </div>
+
 </div>
 
 <!-- 完成オーバーレイ -->
