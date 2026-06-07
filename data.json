@@ -1036,6 +1036,8 @@
     "students": {
       "maleCount": 19,
       "femaleCount": 18
-    }
+    },
+    "submissionName": "test",
+    "deadline": "2026-06-10"
   }
 }
