@@ -492,27 +492,19 @@
     to   { box-shadow: 0 6px 32px rgba(34,197,94,0.75), 0 0 0 4px rgba(34,197,94,0.2); }
   }
 
-  /* 行内の成長ボタン */
-  .sub-grow-btn {
-    flex-shrink: 0; width: 84px; height: 34px;
-    border-radius: 8px; font-size: 0.72rem; font-weight: 900;
-    cursor: pointer; font-family: inherit; line-height: 1.25;
-    transition: all 0.2s; border: none; white-space: nowrap;
-    padding: 0 6px;
+  /* 行内 達成／失敗ボタン */
+  .sub-action-btn {
+    flex-shrink: 0; width: 34px; height: 34px;
+    border-radius: 8px; font-size: 1rem;
+    cursor: pointer; border: none;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
   }
-  .sub-grow-btn:not(:disabled) {
-    background: linear-gradient(135deg, #22c55e, #15803d);
-    color: white;
-    box-shadow: 0 3px 10px rgba(34,197,94,0.4);
-  }
-  .sub-grow-btn:not(:disabled):hover {
-    transform: translateY(-1px);
-    box-shadow: 0 5px 16px rgba(34,197,94,0.55);
-  }
-  .sub-grow-btn:disabled {
-    background: #f1f5f9; color: #94a3b8;
-    border: 1.5px solid #e2e8f0; cursor: default;
-  }
+  .sub-action-btn:disabled { opacity: 0.35; cursor: default; transform: none !important; }
+  .sub-success { background: #dcfce7; }
+  .sub-success:not(:disabled):hover { background: #bbf7d0; transform: scale(1.12); }
+  .sub-fail    { background: #fee2e2; }
+  .sub-fail:not(:disabled):hover    { background: #fecaca; transform: scale(1.12); }
 
   /* ===== 紙吹雪 ===== */
   .gconf {
@@ -1391,9 +1383,6 @@ function renderUnsubmitted() {
     }
     container.appendChild(sec);
   });
-
-  // 管理パネル行の成長ボタンを同期更新
-  updateSubRowGrowBtns();
 }
 
 function toggleStudentSubmit(num, subIdx) {
@@ -1428,14 +1417,18 @@ function addSubRow(name, deadline, savedIdx) {
   if (!list) return;
   const row = document.createElement('div');
   row.className = 'sub-row';
+  const idxAttr = savedIdx !== undefined ? `data-idx="${savedIdx}"` : '';
+  const disabled = savedIdx !== undefined ? '' : 'disabled';
   row.innerHTML = `
     <input type="text"  class="sub-name" placeholder="例: 家庭学習ノート" value="${escHtml(name)}">
     <input type="date"  class="sub-date" value="${escHtml(deadline)}">
     <button class="sub-remove" onclick="removeSubRow(this)" title="削除">✕</button>
-    <button class="sub-grow-btn" disabled
-      ${savedIdx !== undefined ? `data-idx="${savedIdx}"` : ''}
-      title="全員提出で押せます">🌱 ―
-    </button>
+    <button class="sub-action-btn sub-success" ${idxAttr} ${disabled}
+      title="✅ 達成（全員提出・グリンを成長させる）"
+      onclick="this.dataset.idx !== undefined && recordGrowthForSub(parseInt(this.dataset.idx))">✅</button>
+    <button class="sub-action-btn sub-fail" ${idxAttr} ${disabled}
+      title="❌ 失敗（未達成として記録）"
+      onclick="this.dataset.idx !== undefined && recordFailureForSub(parseInt(this.dataset.idx))">❌</button>
   `;
   // リアルタイムプレビュー
   row.querySelector('.sub-name').oninput  = updateBannerPreview;
@@ -1640,6 +1633,26 @@ function recordGrowthForSub(subIdx) {
   }
 }
 
+/* 提出物ごとの失敗記録 */
+function recordFailureForSub(subIdx) {
+  if (!_data.grinGrowth) return;
+  const g = _data.grinGrowth;
+  if (!g.history) g.history = [];
+
+  // 締切日 or 今日の日付で💤✕を記録
+  const sub = g.submissions && g.submissions[subIdx];
+  const date = (sub && sub.deadline) ? sub.deadline : new Date().toISOString().slice(0, 10);
+  g.history.push({ date, result: 'rest' });
+
+  // この提出物を削除
+  if (g.submissions) g.submissions.splice(subIdx, 1);
+  g.currentSubmitted = [];
+
+  saveData();
+  render();
+  if (adminOpen) { loadSubRows(); updateBannerPreview(); }
+}
+
 function recordRest() {
   if (!_data.grinGrowth) _data.grinGrowth = { stage: 0, history: [] };
   const g = _data.grinGrowth;
@@ -1751,7 +1764,6 @@ async function checkExpiredSubmissions() {
    ============================================================ */
 document.addEventListener('DOMContentLoaded', async () => {
   _data = await loadData();
-  await checkExpiredSubmissions();  // 締切超過チェック（自動未達成記録）
   render();
 });
 </script>
