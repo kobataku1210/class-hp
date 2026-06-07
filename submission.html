@@ -1310,12 +1310,17 @@ function renderUnsubmitted() {
   }
 
   // 提出物ごとにセクションを生成
+  let shownCount = 0;
   subs.forEach((s, subIdx) => {
     const submitted = new Set(s.submitted);
     const mUnsub = [], fUnsub = [];
     for (let i = 1; i <= male; i++)         if (!submitted.has(i)) mUnsub.push(i);
     for (let i = male + 1; i <= total; i++) if (!submitted.has(i)) fUnsub.push(i);
     const remaining = mUnsub.length + fUnsub.length;
+
+    // 全員提出済みの提出物はこのエリアに表示しない
+    if (remaining === 0) return;
+    shownCount++;
 
     const sec = document.createElement('div');
     sec.className = 'sub-section';
@@ -1385,6 +1390,11 @@ function renderUnsubmitted() {
     }
     container.appendChild(sec);
   });
+
+  // 未提出の提出物が1つもない場合
+  if (shownCount === 0) {
+    container.innerHTML = '<div class="unsub-all-done" style="width:100%">🎉 すべて全員提出済み！<div class="all-done-sub">グリンを成長させてね！</div></div>';
+  }
 }
 
 function toggleStudentSubmit(num, subIdx) {
