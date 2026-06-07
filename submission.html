@@ -1636,6 +1636,8 @@ function recordGrowthForSub(subIdx) {
 
   saveData();
   render();          // render() の中で renderUnsubmitted() → updateSubRowGrowBtns() が呼ばれる
+  // 管理パネルの提出物リスト行も再描画（削除した行を消す）
+  if (adminOpen) { loadSubRows(); updateBannerPreview(); }
 
   if (g.stage >= 10) {
     setTimeout(() => {

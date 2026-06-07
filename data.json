@@ -1010,49 +1010,8 @@
     ]
   },
   "grinGrowth": {
-    "stage": 10,
-    "history": [
-      {
-        "date": "2026-06-07",
-        "result": "growth"
-      },
-      {
-        "date": "2026-06-07",
-        "result": "growth"
-      },
-      {
-        "date": "2026-06-07",
-        "result": "growth"
-      },
-      {
-        "date": "2026-06-07",
-        "result": "growth"
-      },
-      {
-        "date": "2026-06-07",
-        "result": "growth"
-      },
-      {
-        "date": "2026-06-07",
-        "result": "growth"
-      },
-      {
-        "date": "2026-06-07",
-        "result": "growth"
-      },
-      {
-        "date": "2026-06-07",
-        "result": "growth"
-      },
-      {
-        "date": "2026-06-07",
-        "result": "growth"
-      },
-      {
-        "date": "2026-06-07",
-        "result": "growth"
-      }
-    ],
+    "stage": 0,
+    "history": [],
     "students": {
       "maleCount": 19,
       "femaleCount": 18
