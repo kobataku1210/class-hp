@@ -1026,7 +1026,9 @@
       {
         "name": "test4",
         "deadline": "2026-07-01",
-        "submitted": []
+        "submitted": [
+          1
+        ]
       }
     ]
   }
