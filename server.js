@@ -130,7 +130,13 @@ const server = http.createServer(async (req, res) => {
       res.end('404 Not Found: ' + url);
       return;
     }
-    res.writeHead(200, { 'Content-Type': contentType });
+    // ブラウザキャッシュを無効化（常に最新のHTML/JSを配信）
+    res.writeHead(200, {
+      'Content-Type': contentType,
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    });
     res.end(data);
   });
 });
