@@ -508,6 +508,43 @@
     .sched-table th:last-child, .sched-table td:last-child { display: none; }
   }
 
+  /* ===== ローカル開発バー（localhost のみ） ===== */
+  #dev-bar {
+    display: none;
+    position: fixed; top: 0; left: 0; right: 0; z-index: 99999;
+    height: 36px;
+    background: repeating-linear-gradient(
+      -45deg,
+      #f59e0b 0px, #f59e0b 10px,
+      #1e1e1e 10px, #1e1e1e 20px
+    );
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+  }
+  #dev-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px;
+    margin: 3px 3px;
+    border-radius: 2px;
+  }
+  #dev-bar-left {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .dev-badge {
+    background: rgba(255,255,255,0.18); border: 1.5px solid rgba(255,255,255,0.5);
+    border-radius: 5px; padding: 1px 10px;
+    font-size: 0.68rem; font-weight: 900; color: white; letter-spacing: 0.14em;
+  }
+  .dev-label {
+    font-size: 0.75rem; font-weight: 800; color: rgba(255,255,255,0.9);
+  }
+  .dev-url {
+    font-size: 0.68rem; color: rgba(255,255,255,0.55);
+    font-family: monospace;
+  }
+  #dev-spacer { height: 36px; }   /* バー分のスペース */
+
   /* ===== ローカルプレビューゾーン（localhost のみ表示） ===== */
   #preview-zone {
     display: none; /* JS で localhost のみ表示 */
@@ -574,6 +611,18 @@
 </style>
 </head>
 <body>
+
+<!-- ローカル開発バー（JS で localhost のみ表示） -->
+<div id="dev-bar">
+  <div id="dev-bar-inner">
+    <div id="dev-bar-left">
+      <span class="dev-badge">⚠ LOCAL PREVIEW</span>
+      <span class="dev-label">開発環境 — 生徒には見えません</span>
+    </div>
+    <span class="dev-url" id="dev-bar-url"></span>
+  </div>
+</div>
+<div id="dev-spacer" style="display:none"></div>
 
 <!-- 背景の雲アニメーション -->
 <div class="cloud-canvas">
@@ -1114,8 +1163,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   buildSchedule(d);
   buildGrinBanner(d);
 
-  // ローカルのみプレビューゾーンを表示
+  // ローカルのみ：開発バー＋プレビューゾーンを表示
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    const bar    = document.getElementById('dev-bar');
+    const spacer = document.getElementById('dev-spacer');
+    const urlEl  = document.getElementById('dev-bar-url');
+    if (bar)    bar.style.display    = 'block';
+    if (spacer) spacer.style.display = 'block';
+    if (urlEl)  urlEl.textContent    = location.href;
     buildPreviewZone();
   }
 });
