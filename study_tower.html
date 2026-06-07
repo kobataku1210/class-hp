@@ -275,10 +275,53 @@ html, body {
 }
 .total-bar span { color: rgba(255,255,255,0.65); font-weight: 800; }
 
+/* ===== 完結バナー ===== */
+#finished-banner {
+  position: relative; z-index: 10;
+  background: linear-gradient(135deg, #0a0a2a 0%, #1a1240 50%, #0a0a2a 100%);
+  border-top: 2px solid rgba(251,191,36,0.35);
+  padding: 28px 20px 32px;
+  text-align: center;
+}
+.fb-kan {
+  display: inline-block;
+  font-size: 0.75rem; font-weight: 900; letter-spacing: 0.18em;
+  color: #fbbf24;
+  border: 2px solid rgba(251,191,36,0.5);
+  border-radius: 6px; padding: 3px 16px;
+  margin-bottom: 14px;
+  background: rgba(251,191,36,0.1);
+}
+.fb-hours {
+  font-size: clamp(2.2rem, 7vw, 3.6rem);
+  font-weight: 900; letter-spacing: 0.04em;
+  background: linear-gradient(135deg, #fbbf24, #fde68a, #f59e0b);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 0 18px rgba(251,191,36,0.45));
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.fb-label {
+  font-size: 0.82rem; color: rgba(255,255,255,0.42);
+  font-weight: 700; letter-spacing: 0.1em;
+  margin-bottom: 18px;
+}
+.fb-msg {
+  font-size: clamp(1rem, 3.5vw, 1.3rem);
+  font-weight: 900; color: rgba(255,255,255,0.92);
+  letter-spacing: 0.04em;
+  line-height: 1.7;
+}
+.fb-stars {
+  font-size: 1.2rem; margin-top: 14px;
+  color: rgba(251,191,36,0.7); letter-spacing: 0.22em;
+}
+
 /* ===== FAB ===== */
 .fab {
   position: fixed; bottom: 24px; right: 22px;
   z-index: 300; width: 62px; height: 62px;
+  display: none; /* 完結のため非表示 */
   border-radius: 50%;
   background: linear-gradient(135deg, #fbbf24, #d97706);
   border: none; color: #1a0800; font-size: 1.9rem; font-weight: 900;
@@ -553,6 +596,19 @@ html, body {
 <!-- 地面 -->
 <div class="ground" id="ground"></div>
 <div class="total-bar" id="total-bar"></div>
+
+<!-- 完結バナー -->
+<div id="finished-banner">
+  <div class="fb-kan">🏯 第１回定期テスト前 勉強タワー　完結</div>
+  <div class="fb-hours">2,259<span style="font-size:0.45em;-webkit-text-fill-color:rgba(251,191,36,0.75);margin-left:4px">時間</span></div>
+  <div class="fb-label">クラス合計勉強時間</div>
+  <div class="fb-msg">
+    テスト勉強、よく頑張りました！<br>
+    みんなの努力がこのタワーに積み上がっています。<br>
+    <span style="font-size:0.88em;color:rgba(255,255,255,0.6)">次のテストも一緒に頑張ろう！</span>
+  </div>
+  <div class="fb-stars">★ ★ ★ ★ ★</div>
+</div>
 <div class="bottom-pad"></div>
 
 <!-- スクロールヒント -->
