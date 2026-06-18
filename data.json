@@ -1044,8 +1044,9 @@
         "promises": [
           {
             "date": "2026-06-18",
-            "status": "pending",
-            "auto": true
+            "status": "done",
+            "auto": true,
+            "doneDate": "2026-06-18"
           },
           {
             "date": "2026-06-21",
