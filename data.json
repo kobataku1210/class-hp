@@ -1031,6 +1031,14 @@
     "achieveCount": 1
   },
   "studies": {
-    "members": []
+    "members": [
+      {
+        "id": "mmqk1zmf9719",
+        "name": "くわもも",
+        "gender": "f",
+        "weekdays": [],
+        "promises": []
+      }
+    ]
   }
 }
