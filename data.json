@@ -1031,59 +1031,6 @@
     "achieveCount": 1
   },
   "studies": {
-    "members": [
-      {
-        "id": "mmqj9k758615",
-        "name": "tk",
-        "gender": "m",
-        "weekdays": [
-          1,
-          4
-        ],
-        "promises": [
-          {
-            "date": "2026-06-18",
-            "status": "done",
-            "auto": true,
-            "doneDate": "2026-06-18"
-          },
-          {
-            "date": "2026-06-22",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-06-25",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-06-29",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-07-02",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-07-06",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-07-09",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-07-13",
-            "status": "pending",
-            "auto": true
-          }
-        ]
-      }
-    ]
+    "members": []
   }
 }
