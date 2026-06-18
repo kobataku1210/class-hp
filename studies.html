@@ -53,6 +53,10 @@
   }
   .member-chip:hover { transform: translateY(-2px); }
   .member-chip.sel { background: #4338ca; color: #fff; border-color: #4338ca; box-shadow: 0 4px 12px rgba(67,56,202,0.35); }
+  .member-chip.male   { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+  .member-chip.male.sel   { background: #1d4ed8; color: #fff; border-color: #1d4ed8; box-shadow: 0 4px 12px rgba(29,78,216,0.35); }
+  .member-chip.female { background: #fdf2f8; border-color: #fbcfe8; color: #be185d; }
+  .member-chip.female.sel { background: #be185d; color: #fff; border-color: #be185d; box-shadow: 0 4px 12px rgba(190,24,93,0.35); }
 
   /* ===== マイ記録カード ===== */
   #my-record { display: none; }
@@ -161,6 +165,16 @@
   .wd-chip.sun { color: #ef4444; } .wd-chip.sat { color: #3b82f6; }
   .wd-chip.on { background: #ea580c; color: #fff; border-color: #ea580c; }
   .wd-chip.on.sun, .wd-chip.on.sat { color: #fff; }
+
+  /* 性別トグル */
+  .gender-toggle { display: flex; gap: 8px; }
+  .g-btn {
+    padding: 8px 16px; border-radius: 11px; border: 1.5px solid #e2e8f0;
+    background: #f8fafc; font-weight: 800; font-family: inherit; cursor: pointer;
+    font-size: 0.88rem; color: #64748b; transition: all 0.12s;
+  }
+  .g-btn.male.on   { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+  .g-btn.female.on { background: #be185d; color: #fff; border-color: #be185d; }
 
   /* 参加者管理リスト */
   .member-row {
@@ -289,6 +303,13 @@
         <input type="text" id="m-name" placeholder="名前（例: 山田 太郎）" style="flex:1;min-width:160px"
                onkeydown="if(event.key==='Enter')saveMember()">
       </div>
+      <div class="field-row">
+        <span class="hint">性別:</span>
+        <div class="gender-toggle">
+          <button class="g-btn male"   id="g-male"   onclick="setGender('m')">👦 男子</button>
+          <button class="g-btn female" id="g-female" onclick="setGender('f')">👧 女子</button>
+        </div>
+      </div>
       <div class="weekday-row">
         <span class="hint">提出する曜日（毎週）:</span>
         <div class="wd-chips" id="wd-chips"></div>
@@ -339,6 +360,7 @@ let adminOpen = false;
 let selId       = null;       // 閲覧中の参加者ID
 let editId      = null;       // 編集中の参加者ID（null=新規追加）
 let formWeekdays = new Set(); // 登録フォームで選択中の曜日 (0=日..6=土)
+let formGender  = null;       // 登録フォームで選択中の性別 ('m'|'f')
 let calYear, calMonth;        // 表示中のカレンダー年月
 
 const WEEKDAY_LABELS = ['日','月','火','水','木','金','土'];
@@ -357,6 +379,8 @@ function fmtDate(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStar
 function parseLocalDate(s){ const [y,mo,da] = s.split('-').map(Number); return new Date(y, mo-1, da); }
 function weekdayText(wds){ return (wds||[]).slice().sort((a,b)=>a-b).map(w=>WEEKDAY_LABELS[w]).join('・'); }
 function genId(){ return 'm' + Date.now().toString(36) + Math.floor(Math.random()*1000); }
+function genderIcon(m){ return m && m.gender === 'm' ? '👦' : m && m.gender === 'f' ? '👧' : '👤'; }
+function genderClass(m){ return m && m.gender === 'm' ? ' male' : m && m.gender === 'f' ? ' female' : ''; }
 
 function ensureStudies(){
   if (!_data.studies) _data.studies = { members: [] };
@@ -446,7 +470,7 @@ function renderMemberChips(){
     const st = computeStats(m);
     const fire = st.cur > 0 ? ` 🔥${st.cur}` : '';
     const sel = selId === m.id ? ' sel' : '';
-    return `<button class="member-chip${sel}" onclick="selectMember('${m.id}')">👤 ${escHtml(m.name)}${fire}</button>`;
+    return `<button class="member-chip${genderClass(m)}${sel}" onclick="selectMember('${m.id}')">${genderIcon(m)} ${escHtml(m.name)}${fire}</button>`;
   }).join('');
 }
 
@@ -465,7 +489,11 @@ function renderMyRecord(){
   box.style.display = 'block';
 
   const stats = computeStats(m);
-  document.getElementById('mr-avatar').textContent = '👤';
+  const av = document.getElementById('mr-avatar');
+  av.textContent = genderIcon(m);
+  av.style.background = m.gender === 'm' ? 'linear-gradient(135deg,#bfdbfe,#93c5fd)'
+                     : m.gender === 'f' ? 'linear-gradient(135deg,#fbcfe8,#f9a8d4)'
+                     : 'linear-gradient(135deg,#fed7aa,#fdba74)';
   document.getElementById('mr-name').textContent = m.name + ' の記録';
   document.getElementById('mr-badges').textContent = badgesFor(stats) || 'まだバッジなし — がんばろう！';
   document.getElementById('st-streak').textContent = stats.cur;
@@ -544,7 +572,7 @@ function renderRanking(){
     const topCls = i < 3 ? ` top${i+1}` : '';
     const medal = medals[i] || `${i+1}`;
     return `<div class="rank-row${topCls}"><span class="rank-medal">${medal}</span>
-      <span class="rank-who">👤 ${escHtml(x.m.name)}</span>
+      <span class="rank-who">${genderIcon(x.m)} ${escHtml(x.m.name)}</span>
       <span class="rank-fire">🔥 ${x.s.cur}　<span style="color:#94a3b8;font-size:.8rem">(最高${x.s.best}・計${x.s.total})</span></span></div>`;
   }).join('');
 }
@@ -564,6 +592,11 @@ function toggleWeekday(wd){
   if (formWeekdays.has(wd)) formWeekdays.delete(wd); else formWeekdays.add(wd);
   renderWeekdayChips();
 }
+function renderGenderToggle(){
+  document.getElementById('g-male').classList.toggle('on', formGender === 'm');
+  document.getElementById('g-female').classList.toggle('on', formGender === 'f');
+}
+function setGender(g){ formGender = (formGender === g) ? null : g; renderGenderToggle(); }
 
 function startEditMember(id){
   const m = findMemberById(id);
@@ -571,10 +604,12 @@ function startEditMember(id){
   editId = id;
   document.getElementById('m-name').value = m.name;
   formWeekdays = new Set(m.weekdays || []);
+  formGender = m.gender || null;
   document.getElementById('form-title').textContent = '✏️ 参加者を編集';
   document.getElementById('m-save-btn').textContent = '💾 更新';
   document.getElementById('m-cancel-btn').style.display = 'inline-block';
   renderWeekdayChips();
+  renderGenderToggle();
   document.getElementById('m-name').scrollIntoView({ behavior:'smooth', block:'center' });
   document.getElementById('m-name').focus();
 }
@@ -582,11 +617,13 @@ function cancelEdit(){
   editId = null;
   document.getElementById('m-name').value = '';
   formWeekdays = new Set();
+  formGender = null;
   document.getElementById('form-title').textContent = '➕ やりたい生徒を登録';
   document.getElementById('m-save-btn').textContent = '➕ 追加';
   document.getElementById('m-cancel-btn').style.display = 'none';
   document.getElementById('m-hint').textContent = '';
   renderWeekdayChips();
+  renderGenderToggle();
 }
 function saveMember(){
   const name = document.getElementById('m-name').value.trim();
@@ -598,6 +635,7 @@ function saveMember(){
     const m = findMemberById(editId);
     if (m){
       m.name = name;
+      m.gender = formGender;
       const today = todayStr();
       // 既存の自動pending(未来)を作り直し
       m.promises = (m.promises || []).filter(p => !(p.auto && p.status === 'pending' && p.date >= today));
@@ -605,7 +643,7 @@ function saveMember(){
       syncWeekdayPromises(m);
     }
   } else {
-    const m = { id: genId(), name, weekdays: wds, promises: [] };
+    const m = { id: genId(), name, gender: formGender, weekdays: wds, promises: [] };
     syncWeekdayPromises(m);
     getMembers().push(m);
   }
@@ -645,7 +683,7 @@ function renderMemberAdminList(){
     const sch = (m.weekdays && m.weekdays.length) ? '🗓 毎週 ' + weekdayText(m.weekdays) : '🗓 固定なし';
     return `<div class="member-row">
       <div class="mr-info">
-        <span class="mr-rowname">👤 ${escHtml(m.name)}</span>
+        <span class="mr-rowname">${genderIcon(m)} ${escHtml(m.name)}</span>
         <span class="mr-sch">${sch}</span>
       </div>
       <div class="mr-oneoff">
@@ -662,6 +700,7 @@ function renderMemberAdminList(){
 
 function renderAdmin(){
   renderWeekdayChips();
+  renderGenderToggle();
   renderMemberAdminList();
 
   // 提出チェック：今日まで（今日＋期限切れ）の pending を日付順に
@@ -680,7 +719,7 @@ function renderAdmin(){
     const overdue = it.p.date < today;
     const todayTag = it.p.date === today ? ' ★今日' : overdue ? ' （期限切れ）' : '';
     return `<div class="check-row ${overdue?'overdue':''}">
-      <span class="check-who">👤 ${escHtml(it.m.name)}</span>
+      <span class="check-who">${genderIcon(it.m)} ${escHtml(it.m.name)}</span>
       <span class="check-date">${it.p.date.slice(5).replace('-','/')}${todayTag}</span>
       <span class="check-btns">
         <button class="mini-btn mini-done" onclick="markPromise('${it.m.id}',${it.idx},'done')">✅受け取った</button>
