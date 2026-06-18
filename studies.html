@@ -44,27 +44,15 @@
   .card.indigo .card-title { color: #4338ca; }
   .hint { font-size: 0.82rem; color: #94a3b8; }
 
-  /* ===== 番号グリッド ===== */
-  .num-group { margin-bottom: 12px; }
-  .num-group-label {
-    display: inline-block; font-size: 0.78rem; font-weight: 800;
-    padding: 3px 12px; border-radius: 30px; margin-bottom: 8px;
+  /* ===== 参加者チップ（記録を見る） ===== */
+  .member-chips { display: flex; flex-wrap: wrap; gap: 9px; }
+  .member-chip {
+    padding: 9px 16px; border-radius: 30px; cursor: pointer;
+    background: #eef2ff; border: 1.5px solid #c7d2fe; color: #3730a3;
+    font-size: 0.92rem; font-weight: 800; font-family: inherit; transition: all 0.12s;
   }
-  .male-label   { background: #dbeafe; color: #1d4ed8; }
-  .female-label { background: #fce7f3; color: #be185d; }
-  .nums { display: flex; flex-wrap: wrap; gap: 7px; }
-  .num {
-    width: 42px; height: 42px; border-radius: 11px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.95rem; font-weight: 800; cursor: pointer;
-    border: 1.5px solid transparent; transition: all 0.12s; user-select: none;
-  }
-  .num.male   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
-  .num.female { background: #fdf2f8; color: #be185d; border-color: #fbcfe8; }
-  .num:hover  { transform: translateY(-2px); }
-  .num.sel.male   { background: #1d4ed8; color: #fff; border-color: #1d4ed8; box-shadow: 0 4px 12px rgba(29,78,216,0.4); }
-  .num.sel.female { background: #be185d; color: #fff; border-color: #be185d; box-shadow: 0 4px 12px rgba(190,24,93,0.4); }
-  .num .dot { font-size: 0.7rem; position: absolute; margin-top: 22px; }
+  .member-chip:hover { transform: translateY(-2px); }
+  .member-chip.sel { background: #4338ca; color: #fff; border-color: #4338ca; box-shadow: 0 4px 12px rgba(67,56,202,0.35); }
 
   /* ===== マイ記録カード ===== */
   #my-record { display: none; }
@@ -87,6 +75,11 @@
   .stat.fire .v { color: #ea580c; }
   .stat.best .v { color: #d97706; }
   .stat.total .v { color: #4338ca; }
+  .mr-schedule {
+    display: inline-block; margin-bottom: 14px; font-size: 0.82rem; font-weight: 800;
+    color: #c2410c; background: #fff7ed; border: 1.5px solid #fed7aa;
+    border-radius: 30px; padding: 5px 14px;
+  }
 
   /* ===== カレンダー ===== */
   .cal-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 10px; }
@@ -145,21 +138,20 @@
   .admin-sub-title { font-size: 0.85rem; font-weight: 900; color: #475569; margin: 16px 0 8px; }
   .field-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
   .field-row label { font-size: 0.8rem; font-weight: 800; color: #64748b; }
-  input[type="date"], input[type="number"], select {
-    padding: 8px 10px; border: 1.5px solid #e2e8f0; border-radius: 10px;
-    font-size: 0.88rem; font-family: inherit; color: #1e293b;
+  input[type="text"], input[type="date"], input[type="number"] {
+    padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+    font-size: 0.9rem; font-family: inherit; color: #1e293b;
   }
-  input[type="number"] { width: 70px; }
   .btn {
-    padding: 8px 16px; border-radius: 11px; border: none; cursor: pointer;
+    padding: 9px 18px; border-radius: 11px; border: none; cursor: pointer;
     font-size: 0.85rem; font-weight: 900; font-family: inherit;
   }
   .btn-primary { background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; }
   .btn-primary:disabled { opacity: 0.4; cursor: default; }
   .btn-sub { background: #eef2ff; color: #4338ca; }
 
-  /* 曜日固定チップ */
-  .weekday-row { display: none; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0 4px; }
+  /* 曜日チップ */
+  .weekday-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0 10px; }
   .wd-chips { display: flex; gap: 5px; }
   .wd-chip {
     width: 40px; height: 40px; border-radius: 11px; border: 1.5px solid #e2e8f0;
@@ -169,11 +161,20 @@
   .wd-chip.sun { color: #ef4444; } .wd-chip.sat { color: #3b82f6; }
   .wd-chip.on { background: #ea580c; color: #fff; border-color: #ea580c; }
   .wd-chip.on.sun, .wd-chip.on.sat { color: #fff; }
-  .mr-schedule {
-    display: inline-block; margin-bottom: 14px; font-size: 0.82rem; font-weight: 800;
-    color: #c2410c; background: #fff7ed; border: 1.5px solid #fed7aa;
-    border-radius: 30px; padding: 5px 14px;
+
+  /* 参加者管理リスト */
+  .member-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: #f8fafc; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px;
   }
+  .mr-info { display: flex; flex-direction: column; gap: 2px; min-width: 120px; }
+  .mr-rowname { font-weight: 900; font-size: 0.95rem; }
+  .mr-sch { font-size: 0.76rem; color: #c2410c; font-weight: 700; }
+  .mr-oneoff { display: flex; gap: 5px; align-items: center; margin-left: auto; }
+  .mr-oneoff input[type="date"] { padding: 6px 8px; font-size: 0.8rem; }
+  .mr-actions { display: flex; gap: 5px; }
+
+  /* 提出チェック */
   .check-list { display: flex; flex-direction: column; gap: 8px; }
   .check-row {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -186,6 +187,8 @@
   .mini-btn { padding: 6px 11px; border-radius: 9px; border: none; cursor: pointer; font-size: 0.8rem; font-weight: 900; font-family: inherit; }
   .mini-done { background: #dcfce7; color: #15803d; }
   .mini-miss { background: #fee2e2; color: #dc2626; }
+  .mini-add  { background: #fef3c7; color: #b45309; }
+  .mini-edit { background: #e0e7ff; color: #4338ca; }
   .mini-del  { background: #f1f5f9; color: #64748b; }
   #save-status { font-size: 0.82rem; font-weight: 800; color: #16a34a; margin-left: 8px; }
 
@@ -218,8 +221,8 @@
   @keyframes fall { to { transform: translateY(105vh) rotate(720deg); opacity: 0; } }
 
   @media (max-width: 600px) {
-    .num { width: 38px; height: 38px; }
     .stat { min-width: 70px; }
+    .mr-oneoff { margin-left: 0; }
   }
 </style>
 </head>
@@ -233,10 +236,10 @@
     <div class="page-sub">自分で決めた日にワークを提出！🔥連続記録をのばそう</div>
   </div>
 
-  <!-- ====== 自分の記録を見る ====== -->
+  <!-- ====== 記録を見たい人を選ぶ ====== -->
   <div class="card indigo">
-    <div class="card-title">🔎 自分の番号を選んで記録を見よう</div>
-    <div id="select-grids"></div>
+    <div class="card-title">🔎 記録を見たい人を選ぼう</div>
+    <div class="member-chips" id="member-chips"></div>
   </div>
 
   <!-- ====== マイ記録 ====== -->
@@ -281,30 +284,26 @@
     <div class="card-title">🔓 先生用コントロール <span id="save-status"></span></div>
     <div id="admin-body">
 
-      <div class="admin-sub-title">🗓 曜日で固定（毎週この曜日に提出）</div>
-      <div id="reg-grids"></div>
-      <div class="weekday-row" id="weekday-row">
-        <div class="wd-chips" id="wd-chips"></div>
-        <button class="btn btn-primary" onclick="saveWeekdays()">🔁 この曜日で固定</button>
-        <button class="btn btn-sub" onclick="clearWeekdays()">解除</button>
-      </div>
-      <div class="hint" id="reg-hint">番号を選んでから曜日をえらんでください</div>
-
-      <div class="admin-sub-title">➕ 単発で約束を追加（曜日固定とは別の特別な日）</div>
+      <div class="admin-sub-title" id="form-title">➕ やりたい生徒を登録</div>
       <div class="field-row">
-        <input type="date" id="reg-date">
-        <button class="btn btn-sub" id="reg-btn" onclick="registerPromise()" disabled>追加</button>
+        <input type="text" id="m-name" placeholder="名前（例: 山田 太郎）" style="flex:1;min-width:160px"
+               onkeydown="if(event.key==='Enter')saveMember()">
       </div>
+      <div class="weekday-row">
+        <span class="hint">提出する曜日（毎週）:</span>
+        <div class="wd-chips" id="wd-chips"></div>
+      </div>
+      <div class="field-row">
+        <button class="btn btn-primary" id="m-save-btn" onclick="saveMember()">➕ 追加</button>
+        <button class="btn btn-sub" id="m-cancel-btn" onclick="cancelEdit()" style="display:none">キャンセル</button>
+        <span class="hint" id="m-hint"></span>
+      </div>
+
+      <div class="admin-sub-title">👥 参加者一覧</div>
+      <div id="member-admin-list"></div>
 
       <div class="admin-sub-title">📥 提出チェック（今日の予定・期限切れ）</div>
       <div class="check-list" id="check-list"></div>
-
-      <div class="admin-sub-title">👥 人数設定</div>
-      <div class="field-row">
-        <label>男子</label><input type="number" id="cfg-male" min="0" max="50">
-        <label>女子</label><input type="number" id="cfg-female" min="0" max="50">
-        <button class="btn btn-sub" onclick="saveConfig()">保存</button>
-      </div>
     </div>
   </div>
 </div>
@@ -337,9 +336,9 @@ let _data = {};
 let _adminPin = '';
 let adminOpen = false;
 
-let selKey   = null;          // 閲覧中の生徒 {no, gender}
-let regKey   = null;          // 登録対象の生徒 {no, gender}
-let regWeekdays = new Set();  // 登録UIで選択中の曜日 (0=日..6=土)
+let selId       = null;       // 閲覧中の参加者ID
+let editId      = null;       // 編集中の参加者ID（null=新規追加）
+let formWeekdays = new Set(); // 登録フォームで選択中の曜日 (0=日..6=土)
 let calYear, calMonth;        // 表示中のカレンダー年月
 
 const WEEKDAY_LABELS = ['日','月','火','水','木','金','土'];
@@ -357,42 +356,15 @@ function todayStr(){
 function fmtDate(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function parseLocalDate(s){ const [y,mo,da] = s.split('-').map(Number); return new Date(y, mo-1, da); }
 function weekdayText(wds){ return (wds||[]).slice().sort((a,b)=>a-b).map(w=>WEEKDAY_LABELS[w]).join('・'); }
+function genId(){ return 'm' + Date.now().toString(36) + Math.floor(Math.random()*1000); }
 
-/* 曜日固定 → 今日から SYNC_DAYS 日先までの予定(pending)を自動生成（既存の日付はスキップ） */
-function syncWeekdayPromises(m){
-  if (!m.weekdays || m.weekdays.length === 0) return;
-  if (!m.promises) m.promises = [];
-  const have = new Set(m.promises.map(p => p.date));
-  const base = parseLocalDate(todayStr());
-  for (let i = 0; i < SYNC_DAYS; i++){
-    const d = new Date(base); d.setDate(base.getDate() + i);
-    if (m.weekdays.includes(d.getDay())){
-      const ds = fmtDate(d);
-      if (!have.has(ds)){ m.promises.push({ date: ds, status: 'pending', auto: true }); have.add(ds); }
-    }
-  }
-}
-function getStudentConfig(){
-  const cfg = (_data.grinGrowth || {}).students || {};
-  return { male: cfg.maleCount ?? 19, female: cfg.femaleCount ?? 18 };
-}
 function ensureStudies(){
   if (!_data.studies) _data.studies = { members: [] };
   if (!_data.studies.members) _data.studies.members = [];
   return _data.studies;
 }
-function memberKey(no, gender){ return gender + '-' + no; }
-function findMember(no, gender){
-  return ensureStudies().members.find(m => m.no === no && m.gender === gender) || null;
-}
-function findOrCreateMember(no, gender){
-  let m = findMember(no, gender);
-  if (!m){ m = { no, gender, promises: [] }; ensureStudies().members.push(m); }
-  if (!m.promises) m.promises = [];
-  return m;
-}
-function genderMark(g){ return g === 'm' ? '👦' : '👧'; }
-function memberLabel(no, gender){ return `${genderMark(gender)}${no}番`; }
+function getMembers(){ return ensureStudies().members; }
+function findMemberById(id){ return getMembers().find(m => m.id === id) || null; }
 
 /* 連続記録などを計算 */
 function computeStats(m){
@@ -401,7 +373,6 @@ function computeStats(m){
   ps.forEach(p => {
     if (p.status === 'done'){ cur++; total++; if (cur > best) best = cur; }
     else if (p.status === 'missed'){ cur = 0; }
-    // pending はまだ確定していないのでスキップ
   });
   const pending = (m.promises||[]).filter(p => p.status === 'pending');
   return { cur, best, total, pending };
@@ -415,6 +386,21 @@ function badgesFor(stats){
   else if (stats.total >= 10) b += '🏅';
   else if (stats.total >= 5) b += '⭐';
   return b;
+}
+
+/* 曜日固定 → 今日から SYNC_DAYS 日先までの予定(pending)を自動生成 */
+function syncWeekdayPromises(m){
+  if (!m.weekdays || m.weekdays.length === 0) return;
+  if (!m.promises) m.promises = [];
+  const have = new Set(m.promises.map(p => p.date));
+  const base = parseLocalDate(todayStr());
+  for (let i = 0; i < SYNC_DAYS; i++){
+    const d = new Date(base); d.setDate(base.getDate() + i);
+    if (m.weekdays.includes(d.getDay())){
+      const ds = fmtDate(d);
+      if (!have.has(ds)){ m.promises.push({ date: ds, status: 'pending', auto: true }); have.add(ds); }
+    }
+  }
 }
 
 /* ============================================================
@@ -438,60 +424,49 @@ async function saveData(){
 }
 
 /* ============================================================
-   番号グリッド
-   ============================================================ */
-function buildNumberGrid(containerId, onPick, selectedKey){
-  const { male, female } = getStudentConfig();
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  const make = (count, gender, labelHtml, labelClass) => {
-    let h = `<div class="num-group"><span class="num-group-label ${labelClass}">${labelHtml}</span><div class="nums">`;
-    for (let i = 1; i <= count; i++){
-      const k = memberKey(i, gender);
-      const m = findMember(i, gender);
-      const st = m ? computeStats(m) : null;
-      const fire = st && st.cur > 0 ? `<span class="dot">🔥</span>` : '';
-      const sel = selectedKey === k ? ' sel' : '';
-      h += `<div class="num ${gender==='m'?'male':'female'}${sel}" style="position:relative" onclick="${onPick}(${i},'${gender}')">${i}${fire}</div>`;
-    }
-    h += `</div></div>`;
-    return h;
-  };
-  el.innerHTML = make(male, 'm', '👦 男子', 'male-label') + make(female, 'f', '👧 女子', 'female-label');
-}
-
-/* ============================================================
    描画
    ============================================================ */
 function render(){
   // 曜日固定の予定を最新化（メモリ上。保存は明示操作時のみ）
-  ensureStudies().members.forEach(syncWeekdayPromises);
-  buildNumberGrid('select-grids', 'selectStudent', selKey ? memberKey(selKey.no, selKey.gender) : null);
+  getMembers().forEach(syncWeekdayPromises);
+  renderMemberChips();
   renderMyRecord();
   renderRanking();
   if (adminOpen) renderAdmin();
 }
 
-function selectStudent(no, gender){
-  selKey = { no, gender };
+function renderMemberChips(){
+  const el = document.getElementById('member-chips');
+  const ms = getMembers();
+  if (ms.length === 0){
+    el.innerHTML = '<div class="hint">まだ参加者がいません。先生が登録すると、ここに名前が出ます。</div>';
+    return;
+  }
+  el.innerHTML = ms.map(m => {
+    const st = computeStats(m);
+    const fire = st.cur > 0 ? ` 🔥${st.cur}` : '';
+    const sel = selId === m.id ? ' sel' : '';
+    return `<button class="member-chip${sel}" onclick="selectMember('${m.id}')">👤 ${escHtml(m.name)}${fire}</button>`;
+  }).join('');
+}
+
+function selectMember(id){
+  selId = id;
   const t = new Date();
-  calYear = t.getFullYear(); calMonth = t.getMonth(); // 今月から表示
+  calYear = t.getFullYear(); calMonth = t.getMonth();
   render();
   document.getElementById('my-record').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 function renderMyRecord(){
   const box = document.getElementById('my-record');
-  if (!selKey){ box.style.display = 'none'; return; }
+  const m = selId ? findMemberById(selId) : null;
+  if (!m){ box.style.display = 'none'; selId = null; return; }
   box.style.display = 'block';
 
-  const m = findMember(selKey.no, selKey.gender) || { no: selKey.no, gender: selKey.gender, promises: [] };
   const stats = computeStats(m);
-
-  document.getElementById('mr-avatar').textContent = genderMark(selKey.gender);
-  document.getElementById('mr-avatar').style.background = selKey.gender === 'm'
-    ? 'linear-gradient(135deg,#bfdbfe,#93c5fd)' : 'linear-gradient(135deg,#fbcfe8,#f9a8d4)';
-  document.getElementById('mr-name').textContent = memberLabel(selKey.no, selKey.gender) + ' の記録';
+  document.getElementById('mr-avatar').textContent = '👤';
+  document.getElementById('mr-name').textContent = m.name + ' の記録';
   document.getElementById('mr-badges').textContent = badgesFor(stats) || 'まだバッジなし — がんばろう！';
   document.getElementById('st-streak').textContent = stats.cur;
   document.getElementById('st-best').textContent   = stats.best;
@@ -540,13 +515,14 @@ function changeMonth(delta){
   calMonth += delta;
   if (calMonth < 0){ calMonth = 11; calYear--; }
   if (calMonth > 11){ calMonth = 0; calYear++; }
-  if (selKey) renderCalendar(findMember(selKey.no, selKey.gender) || { promises: [] });
+  const m = selId ? findMemberById(selId) : null;
+  if (m) renderCalendar(m);
 }
 
 function renderPromiseList(m){
   const el = document.getElementById('promise-list');
   const ps = (m.promises||[]).slice().sort((a,b)=> a.date < b.date ? 1 : -1).slice(0, 8);
-  if (ps.length === 0){ el.innerHTML = `<div class="hint">まだ約束がありません。先生用パネルから登録できます。</div>`; return; }
+  if (ps.length === 0){ el.innerHTML = `<div class="hint">まだ約束がありません。</div>`; return; }
   el.innerHTML = ps.map(p => {
     const mark = p.status === 'done' ? '⭐' : p.status === 'missed' ? '💤' : '🚩';
     const stTxt = p.status === 'done' ? '<span class="pi-status ps-done">提出できた！</span>'
@@ -558,7 +534,7 @@ function renderPromiseList(m){
 
 function renderRanking(){
   const el = document.getElementById('rank-list');
-  const rows = ensureStudies().members.map(m => ({ m, s: computeStats(m) }))
+  const rows = getMembers().map(m => ({ m, s: computeStats(m) }))
     .filter(x => x.s.total > 0 || x.s.cur > 0)
     .sort((a,b)=> (b.s.cur - a.s.cur) || (b.s.best - a.s.best) || (b.s.total - a.s.total))
     .slice(0, 8);
@@ -568,95 +544,130 @@ function renderRanking(){
     const topCls = i < 3 ? ` top${i+1}` : '';
     const medal = medals[i] || `${i+1}`;
     return `<div class="rank-row${topCls}"><span class="rank-medal">${medal}</span>
-      <span class="rank-who">${memberLabel(x.m.no, x.m.gender)}</span>
+      <span class="rank-who">👤 ${escHtml(x.m.name)}</span>
       <span class="rank-fire">🔥 ${x.s.cur}　<span style="color:#94a3b8;font-size:.8rem">(最高${x.s.best}・計${x.s.total})</span></span></div>`;
   }).join('');
 }
 
 /* ============================================================
-   先生用パネル
+   先生用パネル：参加者の登録・編集
    ============================================================ */
-function pickRegStudent(no, gender){
-  regKey = { no, gender };
-  const m = findMember(no, gender);
-  regWeekdays = new Set((m && m.weekdays) || []);
-  buildNumberGrid('reg-grids', 'pickRegStudent', memberKey(no, gender));
-  document.getElementById('weekday-row').style.display = 'flex';
-  renderWeekdayChips();
-  updateRegBtn();
-}
 function renderWeekdayChips(){
   const el = document.getElementById('wd-chips');
   el.innerHTML = WEEKDAY_LABELS.map((lab, wd) => {
     const cls = wd === 0 ? 'sun' : wd === 6 ? 'sat' : '';
-    const on  = regWeekdays.has(wd) ? ' on' : '';
+    const on  = formWeekdays.has(wd) ? ' on' : '';
     return `<button class="wd-chip ${cls}${on}" onclick="toggleWeekday(${wd})">${lab}</button>`;
   }).join('');
 }
 function toggleWeekday(wd){
-  if (regWeekdays.has(wd)) regWeekdays.delete(wd); else regWeekdays.add(wd);
+  if (formWeekdays.has(wd)) formWeekdays.delete(wd); else formWeekdays.add(wd);
   renderWeekdayChips();
 }
-function saveWeekdays(){
-  if (!regKey){ document.getElementById('reg-hint').textContent = '先に番号を選んでください'; return; }
-  const m = findOrCreateMember(regKey.no, regKey.gender);
-  const today = todayStr();
-  // 既存の「自動生成された未来のpending」を一旦消して作り直す
-  m.promises = (m.promises || []).filter(p => !(p.auto && p.status === 'pending' && p.date >= today));
-  m.weekdays = [...regWeekdays].sort((a,b)=>a-b);
-  syncWeekdayPromises(m);
-  saveData();
-  render();
+
+function startEditMember(id){
+  const m = findMemberById(id);
+  if (!m) return;
+  editId = id;
+  document.getElementById('m-name').value = m.name;
+  formWeekdays = new Set(m.weekdays || []);
+  document.getElementById('form-title').textContent = '✏️ 参加者を編集';
+  document.getElementById('m-save-btn').textContent = '💾 更新';
+  document.getElementById('m-cancel-btn').style.display = 'inline-block';
+  renderWeekdayChips();
+  document.getElementById('m-name').scrollIntoView({ behavior:'smooth', block:'center' });
+  document.getElementById('m-name').focus();
 }
-function clearWeekdays(){
-  if (!regKey) return;
-  const m = findMember(regKey.no, regKey.gender);
-  if (m){
-    const today = todayStr();
-    m.promises = (m.promises || []).filter(p => !(p.auto && p.status === 'pending' && p.date >= today));
-    m.weekdays = [];
-  }
-  regWeekdays = new Set();
-  saveData();
-  render();
+function cancelEdit(){
+  editId = null;
+  document.getElementById('m-name').value = '';
+  formWeekdays = new Set();
+  document.getElementById('form-title').textContent = '➕ やりたい生徒を登録';
+  document.getElementById('m-save-btn').textContent = '➕ 追加';
+  document.getElementById('m-cancel-btn').style.display = 'none';
+  document.getElementById('m-hint').textContent = '';
+  renderWeekdayChips();
 }
-function updateRegBtn(){
-  const date = document.getElementById('reg-date').value;
-  document.getElementById('reg-btn').disabled = !(regKey && date);
-  const hint = document.getElementById('reg-hint');
-  if (regKey){
-    const m = findMember(regKey.no, regKey.gender);
-    const wds = (m && m.weekdays) || [];
-    hint.textContent = `${memberLabel(regKey.no, regKey.gender)} ／ 固定曜日: ${wds.length ? weekdayText(wds) : 'なし'}`;
+function saveMember(){
+  const name = document.getElementById('m-name').value.trim();
+  const hint = document.getElementById('m-hint');
+  if (!name){ hint.textContent = '⚠️ 名前を入力してください'; return; }
+  const wds = [...formWeekdays].sort((a,b)=>a-b);
+
+  if (editId){
+    const m = findMemberById(editId);
+    if (m){
+      m.name = name;
+      const today = todayStr();
+      // 既存の自動pending(未来)を作り直し
+      m.promises = (m.promises || []).filter(p => !(p.auto && p.status === 'pending' && p.date >= today));
+      m.weekdays = wds;
+      syncWeekdayPromises(m);
+    }
   } else {
-    hint.textContent = '番号を選んでから曜日をえらんでください';
+    const m = { id: genId(), name, weekdays: wds, promises: [] };
+    syncWeekdayPromises(m);
+    getMembers().push(m);
   }
+  saveData();
+  cancelEdit();
+  render();
 }
-function registerPromise(){
-  const date = document.getElementById('reg-date').value;
-  if (!regKey || !date) return;
-  const m = findOrCreateMember(regKey.no, regKey.gender);
-  if (m.promises.some(p => p.date === date)){
-    document.getElementById('reg-hint').textContent = '⚠️ その日の約束はすでに登録済みです';
-    return;
-  }
+function deleteMember(id){
+  const m = findMemberById(id);
+  if (!m) return;
+  const ms = getMembers();
+  const idx = ms.findIndex(x => x.id === id);
+  if (idx >= 0) ms.splice(idx, 1);
+  if (selId === id) selId = null;
+  if (editId === id) cancelEdit();
+  saveData();
+  render();
+}
+function addOneOff(id){
+  const inp = document.getElementById('oneoff-' + id);
+  const date = inp && inp.value;
+  if (!date) return;
+  const m = findMemberById(id);
+  if (!m) return;
+  if (!m.promises) m.promises = [];
+  if (m.promises.some(p => p.date === date)) return;
   m.promises.push({ date, status: 'pending' });
   saveData();
-  document.getElementById('reg-date').value = '';
-  render();   // regKey は保持（同じ生徒に続けて操作できる）
+  render();
+}
+
+function renderMemberAdminList(){
+  const el = document.getElementById('member-admin-list');
+  const ms = getMembers();
+  if (ms.length === 0){ el.innerHTML = `<div class="hint">まだ参加者がいません。上のフォームで登録してください。</div>`; return; }
+  el.innerHTML = ms.map(m => {
+    const sch = (m.weekdays && m.weekdays.length) ? '🗓 毎週 ' + weekdayText(m.weekdays) : '🗓 固定なし';
+    return `<div class="member-row">
+      <div class="mr-info">
+        <span class="mr-rowname">👤 ${escHtml(m.name)}</span>
+        <span class="mr-sch">${sch}</span>
+      </div>
+      <div class="mr-oneoff">
+        <input type="date" id="oneoff-${m.id}" min="${todayStr()}" title="特別な日を1回だけ追加">
+        <button class="mini-btn mini-add" onclick="addOneOff('${m.id}')">＋特別日</button>
+      </div>
+      <div class="mr-actions">
+        <button class="mini-btn mini-edit" onclick="startEditMember('${m.id}')">✏️編集</button>
+        <button class="mini-btn mini-del"  onclick="deleteMember('${m.id}')">🗑削除</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderAdmin(){
-  // 約束登録グリッド
-  buildNumberGrid('reg-grids', 'pickRegStudent', regKey ? memberKey(regKey.no, regKey.gender) : null);
-  if (regKey){ document.getElementById('weekday-row').style.display = 'flex'; renderWeekdayChips(); }
-  else { document.getElementById('weekday-row').style.display = 'none'; }
-  updateRegBtn();
+  renderWeekdayChips();
+  renderMemberAdminList();
 
-  // 提出チェック：今日まで（=今日＋期限切れ）の pending を日付順に
+  // 提出チェック：今日まで（今日＋期限切れ）の pending を日付順に
   const today = todayStr();
   const items = [];
-  ensureStudies().members.forEach(m => {
+  getMembers().forEach(m => {
     (m.promises||[]).forEach((p, idx) => {
       if (p.status === 'pending' && p.date <= today) items.push({ m, p, idx });
     });
@@ -669,18 +680,18 @@ function renderAdmin(){
     const overdue = it.p.date < today;
     const todayTag = it.p.date === today ? ' ★今日' : overdue ? ' （期限切れ）' : '';
     return `<div class="check-row ${overdue?'overdue':''}">
-      <span class="check-who">${memberLabel(it.m.no, it.m.gender)}</span>
+      <span class="check-who">👤 ${escHtml(it.m.name)}</span>
       <span class="check-date">${it.p.date.slice(5).replace('-','/')}${todayTag}</span>
       <span class="check-btns">
-        <button class="mini-btn mini-done" onclick="markPromise(${it.m.no},'${it.m.gender}',${it.idx},'done')">✅受け取った</button>
-        <button class="mini-btn mini-miss" onclick="markPromise(${it.m.no},'${it.m.gender}',${it.idx},'missed')">💤未提出</button>
-        <button class="mini-btn mini-del"  onclick="markPromise(${it.m.no},'${it.m.gender}',${it.idx},'delete')">🗑</button>
+        <button class="mini-btn mini-done" onclick="markPromise('${it.m.id}',${it.idx},'done')">✅受け取った</button>
+        <button class="mini-btn mini-miss" onclick="markPromise('${it.m.id}',${it.idx},'missed')">💤未提出</button>
+        <button class="mini-btn mini-del"  onclick="markPromise('${it.m.id}',${it.idx},'delete')">🗑</button>
       </span></div>`;
   }).join('');
 }
 
-function markPromise(no, gender, idx, action){
-  const m = findMember(no, gender);
+function markPromise(id, idx, action){
+  const m = findMemberById(id);
   if (!m || !m.promises[idx]) return;
   if (action === 'delete'){
     m.promises.splice(idx, 1);
@@ -693,22 +704,10 @@ function markPromise(no, gender, idx, action){
   saveData();
   render();
 
-  // 達成で連続記録が伸びたらお祝い
   if (action === 'done'){
     const st = computeStats(m);
     if (st.cur > 0 && st.cur % 5 === 0) spawnConfetti();
   }
-}
-
-function saveConfig(){
-  const mEl = document.getElementById('cfg-male');
-  const fEl = document.getElementById('cfg-female');
-  const male = parseInt(mEl.value) || 0;
-  const female = parseInt(fEl.value) || 0;
-  if (!_data.grinGrowth) _data.grinGrowth = {};
-  _data.grinGrowth.students = Object.assign({}, _data.grinGrowth.students, { maleCount: male, femaleCount: female });
-  saveData();
-  render();
 }
 
 /* ============================================================
@@ -740,11 +739,7 @@ function submitPin(){
     document.getElementById('lock-btn').classList.add('open');
     document.getElementById('admin-card').style.display = 'block';
     document.getElementById('admin-body').style.display = 'block';
-    const cfg = (_data.grinGrowth || {}).students || {};
-    document.getElementById('cfg-male').value   = cfg.maleCount   ?? 19;
-    document.getElementById('cfg-female').value = cfg.femaleCount ?? 18;
-    document.getElementById('reg-date').setAttribute('min', todayStr());
-    document.getElementById('reg-date').onchange = updateRegBtn;
+    cancelEdit();
     renderAdmin();
   } else {
     inp.classList.add('error'); err.textContent = '暗証番号が違います';
