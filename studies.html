@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>スタディーズ ｜ マイ約束カレンダー</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+    background: linear-gradient(180deg, #eef2ff 0%, #fff7ed 55%, #fefce8 100%);
+    min-height: 100vh;
+    color: #1e293b;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 26px 18px 100px; }
+
+  /* ===== ヘッダー ===== */
+  .page-header { text-align: center; margin-bottom: 22px; position: relative; }
+  .page-title {
+    font-size: 1.85rem; font-weight: 900; color: #c2410c;
+    letter-spacing: 0.04em; line-height: 1.2;
+  }
+  .page-sub { font-size: 0.88rem; color: #64748b; margin-top: 6px; }
+  .lock-btn {
+    position: absolute; top: -4px; right: 0;
+    padding: 7px 14px; border-radius: 12px;
+    background: #fff; border: 1.5px solid #e2e8f0; color: #64748b;
+    font-size: 0.82rem; font-weight: 800; font-family: inherit; cursor: pointer;
+  }
+  .lock-btn.open { background: #fff7ed; border-color: #fdba74; color: #c2410c; }
+
+  /* ===== カード共通 ===== */
+  .card {
+    background: #fff; border-radius: 24px; padding: 22px 20px;
+    box-shadow: 0 10px 38px rgba(0,0,0,0.09);
+    border: 2px solid #fde68a; margin-bottom: 18px;
+  }
+  .card.indigo { border-color: #c7d2fe; }
+  .card-title {
+    font-size: 1.05rem; font-weight: 900; color: #b45309;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  }
+  .card.indigo .card-title { color: #4338ca; }
+  .hint { font-size: 0.82rem; color: #94a3b8; }
+
+  /* ===== 番号グリッド ===== */
+  .num-group { margin-bottom: 12px; }
+  .num-group-label {
+    display: inline-block; font-size: 0.78rem; font-weight: 800;
+    padding: 3px 12px; border-radius: 30px; margin-bottom: 8px;
+  }
+  .male-label   { background: #dbeafe; color: #1d4ed8; }
+  .female-label { background: #fce7f3; color: #be185d; }
+  .nums { display: flex; flex-wrap: wrap; gap: 7px; }
+  .num {
+    width: 42px; height: 42px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.95rem; font-weight: 800; cursor: pointer;
+    border: 1.5px solid transparent; transition: all 0.12s; user-select: none;
+  }
+  .num.male   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .num.female { background: #fdf2f8; color: #be185d; border-color: #fbcfe8; }
+  .num:hover  { transform: translateY(-2px); }
+  .num.sel.male   { background: #1d4ed8; color: #fff; border-color: #1d4ed8; box-shadow: 0 4px 12px rgba(29,78,216,0.4); }
+  .num.sel.female { background: #be185d; color: #fff; border-color: #be185d; box-shadow: 0 4px 12px rgba(190,24,93,0.4); }
+  .num .dot { font-size: 0.7rem; position: absolute; margin-top: 22px; }
+
+  /* ===== マイ記録カード ===== */
+  #my-record { display: none; }
+  .mr-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+  .mr-avatar {
+    width: 64px; height: 64px; border-radius: 18px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 2rem;
+    background: linear-gradient(135deg, #fed7aa, #fdba74);
+  }
+  .mr-name { font-size: 1.25rem; font-weight: 900; color: #1e293b; }
+  .mr-badges { font-size: 1.1rem; margin-top: 2px; letter-spacing: 2px; min-height: 1.3rem; }
+
+  .stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .stat {
+    flex: 1; min-width: 90px; text-align: center;
+    background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 16px; padding: 12px 8px;
+  }
+  .stat .v { font-size: 1.7rem; font-weight: 900; line-height: 1; }
+  .stat .l { font-size: 0.72rem; color: #94a3b8; font-weight: 700; margin-top: 5px; }
+  .stat.fire .v { color: #ea580c; }
+  .stat.best .v { color: #d97706; }
+  .stat.total .v { color: #4338ca; }
+
+  /* ===== カレンダー ===== */
+  .cal-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 10px; }
+  .cal-nav button {
+    width: 34px; height: 34px; border-radius: 10px; border: 1.5px solid #e2e8f0;
+    background: #fff; font-size: 1rem; cursor: pointer; font-weight: 900; color: #64748b;
+  }
+  .cal-nav .cal-month { font-size: 1.05rem; font-weight: 900; color: #b45309; min-width: 120px; text-align: center; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-dow { text-align: center; font-size: 0.72rem; font-weight: 800; color: #94a3b8; padding: 4px 0; }
+  .cal-dow.sun { color: #ef4444; }
+  .cal-dow.sat { color: #3b82f6; }
+  .cal-cell {
+    aspect-ratio: 1 / 1; border-radius: 10px; background: #f8fafc;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 0.78rem; color: #cbd5e1; position: relative; border: 1.5px solid transparent;
+  }
+  .cal-cell.has { color: #475569; }
+  .cal-cell.today { border-color: #fb923c; }
+  .cal-cell .cal-day { font-size: 0.7rem; font-weight: 700; }
+  .cal-cell .cal-mark { font-size: 1.15rem; line-height: 1; margin-top: 1px; }
+  .cal-cell.empty { background: transparent; }
+
+  .cal-legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-top: 12px; font-size: 0.78rem; color: #64748b; }
+  .cal-legend span { display: inline-flex; align-items: center; gap: 4px; }
+
+  /* 約束一覧 */
+  .promise-list { margin-top: 16px; display: flex; flex-direction: column; gap: 7px; }
+  .promise-item {
+    display: flex; align-items: center; gap: 10px;
+    background: #f8fafc; border-radius: 12px; padding: 8px 12px; font-size: 0.85rem;
+  }
+  .promise-item .pi-mark { font-size: 1.1rem; }
+  .promise-item .pi-date { font-weight: 800; }
+  .promise-item .pi-status { margin-left: auto; font-weight: 800; font-size: 0.78rem; }
+  .ps-pending { color: #d97706; }
+  .ps-done    { color: #16a34a; }
+  .ps-missed  { color: #94a3b8; }
+
+  /* ===== ランキング ===== */
+  .rank-list { display: flex; flex-direction: column; gap: 8px; }
+  .rank-row {
+    display: flex; align-items: center; gap: 12px;
+    background: #f8fafc; border-radius: 14px; padding: 10px 14px;
+  }
+  .rank-row.top1 { background: linear-gradient(135deg, #fef3c7, #fde68a); border: 1.5px solid #fbbf24; }
+  .rank-row.top2 { background: #f1f5f9; border: 1.5px solid #cbd5e1; }
+  .rank-row.top3 { background: #fff7ed; border: 1.5px solid #fdba74; }
+  .rank-medal { font-size: 1.3rem; width: 32px; text-align: center; }
+  .rank-who { font-weight: 800; }
+  .rank-fire { margin-left: auto; font-weight: 900; color: #ea580c; font-size: 1rem; }
+  .rank-empty { color: #94a3b8; font-size: 0.85rem; text-align: center; padding: 14px; }
+
+  /* ===== 先生用パネル ===== */
+  #admin-body { display: none; }
+  .admin-sub-title { font-size: 0.85rem; font-weight: 900; color: #475569; margin: 16px 0 8px; }
+  .field-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  .field-row label { font-size: 0.8rem; font-weight: 800; color: #64748b; }
+  input[type="date"], input[type="number"], select {
+    padding: 8px 10px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+    font-size: 0.88rem; font-family: inherit; color: #1e293b;
+  }
+  input[type="number"] { width: 70px; }
+  .btn {
+    padding: 8px 16px; border-radius: 11px; border: none; cursor: pointer;
+    font-size: 0.85rem; font-weight: 900; font-family: inherit;
+  }
+  .btn-primary { background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; }
+  .btn-primary:disabled { opacity: 0.4; cursor: default; }
+  .btn-sub { background: #eef2ff; color: #4338ca; }
+  .check-list { display: flex; flex-direction: column; gap: 8px; }
+  .check-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: #f8fafc; border-radius: 12px; padding: 9px 12px;
+  }
+  .check-row.overdue { background: #fff1f2; }
+  .check-who { font-weight: 800; }
+  .check-date { font-size: 0.8rem; color: #94a3b8; }
+  .check-btns { margin-left: auto; display: flex; gap: 6px; }
+  .mini-btn { padding: 6px 11px; border-radius: 9px; border: none; cursor: pointer; font-size: 0.8rem; font-weight: 900; font-family: inherit; }
+  .mini-done { background: #dcfce7; color: #15803d; }
+  .mini-miss { background: #fee2e2; color: #dc2626; }
+  .mini-del  { background: #f1f5f9; color: #64748b; }
+  #save-status { font-size: 0.82rem; font-weight: 800; color: #16a34a; margin-left: 8px; }
+
+  .back-link { display: inline-block; margin-bottom: 14px; color: #64748b; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+  .back-link:hover { color: #c2410c; }
+
+  /* ===== PINモーダル ===== */
+  #pin-modal {
+    position: fixed; inset: 0; background: rgba(15,23,42,0.55);
+    display: none; align-items: center; justify-content: center; z-index: 999; padding: 20px;
+  }
+  #pin-modal.show { display: flex; }
+  .pin-box { background: #fff; border-radius: 22px; padding: 30px 26px; width: 320px; max-width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .pin-icon { font-size: 2.4rem; }
+  .pin-title { font-size: 1.15rem; font-weight: 900; margin-top: 6px; }
+  .pin-sub { font-size: 0.82rem; color: #94a3b8; margin: 4px 0 16px; }
+  .pin-input-wrap { display: flex; gap: 6px; }
+  .pin-input-wrap input { flex: 1; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 1.1rem; text-align: center; letter-spacing: 0.3em; font-family: inherit; }
+  .pin-input-wrap input.error { border-color: #ef4444; animation: shake 0.4s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .pin-eye { width: 46px; border: 1.5px solid #e2e8f0; border-radius: 12px; background: #f8fafc; cursor: pointer; font-size: 1.1rem; }
+  .pin-err { color: #ef4444; font-size: 0.8rem; font-weight: 700; min-height: 1.1rem; margin: 8px 0; }
+  .pin-btns { display: flex; gap: 8px; }
+  .pin-btns button { flex: 1; padding: 11px; border-radius: 12px; border: none; cursor: pointer; font-weight: 900; font-family: inherit; }
+  .pin-cancel { background: #f1f5f9; color: #64748b; }
+  .pin-ok { background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; }
+
+  /* ===== 紙吹雪 ===== */
+  .conf { position: fixed; top: -20px; z-index: 1500; pointer-events: none; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(105vh) rotate(720deg); opacity: 0; } }
+
+  @media (max-width: 600px) {
+    .num { width: 38px; height: 38px; }
+    .stat { min-width: 70px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="class_homepage.html" class="back-link">← 学級トップへ</a>
+
+  <div class="page-header">
+    <button class="lock-btn" id="lock-btn" onclick="toggleAdmin()">🔒 先生用</button>
+    <div class="page-title">📚 スタディーズ</div>
+    <div class="page-sub">自分で決めた日にワークを提出！🔥連続記録をのばそう</div>
+  </div>
+
+  <!-- ====== 自分の記録を見る ====== -->
+  <div class="card indigo">
+    <div class="card-title">🔎 自分の番号を選んで記録を見よう</div>
+    <div id="select-grids"></div>
+  </div>
+
+  <!-- ====== マイ記録 ====== -->
+  <div class="card" id="my-record">
+    <div class="mr-head">
+      <div class="mr-avatar" id="mr-avatar">🙂</div>
+      <div>
+        <div class="mr-name" id="mr-name">－</div>
+        <div class="mr-badges" id="mr-badges"></div>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat fire"><div class="v" id="st-streak">0</div><div class="l">🔥 連続</div></div>
+      <div class="stat best"><div class="v" id="st-best">0</div><div class="l">⭐ 最高記録</div></div>
+      <div class="stat total"><div class="v" id="st-total">0</div><div class="l">📚 提出回数</div></div>
+    </div>
+
+    <div class="cal-nav">
+      <button onclick="changeMonth(-1)">‹</button>
+      <div class="cal-month" id="cal-month">2026年6月</div>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-legend">
+      <span>🚩 約束した日</span>
+      <span>⭐ 提出できた！</span>
+      <span>💤 出せなかった</span>
+    </div>
+
+    <div class="promise-list" id="promise-list"></div>
+  </div>
+
+  <!-- ====== ランキング ====== -->
+  <div class="card">
+    <div class="card-title">🔥 連続記録ランキング</div>
+    <div class="rank-list" id="rank-list"></div>
+  </div>
+
+  <!-- ====== 先生用パネル ====== -->
+  <div class="card indigo" id="admin-card" style="display:none">
+    <div class="card-title">🔓 先生用コントロール <span id="save-status"></span></div>
+    <div id="admin-body">
+
+      <div class="admin-sub-title">🤝 約束を登録する</div>
+      <div id="reg-grids"></div>
+      <div class="field-row" style="margin-top:8px">
+        <label>提出する日</label>
+        <input type="date" id="reg-date">
+        <button class="btn btn-primary" id="reg-btn" onclick="registerPromise()" disabled>🤝 約束する</button>
+      </div>
+      <div class="hint" id="reg-hint">番号と提出日を選んでください</div>
+
+      <div class="admin-sub-title">📥 提出チェック（今日の予定・期限切れ）</div>
+      <div class="check-list" id="check-list"></div>
+
+      <div class="admin-sub-title">👥 人数設定</div>
+      <div class="field-row">
+        <label>男子</label><input type="number" id="cfg-male" min="0" max="50">
+        <label>女子</label><input type="number" id="cfg-female" min="0" max="50">
+        <button class="btn btn-sub" onclick="saveConfig()">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PINモーダル -->
+<div id="pin-modal">
+  <div class="pin-box">
+    <div class="pin-icon">🔒</div>
+    <div class="pin-title">先生用ログイン</div>
+    <div class="pin-sub">暗証番号を入力してください</div>
+    <div class="pin-input-wrap">
+      <input id="pin-input" type="password" inputmode="numeric" maxlength="20" placeholder="●●●●"
+             onkeydown="if(event.key==='Enter')submitPin()">
+      <button class="pin-eye" id="pin-eye" onclick="togglePinEye()" title="表示/非表示">👁</button>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+    <div class="pin-btns">
+      <button class="pin-cancel" onclick="closePinModal()">キャンセル</button>
+      <button class="pin-ok" onclick="submitPin()">ログイン</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   設定・状態
+   ============================================================ */
+const SERVER = 'http://localhost:3456';
+let _data = {};
+let _adminPin = '';
+let adminOpen = false;
+
+let selKey   = null;          // 閲覧中の生徒 {no, gender}
+let regKey   = null;          // 登録対象の生徒 {no, gender}
+let calYear, calMonth;        // 表示中のカレンダー年月
+
+/* ============================================================
+   汎用
+   ============================================================ */
+function escHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function todayStr(){
+  const d = new Date();
+  const local = new Date(d.getTime() - d.getTimezoneOffset()*60000);
+  return local.toISOString().slice(0,10);
+}
+function getStudentConfig(){
+  const cfg = (_data.grinGrowth || {}).students || {};
+  return { male: cfg.maleCount ?? 19, female: cfg.femaleCount ?? 18 };
+}
+function ensureStudies(){
+  if (!_data.studies) _data.studies = { members: [] };
+  if (!_data.studies.members) _data.studies.members = [];
+  return _data.studies;
+}
+function memberKey(no, gender){ return gender + '-' + no; }
+function findMember(no, gender){
+  return ensureStudies().members.find(m => m.no === no && m.gender === gender) || null;
+}
+function findOrCreateMember(no, gender){
+  let m = findMember(no, gender);
+  if (!m){ m = { no, gender, promises: [] }; ensureStudies().members.push(m); }
+  if (!m.promises) m.promises = [];
+  return m;
+}
+function genderMark(g){ return g === 'm' ? '👦' : '👧'; }
+function memberLabel(no, gender){ return `${genderMark(gender)}${no}番`; }
+
+/* 連続記録などを計算 */
+function computeStats(m){
+  const ps = (m.promises||[]).slice().sort((a,b)=> a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  let cur = 0, best = 0, total = 0;
+  ps.forEach(p => {
+    if (p.status === 'done'){ cur++; total++; if (cur > best) best = cur; }
+    else if (p.status === 'missed'){ cur = 0; }
+    // pending はまだ確定していないのでスキップ
+  });
+  const pending = (m.promises||[]).filter(p => p.status === 'pending');
+  return { cur, best, total, pending };
+}
+function badgesFor(stats){
+  let b = '';
+  if (stats.cur >= 10) b += '🔥🔥🔥';
+  else if (stats.cur >= 5) b += '🔥🔥';
+  else if (stats.cur >= 3) b += '🔥';
+  if (stats.total >= 20) b += '🏆';
+  else if (stats.total >= 10) b += '🏅';
+  else if (stats.total >= 5) b += '⭐';
+  return b;
+}
+
+/* ============================================================
+   データ入出力
+   ============================================================ */
+async function loadData(){
+  let d = null;
+  try { const r = await fetch(SERVER + '/api/data', { signal: AbortSignal.timeout(1500) }); if (r.ok) d = await r.json(); } catch(e){}
+  if (!d){ try { const r = await fetch('data.json?_=' + Date.now()); if (r.ok) d = await r.json(); } catch(e){} }
+  return d || {};
+}
+async function saveData(){
+  const stEl = document.getElementById('save-status');
+  if (stEl) stEl.textContent = '⏳ 保存中...';
+  const pin = _adminPin || _data.adminPIN || '1210';
+  try {
+    await fetch(SERVER + '/api/data', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pin, data: _data }) });
+    await fetch(SERVER + '/api/git-push', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pin }) });
+    if (stEl){ stEl.textContent = '✅ 保存しました'; setTimeout(()=> stEl.textContent='', 3000); }
+  } catch(e){ if (stEl) stEl.textContent = '❌ サーバーが起動していません'; }
+}
+
+/* ============================================================
+   番号グリッド
+   ============================================================ */
+function buildNumberGrid(containerId, onPick, selectedKey){
+  const { male, female } = getStudentConfig();
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const make = (count, gender, labelHtml, labelClass) => {
+    let h = `<div class="num-group"><span class="num-group-label ${labelClass}">${labelHtml}</span><div class="nums">`;
+    for (let i = 1; i <= count; i++){
+      const k = memberKey(i, gender);
+      const m = findMember(i, gender);
+      const st = m ? computeStats(m) : null;
+      const fire = st && st.cur > 0 ? `<span class="dot">🔥</span>` : '';
+      const sel = selectedKey === k ? ' sel' : '';
+      h += `<div class="num ${gender==='m'?'male':'female'}${sel}" style="position:relative" onclick="${onPick}(${i},'${gender}')">${i}${fire}</div>`;
+    }
+    h += `</div></div>`;
+    return h;
+  };
+  el.innerHTML = make(male, 'm', '👦 男子', 'male-label') + make(female, 'f', '👧 女子', 'female-label');
+}
+
+/* ============================================================
+   描画
+   ============================================================ */
+function render(){
+  buildNumberGrid('select-grids', 'selectStudent', selKey ? memberKey(selKey.no, selKey.gender) : null);
+  renderMyRecord();
+  renderRanking();
+  if (adminOpen) renderAdmin();
+}
+
+function selectStudent(no, gender){
+  selKey = { no, gender };
+  const t = new Date();
+  calYear = t.getFullYear(); calMonth = t.getMonth(); // 今月から表示
+  render();
+  document.getElementById('my-record').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function renderMyRecord(){
+  const box = document.getElementById('my-record');
+  if (!selKey){ box.style.display = 'none'; return; }
+  box.style.display = 'block';
+
+  const m = findMember(selKey.no, selKey.gender) || { no: selKey.no, gender: selKey.gender, promises: [] };
+  const stats = computeStats(m);
+
+  document.getElementById('mr-avatar').textContent = genderMark(selKey.gender);
+  document.getElementById('mr-avatar').style.background = selKey.gender === 'm'
+    ? 'linear-gradient(135deg,#bfdbfe,#93c5fd)' : 'linear-gradient(135deg,#fbcfe8,#f9a8d4)';
+  document.getElementById('mr-name').textContent = memberLabel(selKey.no, selKey.gender) + ' の記録';
+  document.getElementById('mr-badges').textContent = badgesFor(stats) || 'まだバッジなし — がんばろう！';
+  document.getElementById('st-streak').textContent = stats.cur;
+  document.getElementById('st-best').textContent   = stats.best;
+  document.getElementById('st-total').textContent  = stats.total;
+
+  renderCalendar(m);
+  renderPromiseList(m);
+}
+
+function renderCalendar(m){
+  document.getElementById('cal-month').textContent = `${calYear}年${calMonth+1}月`;
+  const grid = document.getElementById('cal-grid');
+  const dows = ['日','月','火','水','木','金','土'];
+  let html = dows.map((d,i)=>`<div class="cal-dow ${i===0?'sun':i===6?'sat':''}">${d}</div>`).join('');
+
+  const first = new Date(calYear, calMonth, 1).getDay();
+  const days  = new Date(calYear, calMonth+1, 0).getDate();
+  for (let i = 0; i < first; i++) html += `<div class="cal-cell empty"></div>`;
+
+  const byDate = {};
+  (m.promises||[]).forEach(p => { byDate[p.date] = p.status; });
+  const today = todayStr();
+
+  for (let d = 1; d <= days; d++){
+    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const status = byDate[ds];
+    let mark = '';
+    if (status === 'done')    mark = '⭐';
+    else if (status === 'missed') mark = '💤';
+    else if (status === 'pending') mark = '🚩';
+    const cls = (status ? 'has ' : '') + (ds === today ? 'today' : '');
+    html += `<div class="cal-cell ${cls}"><span class="cal-day">${d}</span><span class="cal-mark">${mark}</span></div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function changeMonth(delta){
+  calMonth += delta;
+  if (calMonth < 0){ calMonth = 11; calYear--; }
+  if (calMonth > 11){ calMonth = 0; calYear++; }
+  if (selKey) renderCalendar(findMember(selKey.no, selKey.gender) || { promises: [] });
+}
+
+function renderPromiseList(m){
+  const el = document.getElementById('promise-list');
+  const ps = (m.promises||[]).slice().sort((a,b)=> a.date < b.date ? 1 : -1).slice(0, 8);
+  if (ps.length === 0){ el.innerHTML = `<div class="hint">まだ約束がありません。先生用パネルから登録できます。</div>`; return; }
+  el.innerHTML = ps.map(p => {
+    const mark = p.status === 'done' ? '⭐' : p.status === 'missed' ? '💤' : '🚩';
+    const stTxt = p.status === 'done' ? '<span class="pi-status ps-done">提出できた！</span>'
+               : p.status === 'missed' ? '<span class="pi-status ps-missed">出せなかった</span>'
+               : '<span class="pi-status ps-pending">提出予定</span>';
+    return `<div class="promise-item"><span class="pi-mark">${mark}</span><span class="pi-date">${p.date.slice(5).replace('-','/')}</span>${stTxt}</div>`;
+  }).join('');
+}
+
+function renderRanking(){
+  const el = document.getElementById('rank-list');
+  const rows = ensureStudies().members.map(m => ({ m, s: computeStats(m) }))
+    .filter(x => x.s.total > 0 || x.s.cur > 0)
+    .sort((a,b)=> (b.s.cur - a.s.cur) || (b.s.best - a.s.best) || (b.s.total - a.s.total))
+    .slice(0, 8);
+  if (rows.length === 0){ el.innerHTML = `<div class="rank-empty">まだ記録がありません。最初の1人になろう！</div>`; return; }
+  const medals = ['🥇','🥈','🥉'];
+  el.innerHTML = rows.map((x,i)=>{
+    const topCls = i < 3 ? ` top${i+1}` : '';
+    const medal = medals[i] || `${i+1}`;
+    return `<div class="rank-row${topCls}"><span class="rank-medal">${medal}</span>
+      <span class="rank-who">${memberLabel(x.m.no, x.m.gender)}</span>
+      <span class="rank-fire">🔥 ${x.s.cur}　<span style="color:#94a3b8;font-size:.8rem">(最高${x.s.best}・計${x.s.total})</span></span></div>`;
+  }).join('');
+}
+
+/* ============================================================
+   先生用パネル
+   ============================================================ */
+function pickRegStudent(no, gender){
+  regKey = { no, gender };
+  buildNumberGrid('reg-grids', 'pickRegStudent', memberKey(no, gender));
+  updateRegBtn();
+}
+function updateRegBtn(){
+  const date = document.getElementById('reg-date').value;
+  const ok = regKey && date;
+  document.getElementById('reg-btn').disabled = !ok;
+  document.getElementById('reg-hint').textContent = ok
+    ? `${memberLabel(regKey.no, regKey.gender)} が ${date} に提出する約束`
+    : '番号と提出日を選んでください';
+}
+function registerPromise(){
+  const date = document.getElementById('reg-date').value;
+  if (!regKey || !date) return;
+  const m = findOrCreateMember(regKey.no, regKey.gender);
+  if (m.promises.some(p => p.date === date)){
+    document.getElementById('reg-hint').textContent = '⚠️ その日の約束はすでに登録済みです';
+    return;
+  }
+  m.promises.push({ date, status: 'pending' });
+  saveData();
+  document.getElementById('reg-date').value = '';
+  regKey = null;
+  render();
+  buildNumberGrid('reg-grids', 'pickRegStudent', null);
+  updateRegBtn();
+}
+
+function renderAdmin(){
+  // 約束登録グリッド
+  buildNumberGrid('reg-grids', 'pickRegStudent', regKey ? memberKey(regKey.no, regKey.gender) : null);
+  updateRegBtn();
+
+  // 提出チェック：pending を日付順に
+  const today = todayStr();
+  const items = [];
+  ensureStudies().members.forEach(m => {
+    (m.promises||[]).forEach((p, idx) => {
+      if (p.status === 'pending') items.push({ m, p, idx });
+    });
+  });
+  items.sort((a,b)=> a.p.date < b.p.date ? -1 : 1);
+
+  const el = document.getElementById('check-list');
+  if (items.length === 0){ el.innerHTML = `<div class="hint">提出予定はありません。</div>`; return; }
+  el.innerHTML = items.map(it => {
+    const overdue = it.p.date < today;
+    const todayTag = it.p.date === today ? ' ★今日' : overdue ? ' （期限切れ）' : '';
+    return `<div class="check-row ${overdue?'overdue':''}">
+      <span class="check-who">${memberLabel(it.m.no, it.m.gender)}</span>
+      <span class="check-date">${it.p.date.slice(5).replace('-','/')}${todayTag}</span>
+      <span class="check-btns">
+        <button class="mini-btn mini-done" onclick="markPromise(${it.m.no},'${it.m.gender}',${it.idx},'done')">✅受け取った</button>
+        <button class="mini-btn mini-miss" onclick="markPromise(${it.m.no},'${it.m.gender}',${it.idx},'missed')">💤未提出</button>
+        <button class="mini-btn mini-del"  onclick="markPromise(${it.m.no},'${it.m.gender}',${it.idx},'delete')">🗑</button>
+      </span></div>`;
+  }).join('');
+}
+
+function markPromise(no, gender, idx, action){
+  const m = findMember(no, gender);
+  if (!m || !m.promises[idx]) return;
+  if (action === 'delete'){
+    m.promises.splice(idx, 1);
+  } else if (action === 'done'){
+    m.promises[idx].status = 'done';
+    m.promises[idx].doneDate = todayStr();
+  } else if (action === 'missed'){
+    m.promises[idx].status = 'missed';
+  }
+  saveData();
+  render();
+
+  // 達成で連続記録が伸びたらお祝い
+  if (action === 'done'){
+    const st = computeStats(m);
+    if (st.cur > 0 && st.cur % 5 === 0) spawnConfetti();
+  }
+}
+
+function saveConfig(){
+  const mEl = document.getElementById('cfg-male');
+  const fEl = document.getElementById('cfg-female');
+  const male = parseInt(mEl.value) || 0;
+  const female = parseInt(fEl.value) || 0;
+  if (!_data.grinGrowth) _data.grinGrowth = {};
+  _data.grinGrowth.students = Object.assign({}, _data.grinGrowth.students, { maleCount: male, femaleCount: female });
+  saveData();
+  render();
+}
+
+/* ============================================================
+   PIN / 管理ログイン
+   ============================================================ */
+function toggleAdmin(){
+  if (adminOpen){
+    adminOpen = false; _adminPin = '';
+    document.getElementById('lock-btn').textContent = '🔒 先生用';
+    document.getElementById('lock-btn').classList.remove('open');
+    document.getElementById('admin-card').style.display = 'none';
+    document.getElementById('admin-body').style.display = 'none';
+    render();
+  } else {
+    openPinModal();
+  }
+}
+function openPinModal(){ const mo = document.getElementById('pin-modal'); mo.classList.add('show'); const i = document.getElementById('pin-input'); i.value=''; setTimeout(()=>i.focus(),50); }
+function closePinModal(){ document.getElementById('pin-modal').classList.remove('show'); document.getElementById('pin-err').textContent=''; }
+function togglePinEye(){ const inp=document.getElementById('pin-input'), eye=document.getElementById('pin-eye'); if(inp.type==='password'){inp.type='text';eye.textContent='🙈';}else{inp.type='password';eye.textContent='👁';} }
+function submitPin(){
+  const inp = document.getElementById('pin-input');
+  const err = document.getElementById('pin-err');
+  const correct = _data.adminPIN || '1210';
+  if (inp.value === correct){
+    closePinModal();
+    adminOpen = true; _adminPin = inp.value;
+    document.getElementById('lock-btn').textContent = '🔓 先生用（管理中）';
+    document.getElementById('lock-btn').classList.add('open');
+    document.getElementById('admin-card').style.display = 'block';
+    document.getElementById('admin-body').style.display = 'block';
+    const cfg = (_data.grinGrowth || {}).students || {};
+    document.getElementById('cfg-male').value   = cfg.maleCount   ?? 19;
+    document.getElementById('cfg-female').value = cfg.femaleCount ?? 18;
+    document.getElementById('reg-date').setAttribute('min', todayStr());
+    document.getElementById('reg-date').onchange = updateRegBtn;
+    renderAdmin();
+  } else {
+    inp.classList.add('error'); err.textContent = '暗証番号が違います';
+    setTimeout(()=>inp.classList.remove('error'), 400);
+    inp.value=''; inp.focus();
+  }
+}
+
+/* ============================================================
+   紙吹雪
+   ============================================================ */
+const CONF_COLS = ['#f97316','#fbbf24','#22c55e','#3b82f6','#a855f7','#ec4899'];
+function spawnConfetti(){
+  for (let i = 0; i < 90; i++){
+    setTimeout(()=>{
+      const el = document.createElement('div');
+      el.className = 'conf';
+      el.style.cssText = `left:${Math.random()*100}vw;width:${7+Math.random()*7}px;height:${9+Math.random()*9}px;background:${CONF_COLS[Math.floor(Math.random()*CONF_COLS.length)]};border-radius:${Math.random()>.5?'50%':'3px'};animation-duration:${1.6+Math.random()*2.2}s;`;
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(), 4200);
+    }, i * 14);
+  }
+}
+
+/* ============================================================
+   起動
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', async () => {
+  _data = await loadData();
+  const t = new Date();
+  calYear = t.getFullYear(); calMonth = t.getMonth();
+  render();
+});
+</script>
+</body>
+</html>
