@@ -157,6 +157,23 @@
   .btn-primary { background: linear-gradient(135deg, #f97316, #ea580c); color: #fff; }
   .btn-primary:disabled { opacity: 0.4; cursor: default; }
   .btn-sub { background: #eef2ff; color: #4338ca; }
+
+  /* 曜日固定チップ */
+  .weekday-row { display: none; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0 4px; }
+  .wd-chips { display: flex; gap: 5px; }
+  .wd-chip {
+    width: 40px; height: 40px; border-radius: 11px; border: 1.5px solid #e2e8f0;
+    background: #f8fafc; font-size: 0.92rem; font-weight: 800; cursor: pointer;
+    font-family: inherit; color: #64748b; transition: all 0.12s;
+  }
+  .wd-chip.sun { color: #ef4444; } .wd-chip.sat { color: #3b82f6; }
+  .wd-chip.on { background: #ea580c; color: #fff; border-color: #ea580c; }
+  .wd-chip.on.sun, .wd-chip.on.sat { color: #fff; }
+  .mr-schedule {
+    display: inline-block; margin-bottom: 14px; font-size: 0.82rem; font-weight: 800;
+    color: #c2410c; background: #fff7ed; border: 1.5px solid #fed7aa;
+    border-radius: 30px; padding: 5px 14px;
+  }
   .check-list { display: flex; flex-direction: column; gap: 8px; }
   .check-row {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -236,6 +253,7 @@
       <div class="stat best"><div class="v" id="st-best">0</div><div class="l">⭐ 最高記録</div></div>
       <div class="stat total"><div class="v" id="st-total">0</div><div class="l">📚 提出回数</div></div>
     </div>
+    <div class="mr-schedule" id="mr-schedule" style="display:none"></div>
 
     <div class="cal-nav">
       <button onclick="changeMonth(-1)">‹</button>
@@ -263,14 +281,20 @@
     <div class="card-title">🔓 先生用コントロール <span id="save-status"></span></div>
     <div id="admin-body">
 
-      <div class="admin-sub-title">🤝 約束を登録する</div>
+      <div class="admin-sub-title">🗓 曜日で固定（毎週この曜日に提出）</div>
       <div id="reg-grids"></div>
-      <div class="field-row" style="margin-top:8px">
-        <label>提出する日</label>
-        <input type="date" id="reg-date">
-        <button class="btn btn-primary" id="reg-btn" onclick="registerPromise()" disabled>🤝 約束する</button>
+      <div class="weekday-row" id="weekday-row">
+        <div class="wd-chips" id="wd-chips"></div>
+        <button class="btn btn-primary" onclick="saveWeekdays()">🔁 この曜日で固定</button>
+        <button class="btn btn-sub" onclick="clearWeekdays()">解除</button>
       </div>
-      <div class="hint" id="reg-hint">番号と提出日を選んでください</div>
+      <div class="hint" id="reg-hint">番号を選んでから曜日をえらんでください</div>
+
+      <div class="admin-sub-title">➕ 単発で約束を追加（曜日固定とは別の特別な日）</div>
+      <div class="field-row">
+        <input type="date" id="reg-date">
+        <button class="btn btn-sub" id="reg-btn" onclick="registerPromise()" disabled>追加</button>
+      </div>
 
       <div class="admin-sub-title">📥 提出チェック（今日の予定・期限切れ）</div>
       <div class="check-list" id="check-list"></div>
@@ -315,7 +339,11 @@ let adminOpen = false;
 
 let selKey   = null;          // 閲覧中の生徒 {no, gender}
 let regKey   = null;          // 登録対象の生徒 {no, gender}
+let regWeekdays = new Set();  // 登録UIで選択中の曜日 (0=日..6=土)
 let calYear, calMonth;        // 表示中のカレンダー年月
+
+const WEEKDAY_LABELS = ['日','月','火','水','木','金','土'];
+const SYNC_DAYS = 28;         // 曜日固定の予定を何日先まで自動生成するか
 
 /* ============================================================
    汎用
@@ -325,6 +353,24 @@ function todayStr(){
   const d = new Date();
   const local = new Date(d.getTime() - d.getTimezoneOffset()*60000);
   return local.toISOString().slice(0,10);
+}
+function fmtDate(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function parseLocalDate(s){ const [y,mo,da] = s.split('-').map(Number); return new Date(y, mo-1, da); }
+function weekdayText(wds){ return (wds||[]).slice().sort((a,b)=>a-b).map(w=>WEEKDAY_LABELS[w]).join('・'); }
+
+/* 曜日固定 → 今日から SYNC_DAYS 日先までの予定(pending)を自動生成（既存の日付はスキップ） */
+function syncWeekdayPromises(m){
+  if (!m.weekdays || m.weekdays.length === 0) return;
+  if (!m.promises) m.promises = [];
+  const have = new Set(m.promises.map(p => p.date));
+  const base = parseLocalDate(todayStr());
+  for (let i = 0; i < SYNC_DAYS; i++){
+    const d = new Date(base); d.setDate(base.getDate() + i);
+    if (m.weekdays.includes(d.getDay())){
+      const ds = fmtDate(d);
+      if (!have.has(ds)){ m.promises.push({ date: ds, status: 'pending', auto: true }); have.add(ds); }
+    }
+  }
 }
 function getStudentConfig(){
   const cfg = (_data.grinGrowth || {}).students || {};
@@ -418,6 +464,8 @@ function buildNumberGrid(containerId, onPick, selectedKey){
    描画
    ============================================================ */
 function render(){
+  // 曜日固定の予定を最新化（メモリ上。保存は明示操作時のみ）
+  ensureStudies().members.forEach(syncWeekdayPromises);
   buildNumberGrid('select-grids', 'selectStudent', selKey ? memberKey(selKey.no, selKey.gender) : null);
   renderMyRecord();
   renderRanking();
@@ -448,6 +496,14 @@ function renderMyRecord(){
   document.getElementById('st-streak').textContent = stats.cur;
   document.getElementById('st-best').textContent   = stats.best;
   document.getElementById('st-total').textContent  = stats.total;
+
+  const schEl = document.getElementById('mr-schedule');
+  if (m.weekdays && m.weekdays.length){
+    schEl.style.display = 'inline-block';
+    schEl.textContent = `🗓 毎週 ${weekdayText(m.weekdays)} に提出`;
+  } else {
+    schEl.style.display = 'none';
+  }
 
   renderCalendar(m);
   renderPromiseList(m);
@@ -522,16 +578,59 @@ function renderRanking(){
    ============================================================ */
 function pickRegStudent(no, gender){
   regKey = { no, gender };
+  const m = findMember(no, gender);
+  regWeekdays = new Set((m && m.weekdays) || []);
   buildNumberGrid('reg-grids', 'pickRegStudent', memberKey(no, gender));
+  document.getElementById('weekday-row').style.display = 'flex';
+  renderWeekdayChips();
   updateRegBtn();
+}
+function renderWeekdayChips(){
+  const el = document.getElementById('wd-chips');
+  el.innerHTML = WEEKDAY_LABELS.map((lab, wd) => {
+    const cls = wd === 0 ? 'sun' : wd === 6 ? 'sat' : '';
+    const on  = regWeekdays.has(wd) ? ' on' : '';
+    return `<button class="wd-chip ${cls}${on}" onclick="toggleWeekday(${wd})">${lab}</button>`;
+  }).join('');
+}
+function toggleWeekday(wd){
+  if (regWeekdays.has(wd)) regWeekdays.delete(wd); else regWeekdays.add(wd);
+  renderWeekdayChips();
+}
+function saveWeekdays(){
+  if (!regKey){ document.getElementById('reg-hint').textContent = '先に番号を選んでください'; return; }
+  const m = findOrCreateMember(regKey.no, regKey.gender);
+  const today = todayStr();
+  // 既存の「自動生成された未来のpending」を一旦消して作り直す
+  m.promises = (m.promises || []).filter(p => !(p.auto && p.status === 'pending' && p.date >= today));
+  m.weekdays = [...regWeekdays].sort((a,b)=>a-b);
+  syncWeekdayPromises(m);
+  saveData();
+  render();
+}
+function clearWeekdays(){
+  if (!regKey) return;
+  const m = findMember(regKey.no, regKey.gender);
+  if (m){
+    const today = todayStr();
+    m.promises = (m.promises || []).filter(p => !(p.auto && p.status === 'pending' && p.date >= today));
+    m.weekdays = [];
+  }
+  regWeekdays = new Set();
+  saveData();
+  render();
 }
 function updateRegBtn(){
   const date = document.getElementById('reg-date').value;
-  const ok = regKey && date;
-  document.getElementById('reg-btn').disabled = !ok;
-  document.getElementById('reg-hint').textContent = ok
-    ? `${memberLabel(regKey.no, regKey.gender)} が ${date} に提出する約束`
-    : '番号と提出日を選んでください';
+  document.getElementById('reg-btn').disabled = !(regKey && date);
+  const hint = document.getElementById('reg-hint');
+  if (regKey){
+    const m = findMember(regKey.no, regKey.gender);
+    const wds = (m && m.weekdays) || [];
+    hint.textContent = `${memberLabel(regKey.no, regKey.gender)} ／ 固定曜日: ${wds.length ? weekdayText(wds) : 'なし'}`;
+  } else {
+    hint.textContent = '番号を選んでから曜日をえらんでください';
+  }
 }
 function registerPromise(){
   const date = document.getElementById('reg-date').value;
@@ -544,29 +643,28 @@ function registerPromise(){
   m.promises.push({ date, status: 'pending' });
   saveData();
   document.getElementById('reg-date').value = '';
-  regKey = null;
-  render();
-  buildNumberGrid('reg-grids', 'pickRegStudent', null);
-  updateRegBtn();
+  render();   // regKey は保持（同じ生徒に続けて操作できる）
 }
 
 function renderAdmin(){
   // 約束登録グリッド
   buildNumberGrid('reg-grids', 'pickRegStudent', regKey ? memberKey(regKey.no, regKey.gender) : null);
+  if (regKey){ document.getElementById('weekday-row').style.display = 'flex'; renderWeekdayChips(); }
+  else { document.getElementById('weekday-row').style.display = 'none'; }
   updateRegBtn();
 
-  // 提出チェック：pending を日付順に
+  // 提出チェック：今日まで（=今日＋期限切れ）の pending を日付順に
   const today = todayStr();
   const items = [];
   ensureStudies().members.forEach(m => {
     (m.promises||[]).forEach((p, idx) => {
-      if (p.status === 'pending') items.push({ m, p, idx });
+      if (p.status === 'pending' && p.date <= today) items.push({ m, p, idx });
     });
   });
   items.sort((a,b)=> a.p.date < b.p.date ? -1 : 1);
 
   const el = document.getElementById('check-list');
-  if (items.length === 0){ el.innerHTML = `<div class="hint">提出予定はありません。</div>`; return; }
+  if (items.length === 0){ el.innerHTML = `<div class="hint">今日の提出予定・期限切れはありません。</div>`; return; }
   el.innerHTML = items.map(it => {
     const overdue = it.p.date < today;
     const todayTag = it.p.date === today ? ' ★今日' : overdue ? ' （期限切れ）' : '';
