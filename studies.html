@@ -84,6 +84,13 @@
     color: #c2410c; background: #fff7ed; border: 1.5px solid #fed7aa;
     border-radius: 30px; padding: 5px 14px;
   }
+  .mr-memo {
+    background: #eef2ff; border: 1.5px solid #c7d2fe; border-radius: 14px;
+    padding: 11px 15px; margin-bottom: 16px; font-size: 0.9rem; color: #3730a3;
+    font-weight: 700; line-height: 1.55; white-space: pre-wrap;
+  }
+  .mr-memo .memo-label { font-size: 0.74rem; color: #6366f1; font-weight: 900; display: block; margin-bottom: 3px; }
+  .mr-rowmemo { font-size: 0.76rem; color: #4338ca; font-weight: 700; white-space: pre-wrap; }
 
   /* ===== カレンダー ===== */
   .cal-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 10px; }
@@ -142,10 +149,11 @@
   .admin-sub-title { font-size: 0.85rem; font-weight: 900; color: #475569; margin: 16px 0 8px; }
   .field-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
   .field-row label { font-size: 0.8rem; font-weight: 800; color: #64748b; }
-  input[type="text"], input[type="date"], input[type="number"] {
+  input[type="text"], input[type="date"], input[type="number"], textarea {
     padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 10px;
     font-size: 0.9rem; font-family: inherit; color: #1e293b;
   }
+  textarea { resize: vertical; line-height: 1.5; }
   .btn {
     padding: 9px 18px; border-radius: 11px; border: none; cursor: pointer;
     font-size: 0.85rem; font-weight: 900; font-family: inherit;
@@ -271,6 +279,7 @@
       <div class="stat total"><div class="v" id="st-total">0</div><div class="l">📚 提出回数</div></div>
     </div>
     <div class="mr-schedule" id="mr-schedule" style="display:none"></div>
+    <div class="mr-memo" id="mr-memo" style="display:none"></div>
 
     <div class="cal-nav">
       <button onclick="changeMonth(-1)">‹</button>
@@ -313,6 +322,11 @@
       <div class="weekday-row">
         <span class="hint">提出する曜日（毎週）:</span>
         <div class="wd-chips" id="wd-chips"></div>
+      </div>
+      <div class="field-row" style="align-items:flex-start">
+        <span class="hint" style="margin-top:9px">取り組む内容:</span>
+        <textarea id="m-memo" rows="2" placeholder="話し合って決めた内容（例: 数学ワーク p.20〜30 ／ 英単語 毎回50個）"
+                  style="flex:1;min-width:220px"></textarea>
       </div>
       <div class="field-row">
         <button class="btn btn-primary" id="m-save-btn" onclick="saveMember()">➕ 追加</button>
@@ -508,6 +522,14 @@ function renderMyRecord(){
     schEl.style.display = 'none';
   }
 
+  const memoEl = document.getElementById('mr-memo');
+  if (m.memo){
+    memoEl.style.display = 'block';
+    memoEl.innerHTML = `<span class="memo-label">📝 取り組む内容</span>${escHtml(m.memo)}`;
+  } else {
+    memoEl.style.display = 'none';
+  }
+
   renderCalendar(m);
   renderPromiseList(m);
 }
@@ -603,6 +625,7 @@ function startEditMember(id){
   if (!m) return;
   editId = id;
   document.getElementById('m-name').value = m.name;
+  document.getElementById('m-memo').value = m.memo || '';
   formWeekdays = new Set(m.weekdays || []);
   formGender = m.gender || null;
   document.getElementById('form-title').textContent = '✏️ 参加者を編集';
@@ -616,6 +639,7 @@ function startEditMember(id){
 function cancelEdit(){
   editId = null;
   document.getElementById('m-name').value = '';
+  document.getElementById('m-memo').value = '';
   formWeekdays = new Set();
   formGender = null;
   document.getElementById('form-title').textContent = '➕ やりたい生徒を登録';
@@ -627,6 +651,7 @@ function cancelEdit(){
 }
 function saveMember(){
   const name = document.getElementById('m-name').value.trim();
+  const memo = document.getElementById('m-memo').value.trim();
   const hint = document.getElementById('m-hint');
   if (!name){ hint.textContent = '⚠️ 名前を入力してください'; return; }
   const wds = [...formWeekdays].sort((a,b)=>a-b);
@@ -635,6 +660,7 @@ function saveMember(){
     const m = findMemberById(editId);
     if (m){
       m.name = name;
+      m.memo = memo;
       m.gender = formGender;
       const today = todayStr();
       // 既存の自動pending(未来)を作り直し
@@ -643,7 +669,7 @@ function saveMember(){
       syncWeekdayPromises(m);
     }
   } else {
-    const m = { id: genId(), name, gender: formGender, weekdays: wds, promises: [] };
+    const m = { id: genId(), name, memo, gender: formGender, weekdays: wds, promises: [] };
     syncWeekdayPromises(m);
     getMembers().push(m);
   }
@@ -685,6 +711,7 @@ function renderMemberAdminList(){
       <div class="mr-info">
         <span class="mr-rowname">${genderIcon(m)} ${escHtml(m.name)}</span>
         <span class="mr-sch">${sch}</span>
+        ${m.memo ? `<span class="mr-rowmemo">📝 ${escHtml(m.memo)}</span>` : ''}
       </div>
       <div class="mr-oneoff">
         <input type="date" id="oneoff-${m.id}" min="${todayStr()}" title="特別な日を1回だけ追加">
