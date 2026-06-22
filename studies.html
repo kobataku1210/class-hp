@@ -58,6 +58,20 @@
   .member-chip.female { background: #fdf2f8; border-color: #fbcfe8; color: #be185d; }
   .member-chip.female.sel { background: #be185d; color: #fff; border-color: #be185d; box-shadow: 0 4px 12px rgba(190,24,93,0.35); }
 
+  /* ===== みんなの取り組み 一覧 ===== */
+  .ov-list { display: flex; flex-direction: column; gap: 10px; }
+  .ov-row {
+    background: #f8fafc; border: 1.5px solid #eef2f7; border-radius: 14px;
+    padding: 12px 15px; cursor: pointer; transition: all 0.12s;
+  }
+  .ov-row:hover { border-color: #c7d2fe; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  .ov-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .ov-name { font-weight: 900; font-size: 0.98rem; color: #1e293b; }
+  .ov-name.male { color: #1d4ed8; } .ov-name.female { color: #be185d; }
+  .ov-meta { font-size: 0.8rem; color: #c2410c; font-weight: 800; flex-shrink: 0; }
+  .ov-memo { margin-top: 7px; font-size: 0.9rem; color: #334155; font-weight: 700; white-space: pre-wrap; line-height: 1.5; }
+  .ov-memo.ov-nomemo { color: #94a3b8; font-weight: 600; }
+
   /* ===== マイ記録カード ===== */
   #my-record { display: none; }
   .mr-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -264,6 +278,12 @@
     <div class="member-chips" id="member-chips"></div>
   </div>
 
+  <!-- ====== みんなの取り組み（誰が何をやっているか） ====== -->
+  <div class="card">
+    <div class="card-title">📋 みんなの取り組み</div>
+    <div class="ov-list" id="overview-list"></div>
+  </div>
+
   <!-- ====== マイ記録 ====== -->
   <div class="card" id="my-record">
     <div class="mr-head">
@@ -468,9 +488,35 @@ function render(){
   // 曜日固定の予定を最新化（メモリ上。保存は明示操作時のみ）
   getMembers().forEach(syncWeekdayPromises);
   renderMemberChips();
+  renderOverview();
   renderMyRecord();
   renderRanking();
   if (adminOpen) renderAdmin();
+}
+
+function renderOverview(){
+  const el = document.getElementById('overview-list');
+  const ms = getMembers();
+  if (ms.length === 0){
+    el.innerHTML = '<div class="hint">まだ参加者がいません。先生が登録すると、ここに「誰が何をやっているか」が出ます。</div>';
+    return;
+  }
+  el.innerHTML = ms.map(m => {
+    const st = computeStats(m);
+    const sch  = (m.weekdays && m.weekdays.length) ? '🗓 ' + weekdayText(m.weekdays) : '';
+    const fire = st.cur > 0 ? '🔥' + st.cur : '';
+    const meta = [sch, fire].filter(Boolean).join('　');
+    const memo = m.memo
+      ? `<div class="ov-memo">📝 ${escHtml(m.memo)}</div>`
+      : `<div class="ov-memo ov-nomemo">📝 取り組む内容は調整中</div>`;
+    return `<div class="ov-row" onclick="selectMember('${m.id}')">
+      <div class="ov-head">
+        <span class="ov-name${genderClass(m)}">${genderIcon(m)} ${escHtml(m.name)}</span>
+        ${meta ? `<span class="ov-meta">${meta}</span>` : ''}
+      </div>
+      ${memo}
+    </div>`;
+  }).join('');
 }
 
 function renderMemberChips(){
