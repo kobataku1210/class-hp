@@ -1031,6 +1031,37 @@
     "achieveCount": 1
   },
   "studies": {
-    "members": []
+    "members": [
+      {
+        "id": "mmqojik5q807",
+        "name": "わたゆい",
+        "gender": "f",
+        "weekdays": [
+          3
+        ],
+        "promises": [
+          {
+            "date": "2026-06-24",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-01",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-08",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-15",
+            "status": "pending",
+            "auto": true
+          }
+        ]
+      }
+    ]
   }
 }
