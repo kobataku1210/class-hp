@@ -1243,6 +1243,57 @@
             "auto": true
           }
         ]
+      },
+      {
+        "id": "mmqosgazn52",
+        "name": "ないねね",
+        "gender": "f",
+        "weekdays": [
+          2,
+          4
+        ],
+        "promises": [
+          {
+            "date": "2026-06-23",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-06-25",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-06-30",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-02",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-07",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-09",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-14",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-16",
+            "status": "pending",
+            "auto": true
+          }
+        ]
       }
     ]
   }
