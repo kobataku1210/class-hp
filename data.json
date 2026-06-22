@@ -1172,6 +1172,36 @@
             "auto": true
           }
         ]
+      },
+      {
+        "id": "mmqojntsg104",
+        "name": "みまこう",
+        "gender": "m",
+        "weekdays": [
+          2
+        ],
+        "promises": [
+          {
+            "date": "2026-06-23",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-06-30",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-07",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-14",
+            "status": "pending",
+            "auto": true
+          }
+        ]
       }
     ]
   }
