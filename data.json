@@ -1027,7 +1027,13 @@
       "femaleCount": 18
     },
     "currentSubmitted": [],
-    "submissions": [],
+    "submissions": [
+      {
+        "name": "調査書記載内容調査用紙",
+        "deadline": "2026-07-08",
+        "submitted": []
+      }
+    ],
     "achieveCount": 1
   },
   "studies": {
