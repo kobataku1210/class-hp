@@ -1202,6 +1202,36 @@
             "auto": true
           }
         ]
+      },
+      {
+        "id": "mmqojqcjt842",
+        "name": "しまさく",
+        "gender": "m",
+        "weekdays": [
+          3
+        ],
+        "promises": [
+          {
+            "date": "2026-06-24",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-01",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-08",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-15",
+            "status": "pending",
+            "auto": true
+          }
+        ]
       }
     ]
   }
