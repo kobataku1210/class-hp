@@ -1247,7 +1247,7 @@
         "promises": [
           {
             "date": "2026-06-24",
-            "status": "pending",
+            "status": "missed",
             "auto": true
           },
           {
