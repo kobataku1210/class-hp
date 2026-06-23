@@ -1198,8 +1198,9 @@
         "promises": [
           {
             "date": "2026-06-23",
-            "status": "pending",
-            "auto": true
+            "status": "done",
+            "auto": true,
+            "doneDate": "2026-06-23"
           },
           {
             "date": "2026-06-30",
