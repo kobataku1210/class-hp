@@ -1053,8 +1053,9 @@
         "promises": [
           {
             "date": "2026-06-24",
-            "status": "pending",
-            "auto": true
+            "status": "done",
+            "auto": true,
+            "doneDate": "2026-06-24"
           },
           {
             "date": "2026-07-01",
@@ -1122,6 +1123,11 @@
             "date": "2026-07-17",
             "status": "pending",
             "auto": true
+          },
+          {
+            "date": "2026-07-21",
+            "status": "pending",
+            "auto": true
           }
         ],
         "memo": ""
@@ -1185,6 +1191,11 @@
             "date": "2026-07-14",
             "status": "pending",
             "auto": true
+          },
+          {
+            "date": "2026-07-21",
+            "status": "pending",
+            "auto": true
           }
         ],
         "memo": "１週間で、科目を問わず、合計１０ページワークを進める"
@@ -1215,6 +1226,11 @@
           },
           {
             "date": "2026-07-14",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-21",
             "status": "pending",
             "auto": true
           }
@@ -1296,6 +1312,11 @@
           },
           {
             "date": "2026-07-16",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-21",
             "status": "pending",
             "auto": true
           }
