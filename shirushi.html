@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>証 ～クラスの証～</title>
+<style>
+  :root{
+    --navy1:#0a1029; --navy2:#142a5c; --navy3:#1e3a7a;
+    --gold:#f4c84a; --gold-deep:#d4a017; --gold-soft:#ffe9a8;
+    --text:#eaf0ff;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; min-height:100%; }
+  body{
+    font-family:"游ゴシック","Yu Gothic","YuGothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(1200px 700px at 50% -10%, rgba(76,110,200,.35), transparent 60%),
+      linear-gradient(180deg, var(--navy1) 0%, var(--navy2) 55%, var(--navy3) 100%);
+    background-attachment:fixed; min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  .stars{ position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 70% 20%, #fff, transparent),
+      radial-gradient(1px 1px at 40% 70%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 85% 60%, #fff, transparent),
+      radial-gradient(1px 1px at 10% 80%, #fff, transparent),
+      radial-gradient(1px 1px at 55% 45%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 90% 35%, #fff, transparent);
+    opacity:.5; }
+  .wrap{ position:relative; z-index:1; max-width:960px; margin:0 auto; padding:22px 20px 90px; }
+
+  h1{ text-align:center; font-size:22px; font-weight:700; letter-spacing:.25em;
+      color:var(--gold-soft); margin:6px 0 2px; text-shadow:0 0 18px rgba(244,200,74,.35); }
+  .sub{ text-align:center; font-size:12px; color:#a9b8e0; letter-spacing:.12em; margin-bottom:16px; }
+
+  .card{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10);
+    border-radius:16px; padding:18px; }
+
+  label{ display:block; font-size:13px; color:#c7d3f5; margin-bottom:6px; }
+  input[type=text],input[type=number]{ width:100%; padding:12px 14px; font-size:16px; border-radius:10px;
+    border:1px solid rgba(244,200,74,.4); background:rgba(10,16,41,.6); color:#fff; outline:none; }
+  input:focus{ border-color:var(--gold); box-shadow:0 0 0 3px rgba(244,200,74,.18); }
+
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    cursor:pointer; border:none; border-radius:10px; padding:12px 18px; font-size:15px; font-weight:700;
+    font-family:inherit; color:#1a1300;
+    background:linear-gradient(180deg, var(--gold-soft), var(--gold) 60%, var(--gold-deep));
+    box-shadow:0 4px 14px rgba(244,200,74,.25); transition:transform .08s ease, box-shadow .2s; }
+  .btn:hover{ transform:translateY(-1px); box-shadow:0 6px 18px rgba(244,200,74,.4); }
+  .btn:active{ transform:translateY(0); }
+  .btn:disabled{ opacity:.5; cursor:default; transform:none; }
+  .btn.full{ width:100%; }
+  .btn.ghost{ background:transparent; color:var(--gold-soft); border:1px solid rgba(244,200,74,.5);
+    box-shadow:none; font-weight:600; }
+  .hidden{ display:none !important; }
+  .hint{ font-size:12px; color:#9fb0dd; margin-top:8px; line-height:1.6; }
+  .warn{ font-size:13px; color:#ffd9d9; background:rgba(120,20,20,.35);
+    border:1px solid rgba(255,120,120,.4); border-radius:10px; padding:10px 12px; margin-top:10px; line-height:1.6; }
+
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .who{ font-size:13px; color:#c7d3f5; }
+  .who b{ color:var(--gold-soft); }
+  .linkbtn{ background:none; border:none; color:#8fa6df; font-size:12px; cursor:pointer;
+    font-family:inherit; text-decoration:underline; padding:4px; }
+
+  /* 証ゲージ＋歌詞 */
+  .showcase{ display:flex; flex-direction:column; gap:16px; align-items:center; }
+  .gauge-wrap{ position:relative; width:260px; max-width:100%; margin:0 auto;
+    border-radius:14px; border:1px solid rgba(244,200,74,.3);
+    background:radial-gradient(120% 90% at 50% 0%, rgba(76,110,200,.35), transparent 60%), linear-gradient(180deg,#0a1029,#16265a);
+    padding:10px 10px 6px; }
+  .gauge-title{ text-align:center; font-size:13px; letter-spacing:.2em; color:#c7d3f5; margin-bottom:2px; }
+  #gauge{ width:100%; aspect-ratio:1/1; display:block; overflow:visible; }
+  #gaugeRect{ transition:y 1.1s cubic-bezier(.22,1,.36,1), height 1.1s cubic-bezier(.22,1,.36,1); }
+  .gauge-pct{ text-align:center; font-size:14px; color:var(--gold-soft); font-weight:700; margin-top:2px; }
+  .lyrics{ width:100%;
+    background:rgba(10,16,41,.4); border:1px solid rgba(255,255,255,.1); border-radius:14px;
+    padding:16px 20px; line-height:1.95; font-size:16px; color:var(--text); }
+  .lyrics .ly-head{ font-size:12px; letter-spacing:.15em; color:#9fb0dd; margin-bottom:10px; }
+  .ly-line{ opacity:.12; filter:blur(2.5px); transition:opacity .7s ease, filter .7s ease; }
+  .ly-line.on{ opacity:1; filter:none; color:var(--gold-soft); text-shadow:0 0 10px rgba(244,200,74,.25); }
+  .ly-blank{ height:.7em; }
+  .sparkle-layer{ position:absolute; inset:0; pointer-events:none; }
+  .spark{ position:absolute; font-size:26px; animation:sparkPop 1s ease-out forwards;
+    filter:drop-shadow(0 0 6px rgba(244,200,74,.9)); }
+  @keyframes sparkPop{ 0%{opacity:0;transform:scale(.4) translateY(0)} 30%{opacity:1;transform:scale(1.15) translateY(-8px)} 100%{opacity:0;transform:scale(.7) translateY(-30px)} }
+
+  .count{ text-align:center; font-size:15px; color:#dbe6ff; margin:14px 0 6px; }
+  .count b{ font-size:30px; color:var(--gold); margin:0 3px; }
+  .bar{ height:14px; border-radius:99px; background:rgba(10,16,41,.7);
+    border:1px solid rgba(244,200,74,.25); overflow:hidden; }
+  .bar > i{ display:block; height:100%; width:0%;
+    background:linear-gradient(90deg, var(--gold-deep), var(--gold), var(--gold-soft));
+    border-radius:99px; transition:width 1s cubic-bezier(.22,1,.36,1); box-shadow:0 0 12px rgba(244,200,74,.5); }
+  .remain{ text-align:center; font-size:13px; color:#bcd0ff; margin-top:8px; }
+  .doneMsg{ text-align:center; margin-top:12px; font-size:17px; color:var(--gold-soft);
+    text-shadow:0 0 16px rgba(244,200,74,.5); animation:fadeIn .6s ease; }
+  @keyframes fadeIn{ from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+  /* 自己申告 */
+  .report{ margin-top:16px; }
+  .report .big{ width:100%; font-size:18px; padding:16px; }
+  .report .row{ display:flex; gap:8px; align-items:center; margin-top:10px; }
+  .report .row input{ flex:1; }
+  .mine{ text-align:center; font-size:12px; color:#9fb0dd; margin-top:10px; }
+  .mine b{ color:var(--gold-soft); }
+
+  /* 動画 */
+  .videos{ margin-top:18px; }
+  .videos .lead{ font-size:13px; color:#c7d3f5; margin-bottom:8px; }
+  .videos .lead::before{ content:"🎬 "; }
+  .mode-tabs{ display:flex; gap:8px; margin:8px 0 10px; flex-wrap:wrap; }
+  .mode-tabs button{ flex:1 1 auto; min-width:104px; padding:10px; font-size:14px; font-weight:700; font-family:inherit;
+    cursor:pointer; border-radius:10px; border:1px solid rgba(244,200,74,.35);
+    background:rgba(10,16,41,.5); color:#c7d3f5; transition:.15s; }
+  .mode-tabs button.active{ background:linear-gradient(180deg,var(--gold-soft),var(--gold)); color:#1a1300; border-color:transparent; }
+  .vid{ margin-bottom:16px; }
+  .vid .cap{ font-size:14px; font-weight:700; color:var(--gold-soft); margin-bottom:6px; }
+  .vid-frame{ position:relative; width:100%; aspect-ratio:16/9; border-radius:12px; overflow:hidden; background:#000;
+    border:1px solid rgba(255,255,255,.12); }
+  .vid-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; display:block; }
+
+  /* みんなの気づき（共有メモ） */
+  .notes{ margin-top:20px; }
+  .notes .lead{ font-size:13px; color:#c7d3f5; margin-bottom:8px; }
+  .note-form{ display:flex; gap:8px; align-items:flex-end; }
+  .note-form textarea{ flex:1; resize:vertical; min-height:46px; padding:10px 12px; font-size:15px; font-family:inherit;
+    border-radius:10px; border:1px solid rgba(244,200,74,.4); background:rgba(10,16,41,.6); color:#fff; outline:none; }
+  .note-form textarea:focus{ border-color:var(--gold); box-shadow:0 0 0 3px rgba(244,200,74,.18); }
+  .note-form .btn{ white-space:nowrap; }
+  .note-list{ margin-top:12px; display:flex; flex-direction:column; gap:8px; max-height:340px; overflow:auto; }
+  .note{ background:rgba(10,16,41,.5); border:1px solid rgba(255,255,255,.1); border-left:3px solid var(--gold);
+    border-radius:10px; padding:10px 12px; }
+  .note .txt{ font-size:15px; color:var(--text); line-height:1.6; white-space:pre-wrap; word-break:break-word; }
+  .note .meta{ font-size:11px; color:#8fa0cc; margin-top:4px; }
+  .note-empty{ font-size:13px; color:#8fa0cc; text-align:center; padding:12px; }
+
+  .modal{ position:fixed; inset:0; z-index:10; background:rgba(4,8,22,.7); display:flex; align-items:center; justify-content:center; padding:16px; }
+  .modal .panel{ width:100%; max-width:460px; max-height:84vh; overflow:auto;
+    background:linear-gradient(180deg,#10183a,#0b1130); border:1px solid rgba(244,200,74,.3); border-radius:16px; padding:18px; }
+  .panel h2{ margin:0 0 4px; font-size:17px; color:var(--gold-soft); }
+  .panel .pin{ font-size:12px; color:#9fb0dd; margin-bottom:12px; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th,td{ text-align:left; padding:8px 6px; border-bottom:1px solid rgba(255,255,255,.08); }
+  th{ color:#9fb0dd; font-weight:600; }
+  td.num{ text-align:right; color:var(--gold-soft); white-space:nowrap; }
+  .panel .foot{ display:flex; justify-content:space-between; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .danger{ border:1px solid rgba(255,120,120,.6); background:rgba(150,30,30,.3); color:#ffdada;
+    font-weight:700; border-radius:10px; padding:10px 14px; cursor:pointer; font-family:inherit; }
+  .empty{ color:#8fa0cc; font-size:13px; padding:14px 4px; text-align:center; }
+  .panel.msg{ max-width:380px; text-align:center; }
+  .msg-emoji{ font-size:36px; line-height:1; margin-bottom:6px; filter:drop-shadow(0 0 10px rgba(244,200,74,.5)); }
+  .msg-thanks{ font-size:16px; font-weight:700; color:var(--gold-soft); margin-bottom:12px; }
+  .msg-body{ font-size:15px; line-height:1.8; color:var(--text); margin-bottom:18px; }
+  .toast{ position:fixed; left:50%; bottom:64px; transform:translateX(-50%) translateY(20px); opacity:0;
+    background:rgba(10,16,41,.95); border:1px solid rgba(244,200,74,.5); color:var(--gold-soft);
+    padding:10px 18px; border-radius:99px; font-size:14px; z-index:20; transition:.3s; pointer-events:none; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+
+<div class="wrap">
+  <h1 id="appTitle">証</h1>
+  <div class="sub">― クラスみんなで積み重ねる、練習の証 ―</div>
+
+  <div id="offlineWarn" class="warn hidden">
+    このページは「ファイルを直接開いた」状態のため、クラス合計に接続できません。<br>
+    学級HP（先生のサーバー）経由で開いてください。
+  </div>
+
+  <!-- メイン -->
+  <div id="mainView">
+    <div class="card">
+      <div class="showcase">
+        <div class="lyrics" id="lyrics"></div>
+        <div class="gauge-wrap">
+          <div class="gauge-title">証ゲージ</div>
+          <svg id="gauge" viewBox="0 0 400 400" aria-label="証ゲージ">
+            <defs>
+              <!-- おしゃれなサンセット・シャンパンゴールド（斜め） -->
+              <linearGradient id="goldGrad" x1="0.1" y1="1" x2="0.7" y2="0">
+                <stop offset="0%"  stop-color="#8a4f2b"/>
+                <stop offset="22%" stop-color="#c9743b"/>
+                <stop offset="42%" stop-color="#eaa84a"/>
+                <stop offset="60%" stop-color="#f7cf63"/>
+                <stop offset="80%" stop-color="#ffe7a6"/>
+                <stop offset="100%" stop-color="#fff7ec"/>
+              </linearGradient>
+              <!-- ゲージ（白=金が見える部分）から「証」を黒で切り抜く -->
+              <mask id="gaugeMask">
+                <rect id="gaugeRect" x="0" y="400" width="400" height="0" fill="#fff"/>
+                <text x="200" y="305" text-anchor="middle" font-size="330" font-family="'游明朝','Yu Mincho',serif" fill="#000">証</text>
+              </mask>
+            </defs>
+            <!-- 下からたまるゲージ。証の形だけ切り抜かれて浮かび上がる（最初は文字を出さない） -->
+            <rect x="0" y="0" width="400" height="400" fill="url(#goldGrad)" mask="url(#gaugeMask)" style="filter:drop-shadow(0 0 12px rgba(247,207,99,.5))"/>
+          </svg>
+          <div class="sparkle-layer" id="sparkLayer"></div>
+          <div class="gauge-pct"><span id="gaugePct">0</span>%</div>
+        </div>
+      </div>
+
+      <div class="count">クラス合計 <b id="curCount">0</b>/ <span id="goalCount">1000</span> 回</div>
+      <div class="bar"><i id="barFill"></i></div>
+      <div class="remain" id="remainText">あと <b>1000</b> 回で証ゲージが満タン＆歌詞が完成！</div>
+      <div id="doneMsg" class="doneMsg hidden">🎉 証ゲージ満タン！　クラスみんなの「証」と歌詞が完成しました！</div>
+
+      <!-- 自己申告 -->
+      <div class="report">
+        <button id="addOne" class="btn big" type="button">🎵 1回 聴いた！</button>
+        <div class="row">
+          <input id="addMany" type="number" min="1" max="1000" placeholder="まとめて入力（最大1000）">
+          <button id="addManyBtn" class="btn ghost" type="button">追加</button>
+        </div>
+        <div class="mine">あなたの貢献： <b id="myCount">0</b> 回</div>
+      </div>
+
+      <!-- 動画＋気づきをタブで切替 -->
+      <div class="videos">
+        <div class="lead">タブを選んで、動画で練習＆気づきを共有しよう</div>
+        <div class="mode-tabs">
+          <button id="tabOverall" class="active" type="button">全体合唱</button>
+          <button id="tabParts" type="button">パートごとの音声</button>
+          <button id="tabHonke" type="button">本家</button>
+          <button id="tabPoint" type="button">曲のポイント</button>
+          <button id="tabNotes" type="button">気づき</button>
+        </div>
+
+        <!-- 動画パネル -->
+        <div id="videoPanel">
+          <div id="videoList"></div>
+          <div class="hint">見終わったら「🎵 1回 聴いた！」を押して、クラスの合計に1回足してね。</div>
+        </div>
+
+        <!-- 気づきパネル（共有メモ） -->
+        <div id="notesPanel" class="notes hidden">
+          <div class="hint">聴いて気づいたこと・曲のポイントを、クラスみんなで共有しよう（だれが書いたかは出ません）。</div>
+          <div class="note-form">
+            <textarea id="noteInput" maxlength="200" rows="2" placeholder="例）サビでアルトが主旋律になる！／〇〇の言葉を強く歌いたい など"></textarea>
+            <button id="notePost" class="btn" type="button">投稿</button>
+          </div>
+          <div id="noteList" class="note-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="teacherModal" class="modal hidden">
+  <div class="panel">
+    <h2>クラスの証 ― 集計</h2>
+    <div class="pin">クラス合計の確認・目標変更・リセットができます。</div>
+    <div id="rosterArea"></div>
+    <div class="foot">
+      <button id="closeTeacher" class="btn ghost" type="button">閉じる</button>
+      <button id="changeGoal" class="btn ghost" type="button">目標回数を変更</button>
+      <button id="clearNotes" class="danger" type="button">メモを全消去</button>
+      <button id="resetAll" class="danger" type="button">合計をリセット</button>
+    </div>
+  </div>
+</div>
+
+<!-- 押すたびのメッセージ -->
+<div id="msgModal" class="modal hidden">
+  <div class="panel msg">
+    <div class="msg-emoji">🎵</div>
+    <div class="msg-thanks">音源を聴いてくれて、ありがとう！</div>
+    <div class="msg-body" id="msgBody"></div>
+    <button id="msgClose" class="btn full" type="button">閉じる</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   設定
+   ===================================================================== */
+const DEFAULT_GOAL  = 1000;           // 目標回数（先生用パネルで変更可・サーバー保存）
+// ★ 動画リスト。id は YouTube URL の v= のあと（例 https://youtu.be/z-ghPdIAQ-0 → "z-ghPdIAQ-0"）。
+//   全体合唱は複数OK（上から縦に並びます）。増やすときは下の配列に { label, id } を追加してください。
+const OVERALL_VIDEOS = [
+  { label:"全体合唱①", id:"z-ghPdIAQ-0" },
+  { label:"全体合唱②", id:"Oqk54wA58pE" },
+  { label:"全体合唱③", id:"dS5ZNh6M1Kw" },
+  { label:"全体合唱④", id:"eb-g7UqZuwM" },
+];
+const PART_VIDEOS = [
+  { label:"ソプラノ", id:"nz7SKkodswI" },
+  { label:"アルト",   id:"QyRWgAyf7EE" },
+  { label:"男声",     id:"vNAwMKGelgQ" },
+];
+const HONKE_VIDEOS = [
+  { label:"本家", id:"bjwv4m-Aji4" },
+];
+const POINT_VIDEOS = [
+  { label:"①全体のポイント",   id:"0JJwdzqTQqI" },
+  { label:"②ソプラノのポイント", id:"pDpWG25Khmc" },
+  { label:"③男声のポイント",     id:"HBHL77Qp-UU" },
+  { label:"④アルトのポイント",   id:"1O_bBG8-rwM" },
+  { label:"⑤指揮者のポイント",   id:"h4CTnewvW4A" },
+];
+const POLL_MS       = 12000;          // 他の人の申告を取り込む間隔
+
+// ★「証」の歌詞。証ゲージがたまるほど、上の行から順に浮かび上がって完成します（"" は空行＝間あき）。
+const LYRICS = [
+  '前を向きなよ　振り返ってちゃ　上手く歩けない',
+  '遠ざかる君に　手を振るのがやっとで',
+  '',
+  '声に出したら　引き止めそうさ　心で呟く',
+  '“僕は僕の夢へと　君は君の夢を”',
+  '',
+  'あたりまえの温もり　失くして　初めて気づく',
+  '寂しさ　噛み締めて　歩みだす勇気　抱(いだ)いて',
+  '',
+  '溢れだす涙が　君を遮(さえぎ)るまえに',
+  'せめて笑顔で“またいつか”',
+  '傷つけ合っては　何度も許し合えたこと',
+  '代わりなき僕らの証になるだろう',
+  '',
+  '“我侭”って貶(けな)されたって　願い続けてよ',
+  'その声は届くから　君が君でいれば',
+  '',
+  '僕がもしも　夢に　敗れて　諦めたなら',
+  '遠くで叱ってよ　あの時のようにね',
+  '',
+  '君の指差すその未来(さき)に　希望があるはずさ',
+  '誰にも決められはしないよ',
+  '一人で抱え込んで　生きる意味を問うときは',
+  'そっと思い出して　あの日の僕らを',
+  '',
+  '“またね”って言葉の儚さ　叶わない約束',
+  'いくつ交わしても慣れない',
+  'なのに追憶の破片(かけら)を　敷き詰めたノートに',
+  '君の居ないページは無い',
+  '',
+  '溢れだす涙　拭う頃　君はもう見えない',
+  '想う言葉は“ありがとう”',
+  '傷つけ合っては　何度も笑い合えたこと',
+  '絆を胸に秘め　僕も歩き出す',
+];
+
+/* =====================================================================
+   状態
+   ===================================================================== */
+const $ = (id)=>document.getElementById(id);
+const SVGNS = "http://www.w3.org/2000/svg";
+let state = { total:0, goal:DEFAULT_GOAL, students:{} };
+let pollTimer = null;
+
+/* この端末で押した回数（名前なし・端末ローカル保存） */
+const MINE_KEY = "shirushi_mine";
+function getMine(){ return parseInt(localStorage.getItem(MINE_KEY)||"0",10)||0; }
+function addMine(n){ localStorage.setItem(MINE_KEY, getMine()+n); }
+
+/* file:// だとサーバーに繋がらない */
+let offline = (location.protocol === "file:");
+if(offline){ $("offlineWarn").classList.remove("hidden"); }
+
+/* =====================================================================
+   サーバー通信
+   ===================================================================== */
+async function apiGet(){
+  const r = await fetch("/api/shirushi", {cache:"no-store"});
+  if(!r.ok) throw new Error("get failed");
+  return await r.json();
+}
+async function apiAdd(name, add){
+  const r = await fetch("/api/shirushi/add", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({name, add})
+  });
+  const j = await r.json();
+  if(!j.ok) throw new Error(j.error||"add failed");
+  return j;
+}
+
+/* =====================================================================
+   起動（名前入力なし・開いたらすぐ使える）
+   ===================================================================== */
+async function init(){
+  buildGauge();
+  selectTab("overall");
+  try{ state = await apiGet(); }catch(e){ if(!offline) toast("サーバーに接続できませんでした"); }
+  render(false);
+  loadNotes();
+  startPoll();
+}
+
+/* =====================================================================
+   描画
+   ===================================================================== */
+/* 証ゲージ＋歌詞 */
+let lyLines=[], gaugeReady=false;
+function buildGauge(){
+  if(gaugeReady) return;
+  const c=$("lyrics"); c.innerHTML='<div class="ly-head">♪ 証 ― 歌詞（ゲージがたまると完成）</div>';
+  lyLines=[];
+  LYRICS.forEach(line=>{
+    if(line===""){ const b=document.createElement("div"); b.className="ly-blank"; c.appendChild(b); return; }
+    const d=document.createElement("div"); d.className="ly-line"; d.textContent=line;
+    c.appendChild(d); lyLines.push(d);
+  });
+  gaugeReady=true;
+}
+function updateGauge(total, goal){
+  if(!gaugeReady) return;
+  const ratio=Math.min(goal>0?total/goal:0, 1);
+  // 証ゲージ：下から金色で満ちる
+  const rect=$("gaugeRect");
+  rect.style.y=(400-400*ratio)+"px";
+  rect.style.height=(400*ratio)+"px";
+  $("gaugePct").textContent=Math.round(ratio*100);
+  // 歌詞：ゲージの割合ぶんだけ、上の行から完成
+  const shown=Math.round(ratio*lyLines.length);
+  lyLines.forEach((d,i)=> d.classList.toggle('on', i<shown));
+}
+
+function render(spark){
+  const goal = state.goal || DEFAULT_GOAL;
+  const total = Math.min(state.total||0, goal);
+  const ratio = goal>0 ? total/goal : 0;
+  // 証ゲージ＆歌詞を更新
+  updateGauge(state.total||0, goal);
+  // 数値
+  $("curCount").textContent = (state.total||0);
+  $("goalCount").textContent = goal;
+  $("barFill").style.width = (ratio*100)+"%";
+  $("myCount").textContent = getMine();
+  const remain = Math.max(0, goal-(state.total||0));
+  $("remainText").innerHTML = "あと <b>"+remain+"</b> 回で証ゲージが満タン＆歌詞が完成！";
+  $("remainText").classList.toggle("hidden", remain<=0);
+  $("doneMsg").classList.toggle("hidden", (state.total||0) < goal);
+  if(spark) sparkle();
+}
+function sparkle(){
+  const layer=$("sparkLayer"); const marks=["✨","⭐","✨"];
+  for(let i=0;i<6;i++){
+    const s=document.createElement("span"); s.className="spark"; s.textContent=marks[i%marks.length];
+    s.style.left=(10+Math.random()*80)+"%"; s.style.top=(15+Math.random()*70)+"%";
+    s.style.animationDelay=(i*0.05)+"s"; layer.appendChild(s);
+    setTimeout(()=>s.remove(),1100);
+  }
+}
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),1800); }
+
+/* =====================================================================
+   自己申告（＋1のみ。押すたびにランダムメッセージ＋クールダウン）
+   ===================================================================== */
+const MSG_PREFIX = "音源を聴いてくれて、ありがとう！";
+const MESSAGES = [
+  "あなたの陰ながらの努力が、今後クラスを支えます！",
+  "1回の積み重ねが、やがて「証」になります。今日も一歩前進です！",
+  "あなたの1回が、クラスのみんなの背中を押しています。",
+  "小さな積み重ねが、本番の大きな自信になります。",
+  "みんなの「聴いた」が集まって、クラスの音が一つになっていきます。",
+  "色々な全体合唱を聴いてみてください。きっと違いがわかります！",
+  "本家の歌い方と、自分たちの歌い方の「違い」を探してみよう！",
+  "同じ曲でも、合唱団によって表情が全然ちがいます。聴き比べてみて！",
+  "何度も聴いているうちに、この言葉は強調されているなと気づくことができます！",
+  "言葉の最初の音をはっきり出すと、歌が驚くほど伝わるようになります。",
+  "歌詞の意味を思い浮かべながら聴くと、もっと心に響きます。",
+  "サビの歌詞を、どんな気持ちで歌いたいか想像してみよう。",
+  "主旋律が移ることがあります。自分のパートが主旋律になっているところはわかるかな？",
+  "自分のパートだけ口ずさみながら聴くと、覚えるのがぐっと早くなります！",
+  "ソプラノの伸びやかな高音に注目して聴いてみてください。",
+  "アルトのハモリが、曲に深みを与えています。聴こえるかな？",
+  "男声の低い土台があるから、全体が安定して響くんです。",
+  "自分のパートと、ほかのパートの「重なり」を意識して聴いてみよう。",
+  "3つのパートが重なる瞬間の響きを、じっくり味わってみてください。",
+  "ハモリがそろった時の鳥肌、ぜひ感じてみてください！",
+  "みんなの声が溶け合う「ハーモニー」が、合唱のいちばんの魅力です。",
+  "だんだん強くなるところに注目して聴いてみて！　鳥肌が立つかも。",
+  "静かなところと盛り上がるところの差が、感動を生みます。",
+  "どこで一番盛り上がるか、聴きながら探してみよう！",
+  "どこでブレス（息つぎ）をしているか、注目すると歌いやすくなりますよ。",
+  "走らず、遅れず。指揮を思い浮かべながら聴いてみよう。",
+  "目を閉じて聴くと、歌詞とメロディが頭に入りやすくなります。",
+  "口の形を真似しながら聴くと、発音がきれいになります。",
+  "合唱祭のステージで歌っている自分を想像しながら聴いてみてください。",
+  "本番でクラス全員の声がそろう瞬間を、楽しみにしていてね！",
+];
+let lastMsgIdx = -1;
+
+async function report(n){
+  if(offline){ toast("サーバーに接続できません（HP経由で開いてください）"); return; }
+  n = Math.max(1, Math.min(1000, parseInt(n,10)||1));
+  $("addOne").disabled = true; $("addManyBtn").disabled = true;
+  try{
+    const j = await apiAdd("", n);
+    addMine(j.added);
+    const before = state.total||0;
+    state = j.shirushi;
+    render(true);
+    showMessage();
+    if(before < state.goal && state.total >= state.goal){ setTimeout(()=>toast("🎉 証ゲージ満タン！　クラスの証、完成！"), 600); }
+  }catch(e){ toast("追加できませんでした"); $("addOne").disabled=false; $("addManyBtn").disabled=false; }
+}
+function pickMessage(){
+  let i; do { i = Math.floor(Math.random()*MESSAGES.length); } while(MESSAGES.length>1 && i===lastMsgIdx);
+  lastMsgIdx = i; return MESSAGES[i];
+}
+function showMessage(){
+  $("msgBody").textContent = pickMessage();
+  $("msgModal").classList.remove("hidden");
+}
+function closeMessage(){
+  $("msgModal").classList.add("hidden");
+  $("addOne").disabled = false; $("addManyBtn").disabled = false;
+}
+$("addOne").addEventListener("click", ()=>report(1));
+$("addManyBtn").addEventListener("click", ()=>{ const v=$("addMany").value; if(!v){ $("addMany").focus(); return; } report(v); $("addMany").value=""; });
+$("addMany").addEventListener("keydown", e=>{ if(e.key==="Enter"){ const v=$("addMany").value; if(v){ report(v); $("addMany").value=""; } } });
+$("msgClose").addEventListener("click", closeMessage);
+$("msgModal").addEventListener("click", e=>{ if(e.target===$("msgModal")) closeMessage(); });
+
+/* ポーリング（他の人の申告・メモを反映） */
+function startPoll(){ stopPoll(); pollTimer=setInterval(async()=>{ try{ const s=await apiGet(); state=s; render(false); }catch(e){} loadNotes(); }, POLL_MS); }
+function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
+
+/* =====================================================================
+   みんなの気づき（共有メモ）
+   ===================================================================== */
+function fmtTime(ts){
+  try{ const d=new Date(ts); const p=n=>("0"+n).slice(-2);
+    return (d.getMonth()+1)+"/"+d.getDate()+" "+p(d.getHours())+":"+p(d.getMinutes()); }
+  catch(e){ return ""; }
+}
+async function loadNotes(){
+  try{
+    const r=await fetch("/api/shirushi/notes",{cache:"no-store"});
+    const j=await r.json();
+    renderNotes(j.notes||[]);
+  }catch(e){}
+}
+function renderNotes(notes){
+  const c=$("noteList");
+  if(!notes.length){ c.innerHTML='<div class="note-empty">まだ気づきがありません。最初の1つを書いてみよう！</div>'; return; }
+  c.innerHTML="";
+  notes.forEach(n=>{
+    const d=document.createElement("div"); d.className="note";
+    const t=document.createElement("div"); t.className="txt"; t.textContent=n.t;
+    const m=document.createElement("div"); m.className="meta"; m.textContent=fmtTime(n.ts);
+    d.appendChild(t); d.appendChild(m); c.appendChild(d);
+  });
+}
+async function postNote(){
+  if(offline){ toast("サーバーに接続できません（HP経由で開いてください）"); return; }
+  const ta=$("noteInput"); const text=(ta.value||"").trim();
+  if(!text){ ta.focus(); return; }
+  $("notePost").disabled=true;
+  try{
+    const r=await fetch("/api/shirushi/notes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+    const j=await r.json();
+    if(!j.ok){ toast(j.error||"投稿できませんでした"); return; }
+    ta.value=""; renderNotes(j.notes||[]); toast("気づきを共有しました！✨");
+  }catch(e){ toast("投稿できませんでした"); }
+  finally{ $("notePost").disabled=false; }
+}
+$("notePost").addEventListener("click", postNote);
+
+/* =====================================================================
+   動画（全体合唱／パートごとの音声をタブで切替。複数動画を縦に並べる）
+   ===================================================================== */
+function renderVideoList(list){
+  const c=$("videoList"); c.innerHTML="";
+  const valid=list.filter(v=>v && v.id);
+  if(!valid.length){ c.innerHTML='<div class="hint">動画はまだ設定されていません。</div>'; return; }
+  valid.forEach(v=>{
+    const card=document.createElement("div"); card.className="vid";
+    const cap=document.createElement("div"); cap.className="cap"; cap.textContent=v.label;
+    const frame=document.createElement("div"); frame.className="vid-frame";
+    const ifr=document.createElement("iframe");
+    ifr.src="https://www.youtube.com/embed/"+encodeURIComponent(v.id)+"?rel=0&playsinline=1";
+    ifr.title=v.label; ifr.loading="lazy"; ifr.allowFullscreen=true;
+    ifr.setAttribute("allow","accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture");
+    frame.appendChild(ifr); card.appendChild(cap); card.appendChild(frame); c.appendChild(card);
+  });
+}
+const TAB_LISTS = { overall:OVERALL_VIDEOS, parts:PART_VIDEOS, honke:HONKE_VIDEOS, point:POINT_VIDEOS };
+const TAB_BTNS = { overall:"tabOverall", parts:"tabParts", honke:"tabHonke", point:"tabPoint", notes:"tabNotes" };
+function selectTab(which){
+  Object.keys(TAB_BTNS).forEach(k=> $(TAB_BTNS[k]).classList.toggle("active", k===which));
+  if(which==="notes"){
+    $("videoList").innerHTML="";              // 動画を止める（iframe破棄）
+    $("videoPanel").classList.add("hidden");
+    $("notesPanel").classList.remove("hidden");
+    loadNotes();
+  } else {
+    $("notesPanel").classList.add("hidden");
+    $("videoPanel").classList.remove("hidden");
+    renderVideoList(TAB_LISTS[which] || OVERALL_VIDEOS); // 切替で前タブのiframeは破棄＝再生も止まる
+  }
+}
+$("tabOverall").addEventListener("click",()=>selectTab("overall"));
+$("tabParts").addEventListener("click",()=>selectTab("parts"));
+$("tabHonke").addEventListener("click",()=>selectTab("honke"));
+$("tabPoint").addEventListener("click",()=>selectTab("point"));
+$("tabNotes").addEventListener("click",()=>selectTab("notes"));
+
+/* =====================================================================
+   先生用パネル
+   ===================================================================== */
+const teacherModal=$("teacherModal");
+// 先生用ボタンは廃止。タイトル「証」を5回連続タップで先生パネルを開く（生徒には見えない隠し操作）
+let titleTaps=0, titleTapTimer=null;
+$("appTitle").addEventListener("click", ()=>{
+  titleTaps++; clearTimeout(titleTapTimer);
+  titleTapTimer=setTimeout(()=>{ titleTaps=0; }, 1500);
+  if(titleTaps>=5){ titleTaps=0; openTeacher(); }
+});
+$("closeTeacher").addEventListener("click",()=>teacherModal.classList.add("hidden"));
+teacherModal.addEventListener("click",e=>{ if(e.target===teacherModal) teacherModal.classList.add("hidden"); });
+
+async function openTeacher(){ try{ state=await apiGet(); }catch(e){} renderRoster(); teacherModal.classList.remove("hidden"); }
+function renderRoster(){
+  const s=state.students||{}; const names=Object.keys(s).sort((a,b)=>(s[b]-s[a])||a.localeCompare(b,"ja"));
+  const area=$("rosterArea");
+  let head='<div style="font-size:15px;margin-bottom:10px">合計 <b style="color:var(--gold);font-size:20px">'+(state.total||0)+'</b> / '+(state.goal||DEFAULT_GOAL)+' 回'+((state.total||0)>=(state.goal||DEFAULT_GOAL)?' 🎉':'')+'</div>';
+  if(names.length===0){ area.innerHTML=head+'<div class="empty">匿名集計のため、クラス合計のみ記録しています。</div>'; return; }
+  let html=head+'<table><thead><tr><th>名前</th><th class="num">回数</th></tr></thead><tbody>';
+  for(const n of names){ html+='<tr><td>'+escapeHtml(n)+'</td><td class="num">'+s[n]+'</td></tr>'; }
+  html+='</tbody></table>';
+  area.innerHTML=html;
+}
+$("resetAll").addEventListener("click", async ()=>{
+  const pin=prompt("先生用の暗証番号を入力してください（合計を0に戻します）"); if(pin===null) return;
+  try{ const r=await fetch("/api/shirushi/reset",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,mode:"all"})}); const j=await r.json();
+    if(!j.ok){ alert(j.error||"失敗しました"); return; } state=j.shirushi; render(false); renderRoster(); toast("合計をリセットしました"); }catch(e){ alert("通信エラー"); }
+});
+$("changeGoal").addEventListener("click", async ()=>{
+  const g=prompt("新しい目標回数を入力してください", state.goal||DEFAULT_GOAL); if(g===null) return;
+  const goal=parseInt(g,10); if(!goal||goal<1){ alert("数字を入れてください"); return; }
+  const pin=prompt("先生用の暗証番号を入力してください"); if(pin===null) return;
+  try{ const r=await fetch("/api/shirushi/reset",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,goal,mode:"goal"})}); const j=await r.json();
+    if(!j.ok){ alert(j.error||"失敗しました"); return; } state=j.shirushi; render(false); renderRoster(); toast("目標を"+goal+"回にしました"); }catch(e){ alert("通信エラー"); }
+});
+$("clearNotes").addEventListener("click", async ()=>{
+  if(!confirm("みんなの気づき（共有メモ）をすべて消去します。よろしいですか？")) return;
+  const pin=prompt("先生用の暗証番号を入力してください"); if(pin===null) return;
+  try{ const r=await fetch("/api/shirushi/notes/clear",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin})}); const j=await r.json();
+    if(!j.ok){ alert(j.error||"失敗しました"); return; } renderNotes([]); toast("メモを全消去しました"); }catch(e){ alert("通信エラー"); }
+});
+function escapeHtml(s){ return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* 起動（全定義の後で呼ぶ：シーン用の let 変数が初期化済みであること） */
+$("goalCount").textContent=DEFAULT_GOAL;
+init();
+</script>
+</body>
+</html>

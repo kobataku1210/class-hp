@@ -116,6 +116,122 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ===== API: 証 クラス共同カウンター（取得） =====
+  if (req.method === 'GET' && url === '/api/shirushi') {
+    const d = readData();
+    const s = d.shirushi || { total: 0, goal: 500, students: {} };
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify(s));
+    return;
+  }
+
+  // ===== API: 証 自己申告で加算（PIN不要・生徒用） =====
+  if (req.method === 'POST' && url === '/api/shirushi/add') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body);
+      const name = String(payload.name || '').trim().slice(0, 40); // 名前は任意（空＝匿名）
+      let add = parseInt(payload.add, 10);
+      if (!Number.isFinite(add)) add = 1;
+      add = Math.max(1, Math.min(1000, add)); // 1回の申告は最大1000まで
+      const d = readData();
+      if (!d.shirushi) d.shirushi = { total: 0, goal: 500, students: {} };
+      if (name) d.shirushi.students[name] = (d.shirushi.students[name] || 0) + add; // 名前があれば個人別も記録
+      d.shirushi.total = (d.shirushi.total || 0) + add;
+      fs.writeFileSync(DATA_FILE, JSON.stringify(d, null, 2), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: true, shirushi: d.shirushi, added: add }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
+  // ===== API: 証 リセット・目標変更（PIN保護・先生用） =====
+  if (req.method === 'POST' && url === '/api/shirushi/reset') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body);
+      const current = readData();
+      const correctPin = current.adminPIN || '1210';
+      if (payload.pin !== correctPin) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: '暗証番号が違います' }));
+        return;
+      }
+      const goal = Math.max(1, parseInt(payload.goal, 10) || (current.shirushi && current.shirushi.goal) || 500);
+      const keepGoalOnly = payload.mode === 'goal'; // 目標だけ変更（合計は維持）
+      const prevTotal = (current.shirushi && current.shirushi.total) || 0;
+      const prevStudents = (current.shirushi && current.shirushi.students) || {};
+      current.shirushi = {
+        total: keepGoalOnly ? prevTotal : 0,
+        goal: goal,
+        students: keepGoalOnly ? prevStudents : {}
+      };
+      fs.writeFileSync(DATA_FILE, JSON.stringify(current, null, 2), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: true, shirushi: current.shirushi }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
+  // ===== API: 証 みんなの気づき（共有メモ）取得 =====
+  if (req.method === 'GET' && url === '/api/shirushi/notes') {
+    const d = readData();
+    const notes = Array.isArray(d.shirushiNotes) ? d.shirushiNotes : [];
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ notes: notes.slice(-300).reverse() })); // 新しい順
+    return;
+  }
+
+  // ===== API: 証 気づきを投稿（PIN不要・生徒用） =====
+  if (req.method === 'POST' && url === '/api/shirushi/notes') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body);
+      let text = String(payload.text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+      if (!text) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok:false, error:'メモが空です' })); return; }
+      const d = readData();
+      if (!Array.isArray(d.shirushiNotes)) d.shirushiNotes = [];
+      d.shirushiNotes.push({ t: text, ts: Date.now() });
+      if (d.shirushiNotes.length > 300) d.shirushiNotes = d.shirushiNotes.slice(-300);
+      fs.writeFileSync(DATA_FILE, JSON.stringify(d, null, 2), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: true, notes: d.shirushiNotes.slice(-300).reverse() }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
+  // ===== API: 証 気づきの全消去（PIN保護・先生用） =====
+  if (req.method === 'POST' && url === '/api/shirushi/notes/clear') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body);
+      const current = readData();
+      const correctPin = current.adminPIN || '1210';
+      if (payload.pin !== correctPin) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: '暗証番号が違います' }));
+        return;
+      }
+      current.shirushiNotes = [];
+      fs.writeFileSync(DATA_FILE, JSON.stringify(current, null, 2), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: true, notes: [] }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
   // ===== 静的ファイル配信 =====
   let filePath = path.join(BASE_DIR, url === '/' ? 'index.html' : url);
   if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
