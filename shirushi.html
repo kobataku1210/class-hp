@@ -56,6 +56,8 @@
   .btn.ghost{ background:transparent; color:var(--gold-soft); border:1px solid rgba(244,200,74,.5);
     box-shadow:none; font-weight:600; }
   .hidden{ display:none !important; }
+  .home-notice{ background:rgba(76,110,200,.18); border:1px solid rgba(244,200,74,.35); border-radius:12px;
+    padding:12px 14px; font-size:14px; color:#eaf0ff; line-height:1.7; margin-bottom:4px; }
   .hint{ font-size:12px; color:#9fb0dd; margin-top:8px; line-height:1.6; }
   .warn{ font-size:13px; color:#ffd9d9; background:rgba(120,20,20,.35);
     border:1px solid rgba(255,120,120,.4); border-radius:10px; padding:10px 12px; margin-top:10px; line-height:1.6; }
@@ -176,6 +178,7 @@
   <!-- メイン -->
   <div id="mainView">
     <div class="card">
+      <div id="homeNotice" class="home-notice hidden">🏫 ゲージ・歌詞・みんなの気づきは「学校」で使えます。ここ（自宅）では動画を見て練習しよう！</div>
       <div class="showcase">
         <div class="lyrics" id="lyrics"></div>
         <div class="gauge-wrap">
@@ -360,7 +363,8 @@ function addMine(n){ localStorage.setItem(MINE_KEY, getMine()+n); }
 
 /* file:// だとサーバーに繋がらない */
 let offline = (location.protocol === "file:");
-if(offline){ $("offlineWarn").classList.remove("hidden"); }
+/* 自宅版（GitHub Pages＝github.io）や file:// は、サーバーが無いので「動画だけ」モード */
+const HOME_ONLY = offline || /(^|\.)github\.io$/i.test(location.hostname);
 
 /* =====================================================================
    サーバー通信
@@ -383,10 +387,26 @@ async function apiAdd(name, add){
 /* =====================================================================
    起動（名前入力なし・開いたらすぐ使える）
    ===================================================================== */
+/* 自宅版：サーバーが必要な部分（ゲージ・歌詞・カウント・気づき）を隠して動画だけにする */
+function applyHomeMode(){
+  ["showcase","report"].forEach(c=>{ const el=document.querySelector("."+c); if(el) el.classList.add("hidden"); });
+  ["count","bar","remain","doneMsg"].forEach(c=>{ const el=document.querySelector("."+c); if(el) el.classList.add("hidden"); });
+  $("remainText").classList.add("hidden");
+  $("doneMsg").classList.add("hidden");
+  $("tabNotes").classList.add("hidden");      // 気づきタブは隠す（サーバー必須のため）
+  $("homeNotice").classList.remove("hidden");
+  const lead=document.querySelector(".videos .lead"); if(lead) lead.textContent="動画を見て練習しよう（タブで切り替え）";
+}
+
 async function init(){
+  if(HOME_ONLY){                 // 自宅・file:// ＝動画だけモード
+    applyHomeMode();
+    selectTab("overall");
+    return;
+  }
   buildGauge();
   selectTab("overall");
-  try{ state = await apiGet(); }catch(e){ if(!offline) toast("サーバーに接続できませんでした"); }
+  try{ state = await apiGet(); }catch(e){ toast("サーバーに接続できませんでした"); }
   render(false);
   loadNotes();
   startPoll();
