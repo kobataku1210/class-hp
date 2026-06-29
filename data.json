@@ -1071,6 +1071,11 @@
             "date": "2026-07-15",
             "status": "pending",
             "auto": true
+          },
+          {
+            "date": "2026-07-22",
+            "status": "pending",
+            "auto": true
           }
         ]
       },
@@ -1128,6 +1133,11 @@
             "date": "2026-07-21",
             "status": "pending",
             "auto": true
+          },
+          {
+            "date": "2026-07-24",
+            "status": "pending",
+            "auto": true
           }
         ],
         "memo": ""
@@ -1158,6 +1168,11 @@
           },
           {
             "date": "2026-07-15",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-22",
             "status": "pending",
             "auto": true
           }
@@ -1264,6 +1279,11 @@
             "date": "2026-07-15",
             "status": "pending",
             "auto": true
+          },
+          {
+            "date": "2026-07-22",
+            "status": "pending",
+            "auto": true
           }
         ],
         "memo": "数学のワークをやる。授業で行った内容を提出する。"
@@ -1284,8 +1304,9 @@
           },
           {
             "date": "2026-06-25",
-            "status": "pending",
-            "auto": true
+            "status": "done",
+            "auto": true,
+            "doneDate": "2026-06-29"
           },
           {
             "date": "2026-06-30",
@@ -1319,6 +1340,11 @@
           },
           {
             "date": "2026-07-21",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-07-23",
             "status": "pending",
             "auto": true
           }
