@@ -124,6 +124,12 @@
   .vid-frame{ position:relative; width:100%; aspect-ratio:16/9; border-radius:12px; overflow:hidden; background:#000;
     border:1px solid rgba(255,255,255,.12); }
   .vid-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; display:block; }
+  .vid-link{ position:relative; display:block; width:100%; aspect-ratio:16/9; border-radius:12px; overflow:hidden;
+    border:1px solid rgba(255,255,255,.12); background:#000; }
+  .vid-link img{ width:100%; height:100%; object-fit:cover; display:block; opacity:.85; }
+  .vid-link .vid-play{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:16px; font-weight:700; color:#fff; background:rgba(10,16,41,.35); text-shadow:0 2px 8px rgba(0,0,0,.6); }
+  .vid-link:hover .vid-play{ background:rgba(10,16,41,.15); }
 
   /* みんなの気づき（共有メモ） */
   .notes{ margin-top:20px; }
@@ -299,7 +305,7 @@ const PART_VIDEOS = [
   { label:"男声",     id:"vNAwMKGelgQ" },
 ];
 const HONKE_VIDEOS = [
-  { label:"本家", id:"bjwv4m-Aji4" },
+  { label:"本家", id:"bjwv4m-Aji4", linkOnly:true }, // 公式MVは埋め込み禁止のためYouTubeで開く
 ];
 const POINT_VIDEOS = [
   { label:"①全体のポイント",   id:"0JJwdzqTQqI" },
@@ -594,12 +600,24 @@ function renderVideoList(list){
   valid.forEach(v=>{
     const card=document.createElement("div"); card.className="vid";
     const cap=document.createElement("div"); cap.className="cap"; cap.textContent=v.label;
-    const frame=document.createElement("div"); frame.className="vid-frame";
-    const ifr=document.createElement("iframe");
-    ifr.src="https://www.youtube.com/embed/"+encodeURIComponent(v.id)+"?rel=0&playsinline=1";
-    ifr.title=v.label; ifr.loading="lazy"; ifr.allowFullscreen=true;
-    ifr.setAttribute("allow","accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture");
-    frame.appendChild(ifr); card.appendChild(cap); card.appendChild(frame); c.appendChild(card);
+    card.appendChild(cap);
+    if(v.linkOnly){
+      // 埋め込み禁止の動画（本家など）→ サムネイル＋YouTubeで見るリンク
+      const a=document.createElement("a"); a.className="vid-link";
+      a.href="https://www.youtube.com/watch?v="+encodeURIComponent(v.id);
+      a.target="_blank"; a.rel="noopener";
+      a.innerHTML='<img src="https://img.youtube.com/vi/'+encodeURIComponent(v.id)+'/hqdefault.jpg" alt="'+v.label+'" loading="lazy">'+
+                  '<span class="vid-play">▶ YouTubeで見る</span>';
+      card.appendChild(a);
+    } else {
+      const frame=document.createElement("div"); frame.className="vid-frame";
+      const ifr=document.createElement("iframe");
+      ifr.src="https://www.youtube.com/embed/"+encodeURIComponent(v.id)+"?rel=0&playsinline=1";
+      ifr.title=v.label; ifr.loading="lazy"; ifr.allowFullscreen=true;
+      ifr.setAttribute("allow","accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture");
+      frame.appendChild(ifr); card.appendChild(frame);
+    }
+    c.appendChild(card);
   });
 }
 const TAB_LISTS = { overall:OVERALL_VIDEOS, parts:PART_VIDEOS, honke:HONKE_VIDEOS, point:POINT_VIDEOS };
