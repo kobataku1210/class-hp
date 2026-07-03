@@ -1039,7 +1039,9 @@
       {
         "name": "第１回進路希望調査",
         "deadline": "2026-07-08",
-        "submitted": []
+        "submitted": [
+          26
+        ]
       }
     ],
     "achieveCount": 1
