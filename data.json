@@ -1146,8 +1146,9 @@
           },
           {
             "date": "2026-07-08",
-            "status": "pending",
-            "auto": true
+            "status": "done",
+            "auto": true,
+            "doneDate": "2026-07-10"
           },
           {
             "date": "2026-07-15",
