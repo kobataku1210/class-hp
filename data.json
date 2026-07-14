@@ -1025,6 +1025,11 @@
         "date": "2026-07-14",
         "result": "growth",
         "leveledUp": true
+      },
+      {
+        "date": "2026-07-14",
+        "result": "growth",
+        "leveledUp": false
       }
     ],
     "students": {
@@ -1033,49 +1038,6 @@
     },
     "currentSubmitted": [],
     "submissions": [
-      {
-        "name": "第１回進路希望調査",
-        "deadline": "2026-07-08",
-        "submitted": [
-          26,
-          33,
-          6,
-          35,
-          4,
-          10,
-          5,
-          13,
-          16,
-          37,
-          11,
-          19,
-          23,
-          27,
-          1,
-          14,
-          31,
-          34,
-          22,
-          8,
-          20,
-          32,
-          30,
-          18,
-          2,
-          25,
-          28,
-          17,
-          21,
-          24,
-          29,
-          15,
-          3,
-          12,
-          7,
-          9,
-          36
-        ]
-      },
       {
         "name": "修学旅行アレルギー調査",
         "deadline": "2026-07-16",
@@ -1112,7 +1074,7 @@
         ]
       }
     ],
-    "achieveCount": 2
+    "achieveCount": 3
   },
   "studies": {
     "members": [
