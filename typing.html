@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>証 タイピング</title>
+<style>
+  :root{ --navy1:#0a1029; --navy2:#142a5c; --navy3:#1e3a7a;
+    --gold:#f4c84a; --gold-deep:#d4a017; --gold-soft:#ffe9a8; --text:#eaf0ff; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; min-height:100%; }
+  body{ font-family:"游ゴシック","Yu Gothic","YuGothic","Meiryo",sans-serif; color:var(--text);
+    background:radial-gradient(1200px 700px at 50% -10%, rgba(76,110,200,.35), transparent 60%),
+      linear-gradient(180deg,var(--navy1),var(--navy2) 55%,var(--navy3)); background-attachment:fixed; min-height:100vh; }
+  .wrap{ max-width:820px; margin:0 auto; padding:20px 18px 60px; }
+  h1{ text-align:center; font-size:22px; letter-spacing:.2em; color:var(--gold-soft); margin:6px 0 2px; text-shadow:0 0 18px rgba(244,200,74,.35); }
+  .sub{ text-align:center; font-size:12px; color:#a9b8e0; margin-bottom:16px; }
+  .card{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:16px; padding:18px; }
+  .btn{ cursor:pointer; border:none; border-radius:10px; padding:12px 18px; font-size:15px; font-weight:700; font-family:inherit; color:#1a1300;
+    background:linear-gradient(180deg,var(--gold-soft),var(--gold) 60%,var(--gold-deep)); box-shadow:0 4px 14px rgba(244,200,74,.25); }
+  .btn:active{ transform:translateY(1px); }
+  .btn.ghost{ background:transparent; color:var(--gold-soft); border:1px solid rgba(244,200,74,.5); box-shadow:none; }
+  .btn.full{ width:100%; font-size:17px; padding:15px; }
+  .hidden{ display:none !important; }
+  .hint{ font-size:12px; color:#9fb0dd; margin-top:10px; line-height:1.7; }
+
+  .ytwrap{ position:relative; width:100%; aspect-ratio:16/9; border-radius:12px; overflow:hidden; background:#000; border:1px solid rgba(255,255,255,.12); }
+  .ytwrap>div{ width:100%; height:100%; }
+
+  /* スピード選択 */
+  .speeds{ display:flex; gap:10px; margin:14px 0; }
+  .speeds button{ flex:1; padding:14px; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; border-radius:12px;
+    border:1px solid rgba(244,200,74,.35); background:rgba(10,16,41,.5); color:#c7d3f5; }
+  .speeds button.active{ background:linear-gradient(180deg,var(--gold-soft),var(--gold)); color:#1a1300; border-color:transparent; }
+
+  /* プレイ画面 */
+  .stage{ text-align:center; }
+  .lineBox{ min-height:120px; display:flex; flex-direction:column; justify-content:center; padding:10px 6px; }
+  .kana{ font-size:34px; font-weight:700; letter-spacing:.04em; line-height:1.5; word-break:break-all; }
+  .kana .done{ color:var(--gold); text-shadow:0 0 10px rgba(244,200,74,.4); }
+  .kana .cur{ color:#fff; background:rgba(244,200,74,.25); border-radius:6px; padding:0 2px; }
+  .kana .pend{ color:#7c8bbf; }
+  .kana .miss{ animation:shake .25s; }
+  @keyframes shake{ 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
+  .romajiHint{ font-size:16px; color:#9fb0dd; letter-spacing:.06em; margin-top:8px; min-height:22px; }
+  .romajiHint b{ color:var(--gold-soft); }
+  .nextLine{ font-size:18px; color:#6b7bab; margin-top:12px; min-height:24px; }
+
+  .timer{ height:10px; border-radius:99px; background:rgba(10,16,41,.7); border:1px solid rgba(244,200,74,.25); overflow:hidden; margin:16px 0 8px; }
+  .timer>i{ display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--gold-deep),var(--gold),var(--gold-soft)); }
+  .stats{ display:flex; justify-content:center; gap:18px; font-size:13px; color:#c7d3f5; margin-top:6px; }
+  .stats b{ color:var(--gold-soft); font-size:18px; }
+
+  .result h2{ text-align:center; color:var(--gold-soft); font-size:20px; margin:4px 0 14px; }
+  .resGrid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .resItem{ background:rgba(10,16,41,.5); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:14px; text-align:center; }
+  .resItem .v{ font-size:26px; font-weight:700; color:var(--gold); }
+  .resItem .l{ font-size:12px; color:#9fb0dd; margin-top:4px; }
+  .row{ display:flex; gap:10px; margin-top:16px; }
+  .row .btn{ flex:1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>証 タイピング</h1>
+  <div class="sub">― 曲に合わせて、ひらがなを打とう ―</div>
+
+  <!-- ===== スタート画面 ===== -->
+  <div id="startView" class="card">
+    <div class="ytwrap"><div id="ytPlayer"></div></div>
+    <div style="font-size:14px;color:#c7d3f5;margin-top:14px">スピードを選んでください</div>
+    <div class="speeds" id="speeds">
+      <button data-sp="slow">🐢 ゆっくり</button>
+      <button data-sp="normal" class="active">🎵 ふつう</button>
+      <button data-sp="fast">🚀 はやい</button>
+    </div>
+    <div id="videoMsg" class="hint hidden" style="color:#ffd9d9"></div>
+    <button id="startBtn" class="btn full">▶ スタート（曲も再生）</button>
+    <div class="hint">
+      ・ローマ字で入力します（例：「さ」＝ <b>sa</b>／「きょ」＝ <b>kyo</b>）。<br>
+      ・スタートを押すと曲が流れ、歌詞が上から順に流れます。時間内に打ちきろう！<br>
+      ・キーボードのローマ字入力（半角英数）にしておいてください。<br>
+      ・動画が出ないときは、ファイルを直接ではなく <b>学校のURL（…/typing.html）</b> から開いてください。
+    </div>
+  </div>
+
+  <!-- ===== プレイ画面 ===== -->
+  <div id="playView" class="card hidden">
+    <div class="ytwrap" style="max-width:360px;margin:0 auto 10px"><div id="ytPlayer2"></div></div>
+    <div class="stage">
+      <div class="lineBox">
+        <div class="kana" id="kanaLine">―</div>
+        <div class="romajiHint" id="romajiHint"></div>
+      </div>
+      <div class="timer"><i id="timerBar"></i></div>
+      <div class="stats">
+        <span>行 <b id="lineNo">0</b>/<span id="lineTot">0</span></span>
+        <span>打てた <b id="okCount">0</b></span>
+        <span>ミス <b id="missCount">0</b></span>
+      </div>
+      <div class="nextLine" id="nextLine"></div>
+      <div class="row">
+        <button id="quitBtn" class="btn ghost">やめる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 結果画面 ===== -->
+  <div id="resultView" class="card result hidden">
+    <h2>🎉 おつかれさま！</h2>
+    <div class="resGrid">
+      <div class="resItem"><div class="v" id="rAcc">0%</div><div class="l">正確率</div></div>
+      <div class="resItem"><div class="v" id="rOk">0</div><div class="l">正しく打てた文字</div></div>
+      <div class="resItem"><div class="v" id="rMiss">0</div><div class="l">ミス</div></div>
+      <div class="resItem"><div class="v" id="rKpm">0</div><div class="l">1分あたりの入力</div></div>
+    </div>
+    <div class="row">
+      <button id="againBtn" class="btn full">もう一度</button>
+    </div>
+    <div class="row">
+      <button id="backBtn" class="btn ghost full">スピードを選び直す</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   設定
+   ===================================================================== */
+const SONG_VIDEO_ID = "z-ghPdIAQ-0";   // ★ 流す曲のYouTube動画ID（v= のあと）
+
+// ★ 歌詞（ひらがな）。1行ずつ。漢字は使わず、すべてひらがなで書いてください。
+//   先生がお持ちの歌詞をひらがなにして貼り付けてください（ここは差し替え用のサンプルです）。
+const LINES = [
+  "ここにひらがなのかしをいれてください",
+  "かんじはつかわず　すべてひらがなで",
+  "いちぎょうずつ　かいてください",
+  "せんせいがかしをはりつけたら　かんせいです",
+];
+
+// スピード＝1文字あたりの持ち時間(ミリ秒)。小さいほど速い。
+const SPEED_MS = { slow:620, normal:440, fast:300 };
+let speed = "normal";
+
+/* =====================================================================
+   ローマ字判定エンジン
+   ===================================================================== */
+const TABLE = {
+'あ':['a'],'い':['i','yi'],'う':['u','wu','whu'],'え':['e'],'お':['o'],
+'か':['ka','ca'],'き':['ki'],'く':['ku','cu','qu'],'け':['ke'],'こ':['ko','co'],
+'さ':['sa'],'し':['shi','si','ci'],'す':['su'],'せ':['se','ce'],'そ':['so'],
+'た':['ta'],'ち':['chi','ti'],'つ':['tsu','tu'],'て':['te'],'と':['to'],
+'な':['na'],'に':['ni'],'ぬ':['nu'],'ね':['ne'],'の':['no'],
+'は':['ha'],'ひ':['hi'],'ふ':['fu','hu'],'へ':['he'],'ほ':['ho'],
+'ま':['ma'],'み':['mi'],'む':['mu'],'め':['me'],'も':['mo'],
+'や':['ya'],'ゆ':['yu'],'よ':['yo'],
+'ら':['ra'],'り':['ri'],'る':['ru'],'れ':['re'],'ろ':['ro'],
+'わ':['wa'],'を':['wo','o'],'ん':['nn'],
+'が':['ga'],'ぎ':['gi'],'ぐ':['gu'],'げ':['ge'],'ご':['go'],
+'ざ':['za'],'じ':['ji','zi'],'ず':['zu'],'ぜ':['ze'],'ぞ':['zo'],
+'だ':['da'],'ぢ':['di','ji'],'づ':['du','zu'],'で':['de'],'ど':['do'],
+'ば':['ba'],'び':['bi'],'ぶ':['bu'],'べ':['be'],'ぼ':['bo'],
+'ぱ':['pa'],'ぴ':['pi'],'ぷ':['pu'],'ぺ':['pe'],'ぽ':['po'],
+'ぁ':['xa','la'],'ぃ':['xi','li'],'ぅ':['xu','lu'],'ぇ':['xe','le'],'ぉ':['xo','lo'],
+'ゃ':['xya','lya'],'ゅ':['xyu','lyu'],'ょ':['xyo','lyo'],'っ':['xtu','ltu','xtsu'],
+'ー':['-'],'ゔ':['vu']
+};
+const COMBO = {
+'きゃ':['kya'],'きゅ':['kyu'],'きょ':['kyo'],
+'しゃ':['sha','sya'],'しゅ':['shu','syu'],'しょ':['sho','syo'],'しぇ':['she','sye'],
+'ちゃ':['cha','tya'],'ちゅ':['chu','tyu'],'ちょ':['cho','tyo'],'ちぇ':['che','tye'],
+'にゃ':['nya'],'にゅ':['nyu'],'にょ':['nyo'],
+'ひゃ':['hya'],'ひゅ':['hyu'],'ひょ':['hyo'],
+'みゃ':['mya'],'みゅ':['myu'],'みょ':['myo'],
+'りゃ':['rya'],'りゅ':['ryu'],'りょ':['ryo'],
+'ぎゃ':['gya'],'ぎゅ':['gyu'],'ぎょ':['gyo'],
+'じゃ':['ja','jya','zya'],'じゅ':['ju','jyu','zyu'],'じょ':['jo','jyo','zyo'],'じぇ':['je','jye'],
+'ぢゃ':['ja','dya'],'ぢゅ':['ju','dyu'],'ぢょ':['jo','dyo'],
+'びゃ':['bya'],'びゅ':['byu'],'びょ':['byo'],
+'ぴゃ':['pya'],'ぴゅ':['pyu'],'ぴょ':['pyo'],
+'てぃ':['thi'],'でぃ':['dhi'],
+'ふぁ':['fa'],'ふぃ':['fi'],'ふぇ':['fe'],'ふぉ':['fo'],
+'うぃ':['wi'],'うぇ':['we'],
+'ゔぁ':['va'],'ゔぃ':['vi'],'ゔぇ':['ve'],'ゔぉ':['vo']
+};
+const SKIP_CHARS = "、。，．！？!?「」『』（）()［］【】・…〜~,.　 ";
+
+function toHira(s){ return s.replace(/[ァ-ヶ]/g, ch=> String.fromCharCode(ch.charCodeAt(0)-0x60)); }
+function readUnit(line,i){
+  const two=line.substr(i,2);
+  if(COMBO[two]) return {kana:two, romajis:COMBO[two].slice(), len:2};
+  const one=line[i];
+  if(one==='ん') return {kana:'ん', romajis:['nn'], len:1};
+  if(TABLE[one]) return {kana:one, romajis:TABLE[one].slice(), len:1};
+  return null;
+}
+function tokenize(rawLine){
+  const line = toHira(rawLine);
+  const segs=[]; let i=0;
+  while(i<line.length){
+    const ch=line[i];
+    if(SKIP_CHARS.indexOf(ch)!==-1){ segs.push({kana:(ch==='　'?' ':ch), skip:true}); i++; continue; }
+    if(ch==='っ'){
+      i++;
+      const nu=readUnit(line,i);
+      if(!nu){ segs.push({kana:'っ', romajis:['xtu','ltu','xtsu']}); continue; }
+      i+=nu.len;
+      let rom=[];
+      nu.romajis.forEach(r=>{ if(r && 'aiueo'.indexOf(r[0])===-1) rom.push(r[0]+r); });
+      nu.romajis.forEach(r=>{ rom.push('xtu'+r); rom.push('ltu'+r); });
+      segs.push({kana:'っ'+nu.kana, romajis:Array.from(new Set(rom))});
+      continue;
+    }
+    const u=readUnit(line,i);
+    if(!u){ segs.push({kana:ch, skip:true}); i++; continue; }
+    i+=u.len; segs.push({kana:u.kana, romajis:u.romajis});
+  }
+  // ん の確定：次が子音始まりなら "n" 単独も許可
+  for(let k=0;k<segs.length;k++){
+    if(segs[k].kana==='ん'){
+      let j=k+1; while(j<segs.length && segs[j].skip) j++;
+      const nx=segs[j];
+      const allowN = nx && nx.romajis && nx.romajis.every(r=> r && 'aiueoyn'.indexOf(r[0])===-1);
+      segs[k].romajis = allowN ? ['n','nn','xn'] : ['nn','xn'];
+    }
+  }
+  return segs;
+}
+function typeableCount(segs){ return segs.filter(s=>!s.skip).length; }
+function firstTypeable(segs, from){ let i=from; while(i<segs.length && segs[i].skip) i++; return i; }
+
+/* =====================================================================
+   画面・状態
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+let segs=[], si=0, buf="", lineIdx=0;
+let okCount=0, missCount=0, kanaTyped=0;
+let playing=false, lineStart=0, lineDur=0, rafId=0, startedAt=0;
+
+/* スピード選択 */
+$("speeds").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return;
+  speed=b.dataset.sp; [...$("speeds").children].forEach(x=>x.classList.toggle("active",x===b)); });
+
+/* =====================================================================
+   YouTube
+   ===================================================================== */
+let ytPlayer=null, ytReady=false;
+function loadYT(){ if(window.YT&&window.YT.Player){ makePlayer(); return; }
+  const t=document.createElement("script"); t.src="https://www.youtube.com/iframe_api"; document.head.appendChild(t); }
+window.onYouTubeIframeAPIReady=makePlayer;
+function makePlayer(){
+  ytPlayer=new YT.Player("ytPlayer",{ videoId:SONG_VIDEO_ID, playerVars:{rel:0,playsinline:1},
+    events:{ onReady:()=>{ ytReady=true; $("videoMsg").classList.add("hidden"); }, onError:onYTErr } });
+}
+function onYTErr(e){
+  const codes={2:"動画IDが正しくありません",5:"再生できません",100:"動画が見つかりません（削除・非公開の可能性）",
+    101:"この動画は外部での再生が許可されていません",150:"この動画は外部での再生が許可されていません",153:"この動画は外部での再生が許可されていません"};
+  const base=(codes[e.data]||("再生できません（コード"+e.data+"）"));
+  const el=$("videoMsg");
+  el.innerHTML="⚠ "+base+"。<br>ファイルを直接ではなく学校のURL（…/typing.html）から開くか、別の曲IDに変えてください。"+
+    ' <a href="https://www.youtube.com/watch?v='+encodeURIComponent(SONG_VIDEO_ID)+'" target="_blank" style="color:#ffe9a8">▶ YouTubeで見る</a><br>'+
+    "（曲が無くても、タイピングの練習はそのままできます）";
+  el.classList.remove("hidden");
+}
+loadYT();
+
+/* =====================================================================
+   ゲーム進行
+   ===================================================================== */
+$("startBtn").addEventListener("click", startGame);
+$("quitBtn").addEventListener("click", ()=> finish(true));
+$("againBtn").addEventListener("click", startGame);
+$("backBtn").addEventListener("click", ()=>{ show("start"); });
+
+function show(which){
+  $("startView").classList.toggle("hidden", which!=="start");
+  $("playView").classList.toggle("hidden", which!=="play");
+  $("resultView").classList.toggle("hidden", which!=="result");
+}
+
+function startGame(){
+  okCount=0; missCount=0; kanaTyped=0; lineIdx=0;
+  show("play");
+  // プレイ画面にも小さくプレーヤーを出す（同じ動画を移動）
+  movePlayerToPlay();
+  try{ if(ytPlayer&&ytPlayer.playVideo){ ytPlayer.seekTo(0); ytPlayer.playVideo(); } }catch(e){}
+  $("lineTot").textContent = LINES.length;
+  startedAt = performance.now();
+  setupLine();
+  playing=true;
+  cancelAnimationFrame(rafId); rafId=requestAnimationFrame(loop);
+}
+
+/* プレーヤーのiframeをプレイ画面の枠へ移動（同じ再生を継続） */
+function movePlayerToPlay(){
+  const iframe=document.querySelector("#startView iframe, #ytPlayer iframe, #ytPlayer2 iframe");
+  const dest=$("ytPlayer2");
+  const el=document.querySelector(".ytwrap iframe");
+  if(el && dest && el.parentElement!==dest){ dest.appendChild(el); }
+}
+
+function setupLine(){
+  segs=tokenize(LINES[lineIdx]||"");
+  si=firstTypeable(segs,0); buf="";
+  const n=typeableCount(segs);
+  lineDur=Math.max(1800, n*SPEED_MS[speed]);
+  lineStart=performance.now();
+  $("lineNo").textContent=lineIdx+1;
+  $("nextLine").textContent = (lineIdx+1<LINES.length) ? "つぎ：" + LINES[lineIdx+1] : "";
+  renderLine();
+}
+
+function renderLine(){
+  let html="";
+  segs.forEach((s,idx)=>{
+    let cls = s.skip ? "" : (idx<si?"done":(idx===si?"cur":"pend"));
+    html += '<span class="'+cls+'">'+escapeHtml(s.kana)+'</span>';
+  });
+  $("kanaLine").innerHTML=html;
+  // ローマ字ヒント（今の文字＝残りを表示）
+  const cur=segs[si];
+  if(cur&&cur.romajis){
+    const full=cur.romajis[0];
+    const rest=full.slice(buf.length);
+    $("romajiHint").innerHTML='<b>'+escapeHtml(buf)+'</b>'+escapeHtml(rest);
+  } else { $("romajiHint").textContent=""; }
+}
+function escapeHtml(s){ return (s||"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function loop(){
+  if(!playing) return;
+  const now=performance.now();
+  const ratio=Math.max(0,(lineStart+lineDur-now)/lineDur);
+  $("timerBar").style.width=(ratio*100)+"%";
+  if(now>=lineStart+lineDur){ nextLine(); }
+  rafId=requestAnimationFrame(loop);
+}
+function nextLine(){
+  lineIdx++;
+  if(lineIdx>=LINES.length){ finish(false); return; }
+  setupLine();
+}
+
+document.addEventListener("keydown", e=>{
+  if(!playing) return;
+  if(e.key.length===1 && /[a-z0-9\-]/i.test(e.key)){ e.preventDefault(); handleKey(e.key.toLowerCase()); }
+  else if(e.key===" "){ e.preventDefault(); }
+});
+
+function handleKey(c){
+  const seg=segs[si];
+  if(!seg||!seg.romajis){ return; }
+  const nb=buf+c;
+  const cand=seg.romajis.filter(r=> r.indexOf(nb)===0);
+  if(cand.length>0){
+    buf=nb; okCount++;
+    $("okCount").textContent=okCount;
+    if(seg.romajis.indexOf(buf)!==-1){ completeSeg(); }
+    else renderLine();
+  } else {
+    missCount++; $("missCount").textContent=missCount;
+    flashMiss();
+  }
+}
+function completeSeg(){
+  kanaTyped++;
+  si=firstTypeable(segs,si+1); buf="";
+  if(si>=segs.length){ nextLine(); return; }
+  renderLine();
+}
+function flashMiss(){ const el=$("kanaLine"); el.classList.remove("miss"); void el.offsetWidth; el.classList.add("miss"); }
+
+function finish(quit){
+  playing=false; cancelAnimationFrame(rafId);
+  try{ if(ytPlayer&&ytPlayer.pauseVideo) ytPlayer.pauseVideo(); }catch(e){}
+  const total=okCount+missCount;
+  const acc= total>0 ? Math.round(okCount/total*100) : 100;
+  const mins=Math.max(0.001,(performance.now()-startedAt)/60000);
+  const kpm=Math.round(okCount/mins);
+  $("rAcc").textContent=acc+"%"; $("rOk").textContent=okCount; $("rMiss").textContent=missCount; $("rKpm").textContent=kpm;
+  show("result");
+}
+</script>
+</body>
+</html>
