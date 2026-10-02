@@ -22,6 +22,11 @@ const MIME = {
   '.jpg' : 'image/jpeg',
   '.svg' : 'image/svg+xml',
   '.ico' : 'image/x-icon',
+  '.mp3' : 'audio/mpeg',
+  '.m4a' : 'audio/mp4',
+  '.wav' : 'audio/wav',
+  '.ogg' : 'audio/ogg',
+  '.aac' : 'audio/aac',
 };
 
 // リクエストボディを読み取る
@@ -232,28 +237,121 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ===== API: 合唱祭 音源アップロード（PIN保護・先生用） =====
+  if (req.method === 'POST' && url === '/api/upload-audio') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body);
+      const current = readData();
+      const correctPin = current.adminPIN || '1210';
+      if (payload.pin !== correctPin) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: '暗証番号が違います' }));
+        return;
+      }
+      // ファイル名を安全化（パス区切り・制御文字を除去、拡張子は許可リスト）
+      let orig = String(payload.filename || 'audio.mp3');
+      orig = orig.replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').replace(/\s+/g, '_').slice(0, 80);
+      const okExt = ['.mp3', '.m4a', '.wav', '.ogg', '.aac'];
+      let ext = path.extname(orig).toLowerCase();
+      if (!okExt.includes(ext)) { orig += '.mp3'; ext = '.mp3'; }
+      const safeName = Date.now() + '_' + orig;
+      const dir = path.join(BASE_DIR, 'chorus_audio');
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      // base64（data URL形式 or 生base64）をデコードして保存
+      let b64 = String(payload.dataBase64 || '');
+      const comma = b64.indexOf(',');
+      if (b64.startsWith('data:') && comma >= 0) b64 = b64.slice(comma + 1);
+      const buf = Buffer.from(b64, 'base64');
+      if (buf.length === 0) throw new Error('ファイルが空です');
+      if (buf.length > 60 * 1024 * 1024) throw new Error('ファイルが大きすぎます（60MBまで）');
+      fs.writeFileSync(path.join(dir, safeName), buf);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: true, path: 'chorus_audio/' + safeName, size: buf.length }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: String(e && e.message || e) }));
+    }
+    return;
+  }
+
+  // ===== API: 合唱祭 音源ファイル削除（PIN保護・先生用） =====
+  if (req.method === 'POST' && url === '/api/delete-audio') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body);
+      const current = readData();
+      const correctPin = current.adminPIN || '1210';
+      if (payload.pin !== correctPin) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: '暗証番号が違います' }));
+        return;
+      }
+      // chorus_audio/ 配下のファイルのみ削除を許可
+      const rel = String(payload.path || '');
+      const target = path.normalize(path.join(BASE_DIR, rel));
+      const audioDir = path.join(BASE_DIR, 'chorus_audio') + path.sep;
+      if (target.startsWith(audioDir) && fs.existsSync(target) && fs.statSync(target).isFile()) {
+        fs.unlinkSync(target);
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: String(e && e.message || e) }));
+    }
+    return;
+  }
+
   // ===== 静的ファイル配信 =====
-  let filePath = path.join(BASE_DIR, url === '/' ? 'index.html' : url);
+  let decodedPath;
+  try { decodedPath = decodeURIComponent(url); } catch { decodedPath = url; }
+  let filePath = path.normalize(path.join(BASE_DIR, decodedPath === '/' ? 'index.html' : decodedPath));
+  // ディレクトリトラバーサル防止：BASE_DIR の外へは出さない
+  if (filePath !== BASE_DIR && !filePath.startsWith(BASE_DIR + path.sep)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('403 Forbidden');
+    return;
+  }
   if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
     filePath = path.join(filePath, 'index.html');
   }
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME[ext] || 'application/octet-stream';
+  const isAudio = ['.mp3', '.m4a', '.wav', '.ogg', '.aac'].includes(ext);
 
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
+  fs.stat(filePath, (statErr, stat) => {
+    if (statErr || !stat.isFile()) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('404 Not Found: ' + url);
       return;
     }
-    // ブラウザキャッシュを無効化（常に最新のHTML/JSを配信）
-    res.writeHead(200, {
-      'Content-Type': contentType,
-      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-    });
-    res.end(data);
+
+    // 音声はシーク（Rangeリクエスト）に対応
+    const range = req.headers.range;
+    if (isAudio && range) {
+      const m = /bytes=(\d*)-(\d*)/.exec(range);
+      let start = m && m[1] ? parseInt(m[1], 10) : 0;
+      let end   = m && m[2] ? parseInt(m[2], 10) : stat.size - 1;
+      if (isNaN(start)) start = 0;
+      if (isNaN(end) || end >= stat.size) end = stat.size - 1;
+      if (start > end) { start = 0; end = stat.size - 1; }
+      res.writeHead(206, {
+        'Content-Type': contentType,
+        'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': end - start + 1,
+        'Cache-Control': 'no-cache',
+      });
+      fs.createReadStream(filePath, { start, end }).pipe(res);
+      return;
+    }
+
+    const headers = isAudio
+      ? { 'Content-Type': contentType, 'Content-Length': stat.size, 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-cache' }
+      : { 'Content-Type': contentType, 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0', 'Pragma': 'no-cache', 'Expires': '0' };
+    res.writeHead(200, headers);
+    fs.createReadStream(filePath).pipe(res);
   });
 });
 

@@ -794,6 +794,27 @@
     </a>
   </section>
 
+  <!-- ========== 合唱祭 ========== -->
+  <section id="sec-chorus">
+    <h2 class="sec-title">
+      <span class="sec-icon">🎵</span>
+      合唱祭
+    </h2>
+    <a href="chorus.html" class="reward-banner" id="chorus-banner" style="
+      background: linear-gradient(135deg, #2e1065 0%, #4c1d95 45%, #5b21b6 100%);
+      border-color: rgba(167,139,250,0.4);
+    ">
+      <div style="flex:1;min-width:0">
+        <div class="rb-badge" style="background:rgba(167,139,250,0.2);border-color:rgba(167,139,250,0.45);color:#c4b5fd">🎵 CHORUS</div>
+        <div class="rb-title" style="background:linear-gradient(135deg,#c4b5fd,#ddd6fe,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">合唱祭 練習音源</div>
+        <div id="chorus-sub-info" style="margin-top:6px">
+          <span class="rb-sub" style="color:rgba(221,214,254,0.9)">練習の音源をいつでも再生！何度も聴いて合わせよう🎶</span>
+        </div>
+      </div>
+      <div class="rb-arrow" style="color:rgba(167,139,250,0.75)">▶</div>
+    </a>
+  </section>
+
   <!-- ========== ご褒美スロット ========== -->
   <section>
     <h2 class="sec-title">
@@ -1259,6 +1280,20 @@ function buildStudiesBanner(d) {
   infoEl.innerHTML = html;
 }
 
+/* 合唱祭：音源の件数・最新をバナーに表示 */
+function buildChorusBanner(d) {
+  const infoEl = document.getElementById('chorus-sub-info');
+  if (!infoEl) return;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const tracks = (d.chorusAudio && d.chorusAudio.tracks) || [];
+  if (tracks.length === 0) {
+    infoEl.innerHTML = `<span class="rb-sub" style="color:rgba(221,214,254,0.9)">練習の音源をいつでも再生！何度も聴いて合わせよう🎶</span>`;
+    return;
+  }
+  const latest = tracks.slice().sort((a, b) => (a.date || '') < (b.date || '') ? 1 : -1)[0];
+  infoEl.innerHTML = `<span class="rb-sub" style="color:rgba(221,214,254,0.95);font-weight:800">🎧 音源 ${tracks.length}件　最新: ${esc(latest.title)}</span>`;
+}
+
 /* ============================================================
    初期化
    ============================================================ */
@@ -1272,6 +1307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   buildSchedule(d);
   buildGrinBanner(d);
   buildStudiesBanner(d);
+  buildChorusBanner(d);
 
   // ローカルのみ：開発バー＋プレビューゾーンを表示
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
@@ -1291,6 +1327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 const PREVIEW_PAGES = [
   { label: '🌱 グリンの成長記録', src: 'submission.html' },
   { label: '📚 スタディーズ', src: 'studies.html' },
+  { label: '🎵 合唱祭 練習音源', src: 'chorus.html' },
   // ↓ 新しいプレビューはここに追加
   // { label: '🎯 新機能名',  src: 'new_feature.html' },
 ];

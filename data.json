@@ -1,5 +1,8 @@
 {
   "adminPIN": "1210",
+  "chorusAudio": {
+    "tracks": []
+  },
   "className": "3年5組",
   "classGoal": "雲外蒼天",
   "classGoalSub": "うんがいそうてん ― 苦しい時を越えれば、青空が待っている",

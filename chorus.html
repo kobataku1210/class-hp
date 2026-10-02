@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>合唱祭 練習音源</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+    background: linear-gradient(180deg, #ede9fe 0%, #f5f3ff 45%, #eef2ff 100%);
+    min-height: 100vh; color: #1e293b;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 26px 18px 100px; }
+
+  .page-header { text-align: center; margin-bottom: 22px; position: relative; }
+  .page-title { font-size: 1.85rem; font-weight: 900; color: #6d28d9; letter-spacing: 0.04em; line-height: 1.2; }
+  .page-sub { font-size: 0.88rem; color: #64748b; margin-top: 6px; }
+  .lock-btn {
+    position: absolute; top: -4px; right: 0; padding: 7px 14px; border-radius: 12px;
+    background: #fff; border: 1.5px solid #e2e8f0; color: #64748b;
+    font-size: 0.82rem; font-weight: 800; font-family: inherit; cursor: pointer;
+  }
+  .lock-btn.open { background: #f5f3ff; border-color: #c4b5fd; color: #6d28d9; }
+
+  .card {
+    background: #fff; border-radius: 24px; padding: 22px 20px;
+    box-shadow: 0 10px 38px rgba(76,29,149,0.09);
+    border: 2px solid #ddd6fe; margin-bottom: 18px;
+  }
+  .card-title { font-size: 1.05rem; font-weight: 900; color: #6d28d9; display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .hint { font-size: 0.82rem; color: #94a3b8; }
+
+  /* 音源リスト */
+  .track-list { display: flex; flex-direction: column; gap: 14px; }
+  .track {
+    background: #faf5ff; border: 1.5px solid #e9d5ff; border-radius: 18px; padding: 15px 17px;
+  }
+  .track-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  .track-title { font-size: 1.05rem; font-weight: 900; color: #5b21b6; }
+  .track-date { font-size: 0.78rem; color: #a78bda; font-weight: 800; flex-shrink: 0; }
+  .track-note { font-size: 0.88rem; color: #475569; font-weight: 600; line-height: 1.5; white-space: pre-wrap; margin: 4px 0 10px; }
+  .track audio { width: 100%; height: 42px; margin-top: 6px; }
+  .track-foot { display: flex; align-items: center; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
+  .track-dl { font-size: 0.8rem; color: #7c3aed; font-weight: 800; text-decoration: none; }
+  .track-dl:hover { text-decoration: underline; }
+  .track-size { font-size: 0.74rem; color: #a78bda; }
+  .track-del { margin-left: auto; padding: 5px 12px; border-radius: 9px; border: none; cursor: pointer; font-size: 0.78rem; font-weight: 900; font-family: inherit; background: #fee2e2; color: #dc2626; }
+  .empty { text-align: center; color: #94a3b8; font-size: 0.9rem; padding: 24px 10px; }
+
+  /* 先生用パネル */
+  #admin-card { display: none; }
+  #admin-body { display: none; }
+  .field-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  .field-row label { font-size: 0.82rem; font-weight: 800; color: #64748b; min-width: 68px; }
+  input[type="text"], input[type="date"], textarea, input[type="file"] {
+    padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+    font-size: 0.9rem; font-family: inherit; color: #1e293b;
+  }
+  input[type="text"], textarea { flex: 1; min-width: 180px; }
+  textarea { resize: vertical; line-height: 1.5; }
+  input[type="file"] { flex: 1; min-width: 200px; background: #faf5ff; }
+  .btn { padding: 10px 20px; border-radius: 11px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 900; font-family: inherit; }
+  .btn-primary { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; }
+  .btn-primary:disabled { opacity: 0.45; cursor: default; }
+  #up-status { font-size: 0.84rem; font-weight: 800; margin-left: 4px; }
+  #up-status.ok { color: #16a34a; } #up-status.err { color: #dc2626; } #up-status.go { color: #7c3aed; }
+
+  .back-link { display: inline-block; margin-bottom: 14px; color: #64748b; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+  .back-link:hover { color: #6d28d9; }
+
+  /* PINモーダル */
+  #pin-modal { position: fixed; inset: 0; background: rgba(15,23,42,0.55); display: none; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+  #pin-modal.show { display: flex; }
+  .pin-box { background: #fff; border-radius: 22px; padding: 30px 26px; width: 320px; max-width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .pin-icon { font-size: 2.4rem; }
+  .pin-title { font-size: 1.15rem; font-weight: 900; margin-top: 6px; }
+  .pin-sub { font-size: 0.82rem; color: #94a3b8; margin: 4px 0 16px; }
+  .pin-input-wrap { display: flex; gap: 6px; }
+  .pin-input-wrap input { flex: 1; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 1.1rem; text-align: center; letter-spacing: 0.3em; font-family: inherit; }
+  .pin-input-wrap input.error { border-color: #ef4444; animation: shake 0.4s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .pin-eye { width: 46px; border: 1.5px solid #e2e8f0; border-radius: 12px; background: #f8fafc; cursor: pointer; font-size: 1.1rem; }
+  .pin-err { color: #ef4444; font-size: 0.8rem; font-weight: 700; min-height: 1.1rem; margin: 8px 0; }
+  .pin-btns { display: flex; gap: 8px; }
+  .pin-btns button { flex: 1; padding: 11px; border-radius: 12px; border: none; cursor: pointer; font-weight: 900; font-family: inherit; }
+  .pin-cancel { background: #f1f5f9; color: #64748b; }
+  .pin-ok { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="class_homepage.html" class="back-link">← 学級トップへ</a>
+
+  <div class="page-header">
+    <button class="lock-btn" id="lock-btn" onclick="toggleAdmin()">🔒 先生用</button>
+    <div class="page-title">🎵 合唱祭 練習音源</div>
+    <div class="page-sub">練習の音源をいつでも聴けます。何度も聴いて合わせよう！</div>
+  </div>
+
+  <!-- 音源リスト -->
+  <div class="card">
+    <div class="card-title">🎧 音源一覧</div>
+    <div class="track-list" id="track-list"></div>
+  </div>
+
+  <!-- 先生用パネル -->
+  <div class="card" id="admin-card">
+    <div class="card-title">🔓 先生用コントロール</div>
+    <div id="admin-body">
+      <div class="field-row">
+        <label>タイトル</label>
+        <input type="text" id="c-title" placeholder="例: 全体練習（10/2）／ソプラノ 主旋律">
+      </div>
+      <div class="field-row">
+        <label>日付</label>
+        <input type="date" id="c-date">
+      </div>
+      <div class="field-row" style="align-items:flex-start">
+        <label style="margin-top:9px">メモ</label>
+        <textarea id="c-note" rows="2" placeholder="例: Aメロの入りに注意／この音源に合わせて練習してね"></textarea>
+      </div>
+      <div class="field-row">
+        <label>音源ファイル</label>
+        <input type="file" id="c-file" accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac">
+      </div>
+      <div class="field-row">
+        <button class="btn btn-primary" id="c-add-btn" onclick="addTrack()">⬆ 追加する</button>
+        <span id="up-status"></span>
+      </div>
+      <div class="hint">MP3推奨（1分≒1MB）。追加すると自動で保存され、生徒の画面にも反映されます。</div>
+    </div>
+  </div>
+</div>
+
+<!-- PINモーダル -->
+<div id="pin-modal">
+  <div class="pin-box">
+    <div class="pin-icon">🔒</div>
+    <div class="pin-title">先生用ログイン</div>
+    <div class="pin-sub">暗証番号を入力してください</div>
+    <div class="pin-input-wrap">
+      <input id="pin-input" type="password" inputmode="numeric" maxlength="20" placeholder="●●●●"
+             onkeydown="if(event.key==='Enter')submitPin()">
+      <button class="pin-eye" id="pin-eye" onclick="togglePinEye()" title="表示/非表示">👁</button>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+    <div class="pin-btns">
+      <button class="pin-cancel" onclick="closePinModal()">キャンセル</button>
+      <button class="pin-ok" onclick="submitPin()">ログイン</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SERVER = 'http://localhost:3456';
+let _data = {};
+let _adminPin = '';
+let adminOpen = false;
+
+function escHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function todayStr(){ const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+function fmtSize(n){ if(!n) return ''; const mb=n/1048576; return mb>=1 ? mb.toFixed(1)+'MB' : Math.max(1,Math.round(n/1024))+'KB'; }
+function fmtDate(s){ if(!s) return ''; const p=s.split('-'); return p.length===3 ? `${p[1]}/${p[2]}` : s; }
+
+function ensureChorus(){ if(!_data.chorusAudio) _data.chorusAudio={tracks:[]}; if(!_data.chorusAudio.tracks) _data.chorusAudio.tracks=[]; return _data.chorusAudio; }
+function getTracks(){ return ensureChorus().tracks; }
+
+async function loadData(){
+  let d=null;
+  try{ const r=await fetch(SERVER+'/api/data',{signal:AbortSignal.timeout(1500)}); if(r.ok) d=await r.json(); }catch(e){}
+  if(!d){ try{ const r=await fetch('data.json?_='+Date.now()); if(r.ok) d=await r.json(); }catch(e){} }
+  return d||{};
+}
+async function saveData(){
+  const pin=_adminPin||_data.adminPIN||'1210';
+  try{
+    await fetch(SERVER+'/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin,data:_data})});
+    await fetch(SERVER+'/api/git-push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})});
+    return true;
+  }catch(e){ return false; }
+}
+
+/* ===== 描画 ===== */
+function render(){
+  const el=document.getElementById('track-list');
+  const tracks=getTracks().slice().sort((a,b)=> (a.date||'')<(b.date||'')?1:(a.date||'')>(b.date||'')?-1:0);
+  if(tracks.length===0){
+    el.innerHTML='<div class="empty">🎵 まだ音源がありません。<br>先生が練習の音源をアップすると、ここに出ます。</div>';
+    return;
+  }
+  el.innerHTML=tracks.map(t=>{
+    const delBtn=adminOpen?`<button class="track-del" onclick="deleteTrack('${t.id}')">🗑 削除</button>`:'';
+    const note=t.note?`<div class="track-note">${escHtml(t.note)}</div>`:'';
+    return `<div class="track">
+      <div class="track-head">
+        <span class="track-title">🎵 ${escHtml(t.title)}</span>
+        <span class="track-date">${fmtDate(t.date)}</span>
+      </div>
+      ${note}
+      <audio controls preload="none" src="${escHtml(t.file)}"></audio>
+      <div class="track-foot">
+        <a class="track-dl" href="${escHtml(t.file)}" download>⬇ ダウンロード</a>
+        <span class="track-size">${fmtSize(t.size)}</span>
+        ${delBtn}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ===== 先生用：追加・削除 ===== */
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result);
+    r.onerror=()=>reject(new Error('ファイル読み込み失敗'));
+    r.readAsDataURL(file);
+  });
+}
+async function addTrack(){
+  const title=document.getElementById('c-title').value.trim();
+  const date=document.getElementById('c-date').value||todayStr();
+  const note=document.getElementById('c-note').value.trim();
+  const fileInput=document.getElementById('c-file');
+  const file=fileInput.files&&fileInput.files[0];
+  const st=document.getElementById('up-status');
+  const btn=document.getElementById('c-add-btn');
+
+  if(!title){ st.className='err'; st.textContent='⚠️ タイトルを入力してください'; return; }
+  if(!file){ st.className='err'; st.textContent='⚠️ 音源ファイルを選んでください'; return; }
+
+  btn.disabled=true; st.className='go'; st.textContent='⏳ アップロード中...';
+  try{
+    const dataBase64=await fileToBase64(file);
+    const pin=_adminPin||_data.adminPIN||'1210';
+    const r=await fetch(SERVER+'/api/upload-audio',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pin,filename:file.name,dataBase64})
+    });
+    const res=await r.json();
+    if(!res.ok) throw new Error(res.error||'アップロード失敗');
+
+    getTracks().push({ id:'t'+Date.now()+Math.floor(Math.random()*1000), title, date, note, file:res.path, size:res.size });
+    st.textContent='⏳ 保存・反映中...';
+    await saveData();
+
+    // フォームをクリア
+    document.getElementById('c-title').value='';
+    document.getElementById('c-note').value='';
+    fileInput.value='';
+    st.className='ok'; st.textContent='✅ 追加しました！';
+    setTimeout(()=>{ st.textContent=''; st.className=''; },3500);
+    render();
+  }catch(e){
+    st.className='err'; st.textContent='❌ '+(e.message||'失敗しました（サーバー起動を確認）');
+  }
+  btn.disabled=false;
+}
+async function deleteTrack(id){
+  const tracks=getTracks();
+  const t=tracks.find(x=>x.id===id);
+  if(!t) return;
+  if(!confirm(`「${t.title}」を削除しますか？`)) return;
+  const pin=_adminPin||_data.adminPIN||'1210';
+  try{ await fetch(SERVER+'/api/delete-audio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin,path:t.file})}); }catch(e){}
+  const idx=tracks.findIndex(x=>x.id===id);
+  if(idx>=0) tracks.splice(idx,1);
+  await saveData();
+  render();
+}
+
+/* ===== PIN ===== */
+function toggleAdmin(){
+  if(adminOpen){
+    adminOpen=false; _adminPin='';
+    document.getElementById('lock-btn').textContent='🔒 先生用';
+    document.getElementById('lock-btn').classList.remove('open');
+    document.getElementById('admin-card').style.display='none';
+    document.getElementById('admin-body').style.display='none';
+    render();
+  } else { openPinModal(); }
+}
+function openPinModal(){ const m=document.getElementById('pin-modal'); m.classList.add('show'); const i=document.getElementById('pin-input'); i.value=''; setTimeout(()=>i.focus(),50); }
+function closePinModal(){ document.getElementById('pin-modal').classList.remove('show'); document.getElementById('pin-err').textContent=''; }
+function togglePinEye(){ const i=document.getElementById('pin-input'),e=document.getElementById('pin-eye'); if(i.type==='password'){i.type='text';e.textContent='🙈';}else{i.type='password';e.textContent='👁';} }
+function submitPin(){
+  const i=document.getElementById('pin-input'),err=document.getElementById('pin-err');
+  const correct=_data.adminPIN||'1210';
+  if(i.value===correct){
+    closePinModal();
+    adminOpen=true; _adminPin=i.value;
+    document.getElementById('lock-btn').textContent='🔓 先生用（管理中）';
+    document.getElementById('lock-btn').classList.add('open');
+    document.getElementById('admin-card').style.display='block';
+    document.getElementById('admin-body').style.display='block';
+    document.getElementById('c-date').value=todayStr();
+    render();
+  }else{
+    i.classList.add('error'); err.textContent='暗証番号が違います';
+    setTimeout(()=>i.classList.remove('error'),400); i.value=''; i.focus();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async ()=>{
+  _data=await loadData();
+  render();
+});
+</script>
+</body>
+</html>
