@@ -1,7 +1,16 @@
 {
   "adminPIN": "1210",
   "chorusAudio": {
-    "tracks": []
+    "tracks": [
+      {
+        "id": "t1790932201626302",
+        "title": "10.2 放課後",
+        "date": "2026-10-02",
+        "note": "",
+        "file": "chorus_audio/1790932201611_10.2_放課後.mp3",
+        "size": 4633660
+      }
+    ]
   },
   "className": "3年5組",
   "classGoal": "雲外蒼天",
