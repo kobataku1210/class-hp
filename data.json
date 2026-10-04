@@ -1,6 +1,11 @@
 {
   "adminPIN": "1210",
   "chorusAudio": {
+    "reference": {
+      "youtubeId": "z-ghPdIAQ-0",
+      "title": "お手本の合唱「証」",
+      "note": ""
+    },
     "tracks": [
       {
         "id": "t1790932201626302",

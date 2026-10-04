@@ -86,6 +86,24 @@
   .pin-btns button { flex: 1; padding: 11px; border-radius: 12px; border: none; cursor: pointer; font-weight: 900; font-family: inherit; }
   .pin-cancel { background: #f1f5f9; color: #64748b; }
   .pin-ok { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; }
+
+  /* 参考音源（お手本・YouTube音声のみ） */
+  .ref-player { background: linear-gradient(135deg,#faf5ff,#f5f3ff); border: 1.5px solid #ddd6fe; border-radius: 18px; padding: 16px 18px; position: relative; }
+  .ref-badge { display: inline-block; font-size: 0.72rem; font-weight: 900; color: #6d28d9; background: #ede9fe; border: 1px solid #c4b5fd; border-radius: 30px; padding: 2px 11px; margin-bottom: 8px; }
+  .ref-title { font-size: 1.1rem; font-weight: 900; color: #5b21b6; margin-bottom: 4px; }
+  .ref-note { font-size: 0.88rem; color: #475569; font-weight: 600; line-height: 1.5; white-space: pre-wrap; margin-bottom: 12px; }
+  .ref-controls { display: flex; align-items: center; gap: 12px; }
+  .ref-play { width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer; background: linear-gradient(135deg,#8b5cf6,#6d28d9); color: #fff; font-size: 1.25rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(109,40,217,0.35); }
+  .ref-seek { flex: 1; accent-color: #7c3aed; cursor: pointer; height: 5px; }
+  .ref-time { font-size: 0.8rem; color: #7c3aed; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 86px; text-align: right; }
+  .ref-foot { margin-top: 11px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .ref-yt-link { font-size: 0.8rem; color: #7c3aed; font-weight: 800; text-decoration: none; }
+  .ref-yt-link:hover { text-decoration: underline; }
+  /* YouTubeプレーヤーは画面外に置き、音声のみ再生 */
+  #yt-holder { position: absolute; left: -9999px; top: 0; width: 320px; height: 180px; pointer-events: none; }
+  #r-status { font-size: 0.84rem; font-weight: 800; margin-left: 4px; }
+  #r-status.ok { color: #16a34a; } #r-status.err { color: #dc2626; } #r-status.go { color: #7c3aed; }
+  .admin-sub { font-weight: 900; color: #6d28d9; margin: 4px 0 8px; font-size: 0.92rem; }
 </style>
 </head>
 <body>
@@ -98,9 +116,15 @@
     <div class="page-sub">練習の音源をいつでも聴けます。何度も聴いて合わせよう！</div>
   </div>
 
-  <!-- 音源リスト -->
+  <!-- 参考音源（お手本） -->
   <div class="card">
-    <div class="card-title">🎧 音源一覧</div>
+    <div class="card-title">📺 参考音源（お手本）</div>
+    <div id="ref-view"></div>
+  </div>
+
+  <!-- 練習音源リスト -->
+  <div class="card">
+    <div class="card-title">🎧 練習音源</div>
     <div class="track-list" id="track-list"></div>
   </div>
 
@@ -108,6 +132,29 @@
   <div class="card" id="admin-card">
     <div class="card-title">🔓 先生用コントロール</div>
     <div id="admin-body">
+      <div class="admin-sub">📺 参考音源（お手本・YouTube／音声のみ）</div>
+      <div class="field-row">
+        <label>タイトル</label>
+        <input type="text" id="r-title" placeholder="例: お手本の合唱「証」">
+      </div>
+      <div class="field-row">
+        <label>YouTube</label>
+        <input type="text" id="r-url" placeholder="YouTubeのURLを貼り付け">
+      </div>
+      <div class="field-row" style="align-items:flex-start">
+        <label style="margin-top:9px">メモ</label>
+        <textarea id="r-note" rows="2" placeholder="例: この合唱を参考に、強弱を意識しよう"></textarea>
+      </div>
+      <div class="field-row">
+        <button class="btn btn-primary" onclick="setReference()">🎼 参考音源を設定</button>
+        <button class="btn" style="background:#f1f5f9;color:#64748b" onclick="removeReference()">削除</button>
+        <span id="r-status"></span>
+      </div>
+      <div class="hint">参考音源は1つ（新しく設定すると差し替え）。映像は表示せず音声だけ流します。</div>
+
+      <hr style="border:none;border-top:1.5px dashed #e9d5ff;margin:18px 0">
+
+      <div class="admin-sub">🎧 練習音源を追加</div>
       <div class="field-row">
         <label>タイトル</label>
         <input type="text" id="c-title" placeholder="例: 全体練習（10/2）／ソプラノ 主旋律">
@@ -183,6 +230,7 @@ async function saveData(){
 
 /* ===== 描画 ===== */
 function render(){
+  renderReference();
   const el=document.getElementById('track-list');
   const tracks=getTracks().slice().sort((a,b)=> (a.date||'')<(b.date||'')?1:(a.date||'')>(b.date||'')?-1:0);
   if(tracks.length===0){
@@ -206,6 +254,126 @@ function render(){
       </div>
     </div>`;
   }).join('');
+}
+
+/* ===== 参考音源（YouTube・音声のみ） ===== */
+function getReference(){ return ensureChorus().reference || null; }
+function extractYouTubeId(url){
+  if(!url) return '';
+  const s=String(url).trim();
+  let m=s.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([A-Za-z0-9_-]{11})/);
+  if(m) return m[1];
+  m=s.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+  if(m) return m[1];
+  if(/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
+  return '';
+}
+function fmtTime(s){ s=Math.max(0,Math.floor(s||0)); const m=Math.floor(s/60); return m+':'+String(s%60).padStart(2,'0'); }
+
+let ytApiPromise=null, ytPlayer=null, ytPollTimer=null, ytDisplayedId=null;
+function loadYTApi(){
+  if(ytApiPromise) return ytApiPromise;
+  ytApiPromise=new Promise(res=>{
+    if(window.YT && window.YT.Player) return res();
+    const prev=window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady=()=>{ if(typeof prev==='function') prev(); res(); };
+    const tag=document.createElement('script'); tag.src='https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  });
+  return ytApiPromise;
+}
+function destroyYtPlayer(){
+  if(ytPollTimer){ clearInterval(ytPollTimer); ytPollTimer=null; }
+  if(ytPlayer && ytPlayer.destroy){ try{ ytPlayer.destroy(); }catch(e){} }
+  ytPlayer=null;
+}
+function renderReference(){
+  const view=document.getElementById('ref-view');
+  if(!view) return;
+  const ref=getReference();
+  const id=ref && ref.youtubeId;
+  if(!id){
+    ytDisplayedId=null; destroyYtPlayer();
+    view.innerHTML='<div class="empty" style="padding:18px 10px">🎼 お手本の合唱はまだ設定されていません。'+(adminOpen?'<br>下の「参考音源」から設定できます。':'')+'</div>';
+    return;
+  }
+  // 同じ音源を表示中なら作り直さない（再生を止めない）
+  if(id===ytDisplayedId && ytPlayer) return;
+  ytDisplayedId=id;
+  const note=ref.note?`<div class="ref-note">${escHtml(ref.note)}</div>`:'';
+  view.innerHTML=`
+    <div class="ref-player">
+      <div class="ref-badge">🎼 お手本</div>
+      <div class="ref-title">${escHtml(ref.title||'参考合唱')}</div>
+      ${note}
+      <div class="ref-controls">
+        <button class="ref-play" id="ref-play" onclick="toggleRefPlay()" title="再生 / 一時停止">▶</button>
+        <input type="range" class="ref-seek" id="ref-seek" min="0" max="1000" value="0" step="1"
+               oninput="seekRef(this.value)">
+        <span class="ref-time" id="ref-time">0:00 / 0:00</span>
+      </div>
+      <div class="ref-foot">
+        <a class="ref-yt-link" href="https://youtu.be/${encodeURIComponent(id)}" target="_blank" rel="noopener">YouTubeで開く ↗</a>
+        <span class="hint" style="font-size:.74rem">※映像は表示せず、音声だけ流れます</span>
+      </div>
+      <div id="yt-holder"><div id="yt-player"></div></div>
+    </div>`;
+  mountYtPlayer(id);
+}
+async function mountYtPlayer(id){
+  await loadYTApi();
+  destroyYtPlayer();
+  const holder=document.getElementById('yt-player');
+  if(!holder || ytDisplayedId!==id) return;
+  ytPlayer=new YT.Player(holder,{
+    videoId:id, width:'320', height:'180',
+    playerVars:{ playsinline:1, controls:0, rel:0, modestbranding:1 },
+    events:{ onReady:updateRefTime, onStateChange:onRefState }
+  });
+}
+function onRefState(e){
+  const btn=document.getElementById('ref-play');
+  if(e.data===YT.PlayerState.PLAYING){ if(btn) btn.textContent='⏸'; if(ytPollTimer) clearInterval(ytPollTimer); ytPollTimer=setInterval(updateRefTime,400); }
+  else { if(btn) btn.textContent='▶'; if(e.data!==YT.PlayerState.BUFFERING && ytPollTimer){ clearInterval(ytPollTimer); ytPollTimer=null; updateRefTime(); } }
+}
+function updateRefTime(){
+  if(!ytPlayer || !ytPlayer.getDuration) return;
+  const dur=ytPlayer.getDuration()||0, cur=ytPlayer.getCurrentTime()||0;
+  const seek=document.getElementById('ref-seek'), time=document.getElementById('ref-time');
+  if(seek && dur>0 && document.activeElement!==seek) seek.value=Math.round(cur/dur*1000);
+  if(time) time.textContent=fmtTime(cur)+' / '+fmtTime(dur);
+}
+function toggleRefPlay(){
+  if(!ytPlayer || !ytPlayer.getPlayerState) return;
+  if(ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
+}
+function seekRef(v){
+  if(!ytPlayer || !ytPlayer.getDuration) return;
+  const dur=ytPlayer.getDuration()||0;
+  if(dur>0){ ytPlayer.seekTo(dur*(v/1000), true); updateRefTime(); }
+}
+async function setReference(){
+  const title=document.getElementById('r-title').value.trim();
+  const url=document.getElementById('r-url').value.trim();
+  const note=document.getElementById('r-note').value.trim();
+  const st=document.getElementById('r-status');
+  const id=extractYouTubeId(url);
+  if(!id){ st.className='err'; st.textContent='⚠️ 正しいYouTube URLを入力してください'; return; }
+  ensureChorus().reference={ youtubeId:id, title:title||'参考合唱', note };
+  ytDisplayedId=null; // 作り直す
+  st.className='go'; st.textContent='⏳ 保存・反映中...';
+  const ok=await saveData();
+  st.className=ok?'ok':'err'; st.textContent=ok?'✅ 設定しました！':'❌ サーバー起動を確認';
+  setTimeout(()=>{ st.textContent=''; st.className=''; },3500);
+  render();
+}
+async function removeReference(){
+  if(!getReference()){ return; }
+  if(!confirm('参考音源を削除しますか？')) return;
+  delete ensureChorus().reference;
+  ytDisplayedId=null;
+  await saveData();
+  render();
 }
 
 /* ===== 先生用：追加・削除 ===== */
