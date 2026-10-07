@@ -4,7 +4,13 @@
     "reference": {
       "youtubeId": "z-ghPdIAQ-0",
       "title": "お手本の合唱「証」",
-      "note": ""
+      "note": "",
+      "markers": [
+        {
+          "label": "サビ",
+          "t": 0.7
+        }
+      ]
     },
     "tracks": [
       {
@@ -13,7 +19,13 @@
         "date": "2026-10-07",
         "note": "",
         "file": "chorus_audio/1791360453919_10.7_放課後練習.mp3",
-        "size": 4630883
+        "size": 4630883,
+        "markers": [
+          {
+            "label": "サビ",
+            "t": 12.3
+          }
+        ]
       },
       {
         "id": "t1791274460603",

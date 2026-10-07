@@ -113,6 +113,31 @@
   #r-status { font-size: 0.84rem; font-weight: 800; margin-left: 4px; }
   #r-status.ok { color: #16a34a; } #r-status.err { color: #dc2626; } #r-status.go { color: #7c3aed; }
   .admin-sub { font-weight: 900; color: #6d28d9; margin: 4px 0 8px; font-size: 0.92rem; }
+
+  /* 歌詞マーカー（聴き比べ） */
+  .markers-label { font-size: 0.8rem; font-weight: 900; color: #7c3aed; margin: 12px 0 5px; }
+  .markers { display: flex; flex-wrap: wrap; gap: 7px; }
+  .marker-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 13px; border-radius: 30px; border: 1.5px solid #c4b5fd;
+    background: #fff; color: #6d28d9; font-weight: 900; font-size: 0.84rem;
+    font-family: inherit; cursor: pointer; line-height: 1;
+  }
+  .marker-chip:hover { background: #f5f3ff; }
+  .marker-chip:active { transform: translateY(1px); }
+  .marker-chip .mk-t { color: #a78bda; font-weight: 800; font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+  .marker-chip .mk-x { color: #dc2626; font-weight: 900; font-size: 0.82rem; margin-left: 1px; padding: 0 2px; }
+  .marker-chip .mk-x:hover { color: #b91c1c; }
+  /* 先生用：マーカー編集 */
+  .mk-edit { margin-top: 11px; padding: 12px 13px; background: #fffbeb; border: 1.5px dashed #fcd34d; border-radius: 13px; }
+  .mk-edit-title { font-size: 0.8rem; font-weight: 900; color: #b45309; margin-bottom: 9px; line-height: 1.4; }
+  .mk-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 9px; }
+  .mk-preset { padding: 6px 12px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; font-weight: 800; font-size: 0.78rem; font-family: inherit; cursor: pointer; }
+  .mk-preset.sel { background: #fef3c7; border-color: #f59e0b; color: #b45309; }
+  .mk-add-row { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+  .mk-add-row input { flex: 1; min-width: 130px; padding: 8px 11px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-family: inherit; font-size: 0.86rem; color: #1e293b; }
+  .mk-add-btn { padding: 8px 15px; border-radius: 11px; border: none; background: linear-gradient(135deg,#f59e0b,#d97706); color: #fff; font-weight: 900; font-family: inherit; font-size: 0.83rem; cursor: pointer; white-space: nowrap; }
+  .mk-add-btn:active { transform: translateY(1px); }
 </style>
 </head>
 <body>
@@ -213,6 +238,9 @@ const SERVER = 'http://localhost:3456';
 let _data = {};
 let _adminPin = '';
 let adminOpen = false;
+const MARKER_LABELS = ['イントロ','Aメロ','Bメロ','サビ','2番Aメロ','2番サビ','大サビ','ラスト'];
+let _mkSel = {};        // playerKey -> 選択中のプリセットラベル（先生用）
+let _pushTimer = null;  // git push のまとめ送信用
 
 function escHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function todayStr(){ const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
@@ -236,6 +264,19 @@ async function saveData(){
     return true;
   }catch(e){ return false; }
 }
+// data.json へ即時保存（git push はしない。マーカー連打用）
+async function saveLocal(){
+  const pin=_adminPin||_data.adminPIN||'1210';
+  try{ await fetch(SERVER+'/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin,data:_data})}); return true; }catch(e){ return false; }
+}
+// 編集が落ち着いたら1回だけ git push（家用GitHub Pagesへ反映）
+function schedulePush(){
+  if(_pushTimer) clearTimeout(_pushTimer);
+  _pushTimer=setTimeout(async()=>{
+    const pin=_adminPin||_data.adminPIN||'1210';
+    try{ await fetch(SERVER+'/api/git-push',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin})}); }catch(e){}
+  }, 3500);
+}
 
 /* ===== 描画 ===== */
 function render(){
@@ -255,11 +296,12 @@ function render(){
         <span class="track-date">${fmtDate(t.date)}</span>
       </div>
       ${note}
-      <audio id="au-${escHtml(t.id)}" controls preload="none" src="${escHtml(t.file)}"></audio>
+      <audio id="au-${escHtml(t.id)}" controls preload="none" src="${escHtml(t.file)}" onplay="onAnyPlay(this)"></audio>
       <div class="skip-row">
         <button class="skip-btn" onclick="skipAudio('au-${escHtml(t.id)}',-5)">⏪ 5秒</button>
         <button class="skip-btn" onclick="skipAudio('au-${escHtml(t.id)}',5)">5秒 ⏩</button>
       </div>
+      <div id="mk-wrap-${escHtml(t.id)}">${markersHtml(t.id)}</div>
       <div class="track-foot">
         <a class="track-dl" href="${escHtml(t.file)}" download>⬇ ダウンロード</a>
         <span class="track-size">${fmtSize(t.size)}</span>
@@ -276,6 +318,88 @@ function skipAudio(id, delta){
   let t=(a.currentTime||0)+delta;
   t=Math.max(0, isFinite(a.duration) ? Math.min(a.duration, t) : t);
   try{ a.currentTime=t; }catch(e){}
+}
+
+/* ===== 歌詞マーカー（お手本と聴き比べ） ===== */
+// playerKey: 'ref'=お手本(YouTube) / それ以外=track.id
+function getMarkers(key){
+  if(key==='ref'){ const r=getReference(); return (r&&r.markers)||[]; }
+  const t=getTracks().find(x=>x.id===key); return (t&&t.markers)||[];
+}
+function setMarkers(key, arr){
+  if(key==='ref'){ const r=getReference(); if(r) r.markers=arr; }
+  else { const t=getTracks().find(x=>x.id===key); if(t) t.markers=arr; }
+}
+function playerCurrentTime(key){
+  if(key==='ref'){ return (ytPlayer&&ytPlayer.getCurrentTime)?(ytPlayer.getCurrentTime()||0):0; }
+  const a=document.getElementById('au-'+key); return a?(a.currentTime||0):0;
+}
+// 1つを再生するとき、他は止める（お手本↔練習のワンタップ切り替え）
+function pauseOthers(key){
+  document.querySelectorAll('audio').forEach(a=>{ if(a.id!=='au-'+key) a.pause(); });
+  if(key!=='ref' && ytPlayer && ytPlayer.pauseVideo){
+    try{ if(ytPlayer.getPlayerState && ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }catch(e){}
+  }
+}
+function onAnyPlay(el){
+  document.querySelectorAll('audio').forEach(a=>{ if(a!==el) a.pause(); });
+  if(ytPlayer && ytPlayer.getPlayerState){ try{ if(ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }catch(e){} }
+}
+// マーカーの位置へジャンプして再生
+function jumpTo(key, t){
+  pauseOthers(key);
+  if(key==='ref'){
+    if(ytPlayer && ytPlayer.seekTo){ ytPlayer.seekTo(t, true); ytPlayer.playVideo(); updateRefTime(); }
+  } else {
+    const a=document.getElementById('au-'+key);
+    if(a){ try{ a.currentTime=t; }catch(e){} a.play().catch(()=>{}); }
+  }
+}
+// マーカー表示＋（先生用）編集UIのHTML
+function markersHtml(key){
+  const arr=getMarkers(key).slice().sort((a,b)=>a.t-b.t);
+  let html='';
+  if(arr.length){
+    html+='<div class="markers-label">🔖 ここから聴く（押すと再生・お手本と聴き比べ）</div><div class="markers">';
+    html+=arr.map((m,i)=>`<button class="marker-chip" onclick="jumpTo('${key}',${m.t})">`
+      +`${escHtml(m.label)} <span class="mk-t">${fmtTime(m.t)}</span>`
+      +(adminOpen?`<span class="mk-x" onclick="event.stopPropagation();delMarker('${key}',${i})" title="削除">✕</span>`:'')
+      +`</button>`).join('');
+    html+='</div>';
+  }
+  if(adminOpen){
+    html+=`<div class="mk-edit">
+      <div class="mk-edit-title">🏷 マーカーを打つ：再生して歌詞の位置まで来たら、ラベルを選んで「＋ここに印」</div>
+      <div class="mk-presets">${MARKER_LABELS.map(l=>`<button class="mk-preset${_mkSel[key]===l?' sel':''}" onclick="selPreset('${key}',this.textContent)">${l}</button>`).join('')}</div>
+      <div class="mk-add-row">
+        <input type="text" id="mkin-${key}" placeholder="ラベル（例: サビ）" value="${escHtml(_mkSel[key]||'')}">
+        <button class="mk-add-btn" onclick="addMarker('${key}')">＋ ここに印</button>
+      </div>
+    </div>`;
+  }
+  return html;
+}
+function selPreset(key, label){
+  _mkSel[key]=label;
+  const inp=document.getElementById('mkin-'+key); if(inp) inp.value=label;
+  const wrap=document.getElementById('mk-wrap-'+key);
+  if(wrap) wrap.querySelectorAll('.mk-preset').forEach(b=>b.classList.toggle('sel', b.textContent===label));
+}
+async function addMarker(key){
+  const inp=document.getElementById('mkin-'+key);
+  const label=((inp&&inp.value.trim())|| _mkSel[key] || '').trim();
+  if(!label){ alert('ラベルを選ぶか入力してください'); return; }
+  const t=Math.max(0, Math.round(playerCurrentTime(key)*10)/10);
+  const arr=getMarkers(key).slice(); arr.push({label, t}); setMarkers(key, arr);
+  await saveLocal(); schedulePush();
+  const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=markersHtml(key);
+}
+async function delMarker(key, idx){
+  const arr=getMarkers(key).slice().sort((a,b)=>a.t-b.t);
+  if(idx<0||idx>=arr.length) return;
+  arr.splice(idx,1); setMarkers(key, arr);
+  await saveLocal(); schedulePush();
+  const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=markersHtml(key);
 }
 
 /* ===== 参考音源（YouTube・音声のみ） ===== */
@@ -319,8 +443,8 @@ function renderReference(){
     view.innerHTML='<div class="empty" style="padding:18px 10px">🎼 お手本の合唱はまだ設定されていません。'+(adminOpen?'<br>下の「参考音源」から設定できます。':'')+'</div>';
     return;
   }
-  // 同じ音源を表示中なら作り直さない（再生を止めない）
-  if(id===ytDisplayedId && ytPlayer) return;
+  // 同じ音源を表示中なら作り直さない（再生を止めない）。マーカー欄だけ更新。
+  if(id===ytDisplayedId && ytPlayer){ const w=document.getElementById('mk-wrap-ref'); if(w) w.innerHTML=markersHtml('ref'); return; }
   ytDisplayedId=id;
   const note=ref.note?`<div class="ref-note">${escHtml(ref.note)}</div>`:'';
   view.innerHTML=`
@@ -340,6 +464,7 @@ function renderReference(){
         <a class="ref-yt-link" href="https://youtu.be/${encodeURIComponent(id)}" target="_blank" rel="noopener">YouTubeで開く ↗</a>
         <span class="hint" style="font-size:.74rem">※映像は表示せず、音声だけ流れます</span>
       </div>
+      <div id="mk-wrap-ref">${markersHtml('ref')}</div>
       <div id="yt-holder"><div id="yt-player"></div></div>
     </div>`;
   mountYtPlayer(id);
@@ -357,7 +482,7 @@ async function mountYtPlayer(id){
 }
 function onRefState(e){
   const btn=document.getElementById('ref-play');
-  if(e.data===YT.PlayerState.PLAYING){ if(btn) btn.textContent='⏸'; if(ytPollTimer) clearInterval(ytPollTimer); ytPollTimer=setInterval(updateRefTime,400); }
+  if(e.data===YT.PlayerState.PLAYING){ document.querySelectorAll('audio').forEach(a=>a.pause()); if(btn) btn.textContent='⏸'; if(ytPollTimer) clearInterval(ytPollTimer); ytPollTimer=setInterval(updateRefTime,400); }
   else { if(btn) btn.textContent='▶'; if(e.data!==YT.PlayerState.BUFFERING && ytPollTimer){ clearInterval(ytPollTimer); ytPollTimer=null; updateRefTime(); } }
 }
 function updateRefTime(){
