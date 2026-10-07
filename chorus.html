@@ -41,6 +41,14 @@
   .track-date { font-size: 0.78rem; color: #a78bda; font-weight: 800; flex-shrink: 0; }
   .track-note { font-size: 0.88rem; color: #475569; font-weight: 600; line-height: 1.5; white-space: pre-wrap; margin: 4px 0 10px; }
   .track audio { width: 100%; height: 42px; margin-top: 6px; }
+  .skip-row { display: flex; gap: 8px; margin-top: 8px; }
+  .skip-btn {
+    padding: 7px 14px; border-radius: 11px; border: 1.5px solid #ddd6fe;
+    background: #f5f3ff; color: #6d28d9; font-weight: 900; font-family: inherit;
+    font-size: 0.86rem; cursor: pointer; line-height: 1; white-space: nowrap;
+  }
+  .skip-btn:hover { background: #ede9fe; }
+  .skip-btn:active { transform: translateY(1px); }
   .track-foot { display: flex; align-items: center; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
   .track-dl { font-size: 0.8rem; color: #7c3aed; font-weight: 800; text-decoration: none; }
   .track-dl:hover { text-decoration: underline; }
@@ -92,7 +100,8 @@
   .ref-badge { display: inline-block; font-size: 0.72rem; font-weight: 900; color: #6d28d9; background: #ede9fe; border: 1px solid #c4b5fd; border-radius: 30px; padding: 2px 11px; margin-bottom: 8px; }
   .ref-title { font-size: 1.1rem; font-weight: 900; color: #5b21b6; margin-bottom: 4px; }
   .ref-note { font-size: 0.88rem; color: #475569; font-weight: 600; line-height: 1.5; white-space: pre-wrap; margin-bottom: 12px; }
-  .ref-controls { display: flex; align-items: center; gap: 12px; }
+  .ref-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .ref-seek { min-width: 140px; }
   .ref-play { width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer; background: linear-gradient(135deg,#8b5cf6,#6d28d9); color: #fff; font-size: 1.25rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(109,40,217,0.35); }
   .ref-seek { flex: 1; accent-color: #7c3aed; cursor: pointer; height: 5px; }
   .ref-time { font-size: 0.8rem; color: #7c3aed; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 86px; text-align: right; }
@@ -246,7 +255,11 @@ function render(){
         <span class="track-date">${fmtDate(t.date)}</span>
       </div>
       ${note}
-      <audio controls preload="none" src="${escHtml(t.file)}"></audio>
+      <audio id="au-${escHtml(t.id)}" controls preload="none" src="${escHtml(t.file)}"></audio>
+      <div class="skip-row">
+        <button class="skip-btn" onclick="skipAudio('au-${escHtml(t.id)}',-5)">⏪ 5秒</button>
+        <button class="skip-btn" onclick="skipAudio('au-${escHtml(t.id)}',5)">5秒 ⏩</button>
+      </div>
       <div class="track-foot">
         <a class="track-dl" href="${escHtml(t.file)}" download>⬇ ダウンロード</a>
         <span class="track-size">${fmtSize(t.size)}</span>
@@ -254,6 +267,15 @@ function render(){
       </div>
     </div>`;
   }).join('');
+}
+
+/* ===== 練習音源の5秒スキップ ===== */
+function skipAudio(id, delta){
+  const a=document.getElementById(id);
+  if(!a) return;
+  let t=(a.currentTime||0)+delta;
+  t=Math.max(0, isFinite(a.duration) ? Math.min(a.duration, t) : t);
+  try{ a.currentTime=t; }catch(e){}
 }
 
 /* ===== 参考音源（YouTube・音声のみ） ===== */
@@ -307,7 +329,9 @@ function renderReference(){
       <div class="ref-title">${escHtml(ref.title||'参考合唱')}</div>
       ${note}
       <div class="ref-controls">
+        <button class="skip-btn" onclick="skipRef(-5)" title="5秒戻す">⏪ 5秒</button>
         <button class="ref-play" id="ref-play" onclick="toggleRefPlay()" title="再生 / 一時停止">▶</button>
+        <button class="skip-btn" onclick="skipRef(5)" title="5秒進める">5秒 ⏩</button>
         <input type="range" class="ref-seek" id="ref-seek" min="0" max="1000" value="0" step="1"
                oninput="seekRef(this.value)">
         <span class="ref-time" id="ref-time">0:00 / 0:00</span>
@@ -351,6 +375,14 @@ function seekRef(v){
   if(!ytPlayer || !ytPlayer.getDuration) return;
   const dur=ytPlayer.getDuration()||0;
   if(dur>0){ ytPlayer.seekTo(dur*(v/1000), true); updateRefTime(); }
+}
+function skipRef(delta){
+  if(!ytPlayer || !ytPlayer.getCurrentTime) return;
+  const dur=ytPlayer.getDuration()||0;
+  let t=(ytPlayer.getCurrentTime()||0)+delta;
+  t=Math.max(0, dur>0 ? Math.min(dur, t) : t);
+  ytPlayer.seekTo(t, true);
+  updateRefTime();
 }
 async function setReference(){
   const title=document.getElementById('r-title').value.trim();
