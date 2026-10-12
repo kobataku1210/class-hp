@@ -138,6 +138,24 @@
   .mk-add-row input { flex: 1; min-width: 130px; padding: 8px 11px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-family: inherit; font-size: 0.86rem; color: #1e293b; }
   .mk-add-btn { padding: 8px 15px; border-radius: 11px; border: none; background: linear-gradient(135deg,#f59e0b,#d97706); color: #fff; font-weight: 900; font-family: inherit; font-size: 0.83rem; cursor: pointer; white-space: nowrap; }
   .mk-add-btn:active { transform: translateY(1px); }
+
+  /* 気づきメモ（クラス共有） */
+  .notes { margin-top: 14px; padding-top: 13px; border-top: 1.5px dashed #e9d5ff; }
+  .notes-title { font-size: 0.87rem; font-weight: 900; color: #7c3aed; margin-bottom: 8px; }
+  .notes-input { display: flex; gap: 8px; align-items: stretch; }
+  .notes-input textarea { flex: 1; min-width: 0; padding: 9px 11px; border: 1.5px solid #e2e8f0; border-radius: 11px; font-family: inherit; font-size: 0.88rem; line-height: 1.5; resize: vertical; color: #1e293b; }
+  .notes-post { flex-shrink: 0; padding: 0 18px; border-radius: 11px; border: none; background: linear-gradient(135deg,#8b5cf6,#6d28d9); color: #fff; font-weight: 900; font-family: inherit; font-size: 0.9rem; cursor: pointer; }
+  .notes-post:active { transform: translateY(1px); }
+  .notes-status { font-size: 0.8rem; font-weight: 800; color: #16a34a; min-height: 1rem; margin: 6px 2px 0; }
+  .notes-status.err { color: #dc2626; }
+  .notes-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .note-item { background: #faf5ff; border-left: 4px solid #a78bda; border-radius: 10px; padding: 9px 12px; }
+  .note-text { font-size: 0.9rem; color: #1e293b; font-weight: 600; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+  .note-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+  .note-time { font-size: 0.72rem; color: #a78bda; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .note-del { margin-left: auto; padding: 3px 11px; border-radius: 8px; border: none; background: #fee2e2; color: #dc2626; font-weight: 900; font-family: inherit; font-size: 0.72rem; cursor: pointer; }
+  .notes-empty { font-size: 0.82rem; color: #94a3b8; padding: 6px 2px; }
+  .notes-setup { font-size: 0.8rem; color: #b45309; background: #fffbeb; border: 1.5px dashed #fcd34d; border-radius: 10px; padding: 9px 11px; font-weight: 700; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -242,6 +260,12 @@ const MARKER_LABELS = ['イントロ','Aメロ','Bメロ','サビ','2番Aメロ'
 let _mkSel = {};        // playerKey -> 選択中のプリセットラベル（先生用）
 let _pushTimer = null;  // git push のまとめ送信用
 
+// ===== 気づきメモ（クラウド保存：Google Apps Script・JSONP）=====
+// ↓ Apps Scriptの「ウェブアプリURL（…/exec）」をここに貼ると、家でも学校でも投稿できます。
+const NOTES_API = '';
+let _notes = {};        // { playerKey: [{t, ts}, ...] }（新しい順）
+let _notesTimer = null; // 自動更新
+
 function escHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function todayStr(){ const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
 function fmtSize(n){ if(!n) return ''; const mb=n/1048576; return mb>=1 ? mb.toFixed(1)+'MB' : Math.max(1,Math.round(n/1024))+'KB'; }
@@ -285,6 +309,7 @@ function render(){
   const tracks=getTracks().slice().sort((a,b)=> (a.date||'')<(b.date||'')?1:(a.date||'')>(b.date||'')?-1:0);
   if(tracks.length===0){
     el.innerHTML='<div class="empty">🎵 まだ音源がありません。<br>先生が練習の音源をアップすると、ここに出ます。</div>';
+    fillAllNotes();
     return;
   }
   el.innerHTML=tracks.map(t=>{
@@ -307,8 +332,10 @@ function render(){
         <span class="track-size">${fmtSize(t.size)}</span>
         ${delBtn}
       </div>
+      ${notesSectionHtml(t.id)}
     </div>`;
   }).join('');
+  fillAllNotes();
 }
 
 /* ===== 練習音源の5秒スキップ ===== */
@@ -402,6 +429,89 @@ async function delMarker(key, idx){
   const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=markersHtml(key);
 }
 
+/* ===== 気づきメモ（クラス共有・クラウド保存） ===== */
+// JSONPでApps Scriptと通信（CORSの制限を受けない）
+function jsonp(url){
+  return new Promise((resolve,reject)=>{
+    const cb='_ncb'+Math.random().toString(36).slice(2);
+    const s=document.createElement('script');
+    let done=false;
+    window[cb]=(data)=>{ done=true; resolve(data); try{delete window[cb];}catch(e){} s.remove(); };
+    s.onerror=()=>{ if(!done){ reject(new Error('通信に失敗しました')); try{delete window[cb];}catch(e){} s.remove(); } };
+    s.src=url+(url.indexOf('?')>=0?'&':'?')+'callback='+cb+'&_='+Date.now();
+    document.body.appendChild(s);
+    setTimeout(()=>{ if(!done){ reject(new Error('応答がありません')); try{delete window[cb];}catch(e){} s.remove(); } }, 12000);
+  });
+}
+function fmtNoteTime(ts){
+  const d=new Date(ts); if(isNaN(d)) return '';
+  const p=n=>String(n).padStart(2,'0');
+  return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+// 各プレーヤー下の「気づきメモ」セクションHTML（入力欄＋一覧の枠）
+function notesSectionHtml(key){
+  if(!NOTES_API){
+    return adminOpen
+      ? `<div class="notes"><div class="notes-title">💡 気づきメモ</div><div class="notes-setup">クラウド未設定です。<br>「合唱気づき_GASコード.gs」をデプロイし、発行された /exec のURLを chorus.html の <b>NOTES_API</b> に貼ると、生徒が家でも学校でも投稿できるようになります。</div></div>`
+      : '';
+  }
+  return `<div class="notes">
+    <div class="notes-title">💡 気づきメモ（クラスで共有・名前は出ません）</div>
+    <div class="notes-input">
+      <textarea id="ni-${escHtml(key)}" rows="2" maxlength="200" placeholder="例）サビのここを強く！／○○の言葉を大切に など"></textarea>
+      <button class="notes-post" onclick="postNote('${escHtml(key)}')">投稿</button>
+    </div>
+    <div class="notes-status" id="ns-${escHtml(key)}"></div>
+    <div class="notes-list" id="nl-${escHtml(key)}"></div>
+  </div>`;
+}
+function fillNotes(key){
+  const el=document.getElementById('nl-'+key); if(!el) return;
+  const arr=_notes[key]||[];
+  if(!arr.length){ el.innerHTML='<div class="notes-empty">まだ気づきがありません。最初の1件を書いてみよう！</div>'; return; }
+  el.innerHTML=arr.map(n=>`<div class="note-item">
+      <div class="note-text">${escHtml(n.t)}</div>
+      <div class="note-meta"><span class="note-time">${fmtNoteTime(n.ts)}</span>`
+      +(adminOpen?`<button class="note-del" onclick="delNote('${escHtml(key)}',${n.ts})">削除</button>`:'')
+      +`</div>
+    </div>`).join('');
+}
+function fillAllNotes(){
+  getTracks().forEach(t=>fillNotes(t.id));
+  fillNotes('ref');
+}
+async function loadNotes(){
+  if(!NOTES_API) return;
+  try{ const r=await jsonp(NOTES_API+'?action=list'); if(r&&r.ok&&r.notes) _notes=r.notes; }catch(e){}
+  fillAllNotes();
+}
+async function postNote(key){
+  const ta=document.getElementById('ni-'+key);
+  const st=document.getElementById('ns-'+key);
+  if(!ta||!st) return;
+  const text=(ta.value||'').trim();
+  if(!text){ st.className='notes-status err'; st.textContent='⚠️ メモを入力してください'; return; }
+  if(!NOTES_API){ st.className='notes-status err'; st.textContent='クラウド未設定です'; return; }
+  st.className='notes-status'; st.textContent='投稿中...';
+  try{
+    const r=await jsonp(NOTES_API+'?action=add&track='+encodeURIComponent(key)+'&text='+encodeURIComponent(text));
+    if(!r||!r.ok) throw new Error((r&&r.error)||'投稿に失敗しました');
+    if(r.notes) _notes=r.notes;
+    ta.value=''; st.className='notes-status'; st.textContent='✅ 投稿ありがとう！';
+    fillNotes(key);
+    setTimeout(()=>{ st.textContent=''; },2800);
+  }catch(e){ st.className='notes-status err'; st.textContent='❌ '+(e.message||'失敗しました'); }
+}
+async function delNote(key, ts){
+  if(!NOTES_API) return;
+  if(!confirm('この気づきを削除しますか？')) return;
+  const pin=_adminPin||_data.adminPIN||'1210';
+  try{
+    const r=await jsonp(NOTES_API+'?action=del&track='+encodeURIComponent(key)+'&ts='+ts+'&pin='+encodeURIComponent(pin));
+    if(r&&r.ok){ if(r.notes) _notes=r.notes; fillNotes(key); }
+  }catch(e){}
+}
+
 /* ===== 参考音源（YouTube・音声のみ） ===== */
 function getReference(){ return ensureChorus().reference || null; }
 function extractYouTubeId(url){
@@ -443,8 +553,13 @@ function renderReference(){
     view.innerHTML='<div class="empty" style="padding:18px 10px">🎼 お手本の合唱はまだ設定されていません。'+(adminOpen?'<br>下の「参考音源」から設定できます。':'')+'</div>';
     return;
   }
-  // 同じ音源を表示中なら作り直さない（再生を止めない）。マーカー欄だけ更新。
-  if(id===ytDisplayedId && ytPlayer){ const w=document.getElementById('mk-wrap-ref'); if(w) w.innerHTML=markersHtml('ref'); return; }
+  // 同じ音源を表示中なら作り直さない（再生を止めない）。マーカー欄・メモ欄だけ更新。
+  if(id===ytDisplayedId && ytPlayer){
+    const w=document.getElementById('mk-wrap-ref'); if(w) w.innerHTML=markersHtml('ref');
+    const nw=document.getElementById('notes-wrap-ref'); if(nw) nw.innerHTML=notesSectionHtml('ref');
+    fillNotes('ref');
+    return;
+  }
   ytDisplayedId=id;
   const note=ref.note?`<div class="ref-note">${escHtml(ref.note)}</div>`:'';
   view.innerHTML=`
@@ -465,6 +580,7 @@ function renderReference(){
         <span class="hint" style="font-size:.74rem">※映像は表示せず、音声だけ流れます</span>
       </div>
       <div id="mk-wrap-ref">${markersHtml('ref')}</div>
+      <div id="notes-wrap-ref">${notesSectionHtml('ref')}</div>
       <div id="yt-holder"><div id="yt-player"></div></div>
     </div>`;
   mountYtPlayer(id);
@@ -629,6 +745,9 @@ function submitPin(){
 document.addEventListener('DOMContentLoaded', async ()=>{
   _data=await loadData();
   render();
+  loadNotes();                                   // 気づきメモを読み込み
+  if(_notesTimer) clearInterval(_notesTimer);
+  _notesTimer=setInterval(loadNotes, 20000);     // 20秒ごとに自動更新（他の人の投稿も反映）
 });
 </script>
 </body>
