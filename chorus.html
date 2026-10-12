@@ -291,7 +291,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-12-2';
+const APP_VERSION = '2026-10-12-3';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -424,6 +424,7 @@ function pauseOthers(key){
   }
 }
 function onAnyPlay(el){
+  if(typeof _cmp!=='undefined' && _cmp.active) return;  // 聴き比べ中は専用スケジューラが管理（お手本を止めない）
   document.querySelectorAll('audio').forEach(a=>{ if(a!==el) a.pause(); });
   if(ytPlayer && ytPlayer.getPlayerState){ try{ if(ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }catch(e){} }
 }
@@ -541,10 +542,11 @@ function renderCompare(){
 function onCmpTrack(id){ stopCompare(true); _cmpTrackId=id; renderCompare(); }
 function startCompare(label){
   if(!ytPlayer||!ytPlayer.seekTo){ alert('お手本の読み込み中です。少し待ってからもう一度押してください。'); return; }
-  // 練習音源の再生をユーザー操作中に解錠（後の自動再生ブロック対策）
+  // 先に active を立てる（この後の解錠 play() で onAnyPlay が走ってもお手本を止めないように）
+  _cmp={active:true, trackId:_cmpTrackId, label:label, phase:'ref', end:0, lockUntil:0};
+  // 練習音源の自動再生を解錠（ユーザー操作中に一瞬 play）
   const a=document.getElementById('au-'+_cmpTrackId);
   if(a){ a.play().then(()=>a.pause()).catch(()=>{}); }
-  _cmp={active:true, trackId:_cmpTrackId, label:label, phase:'ref', end:0, lockUntil:0};
   renderCompare();
   playPhase();
   if(_cmpTimer) clearInterval(_cmpTimer);
