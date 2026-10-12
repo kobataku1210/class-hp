@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Hiragino Kaku Gothic ProN','Meiryo',sans-serif;
+    background:linear-gradient(180deg,#ede9fe 0%,#f5f3ff 45%,#eef2ff 100%);
+    min-height:100vh;color:#1e293b;padding:20px 14px 60px;}
+  .wrap{max-width:720px;margin:0 auto;}
+  .head{text-align:center;margin-bottom:18px;}
+  .title{font-size:1.5rem;font-weight:900;color:#6d28d9;letter-spacing:.03em;}
+  .sub{font-size:.85rem;color:#64748b;margin-top:6px;line-height:1.5;}
+  .card{background:#fff;border-radius:20px;padding:18px 16px;border:2px solid #ddd6fe;
+    box-shadow:0 10px 32px rgba(76,29,149,.09);margin-bottom:16px;}
+  .input{display:flex;gap:9px;align-items:stretch;}
+  .input textarea{flex:1;min-width:0;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:12px;
+    font-family:inherit;font-size:.95rem;line-height:1.5;resize:vertical;color:#1e293b;}
+  .input button{flex-shrink:0;padding:0 20px;border:none;border-radius:12px;cursor:pointer;
+    background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;font-weight:900;font-family:inherit;font-size:.95rem;}
+  .input button:disabled{opacity:.5;cursor:default;}
+  .status{font-size:.82rem;font-weight:800;min-height:1rem;margin:8px 2px 0;color:#16a34a;}
+  .status.err{color:#dc2626;}
+  .list{display:flex;flex-direction:column;gap:9px;}
+  .item{background:#fff;border-left:5px solid #a78bda;border-radius:12px;padding:12px 14px;
+    box-shadow:0 4px 14px rgba(76,29,149,.06);}
+  .text{font-size:.95rem;color:#1e293b;font-weight:600;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
+  .meta{display:flex;align-items:center;gap:10px;margin-top:7px;}
+  .time{font-size:.74rem;color:#a78bda;font-weight:800;font-variant-numeric:tabular-nums;}
+  .del{margin-left:auto;padding:4px 12px;border:none;border-radius:8px;cursor:pointer;
+    background:#fee2e2;color:#dc2626;font-weight:900;font-family:inherit;font-size:.74rem;}
+  .empty{text-align:center;color:#94a3b8;font-size:.9rem;padding:22px 10px;}
+  .foot{text-align:center;margin-top:18px;}
+  .tlink{background:none;border:none;color:#a78bda;font-weight:800;font-family:inherit;font-size:.82rem;cursor:pointer;text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="title">💡 合唱 気づきメモ</div>
+    <div class="sub">聴いて気づいたこと・曲のポイントを、クラスみんなで共有しよう（だれが書いたかは出ません）</div>
+  </div>
+
+  <div class="card">
+    <div class="input">
+      <textarea id="ta" rows="3" maxlength="200" placeholder="例）サビの「あふれ」をもっと強く！／ブレスの位置をそろえる など"></textarea>
+      <button id="post" onclick="postNote()">投稿</button>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="list" id="list"><div class="empty">読み込み中...</div></div>
+
+  <div class="foot">
+    <button class="tlink" id="teacherBtn" onclick="toggleTeacher()">🔒 先生用</button>
+  </div>
+</div>
+
+<script>
+  var NOTES = [], isTeacher = false, pin = '';
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function fmt(ts){var d=new Date(ts);if(isNaN(d))return '';function p(n){return String(n).padStart(2,'0');}return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes());}
+  function render(){
+    var el=document.getElementById('list');
+    if(!NOTES.length){el.innerHTML='<div class="empty">まだ気づきがありません。<br>最初の1件を書いてみよう！</div>';return;}
+    el.innerHTML=NOTES.map(function(n){
+      return '<div class="item"><div class="text">'+esc(n.t)+'</div>'
+        +'<div class="meta"><span class="time">'+fmt(n.ts)+'</span>'
+        +(isTeacher?'<button class="del" onclick="del('+n.ts+')">削除</button>':'')
+        +'</div></div>';
+    }).join('');
+  }
+  function load(){
+    google.script.run
+      .withSuccessHandler(function(d){NOTES=d||[];render();})
+      .withFailureHandler(function(e){document.getElementById('list').innerHTML='<div class="empty">読み込みに失敗しました。更新してください。</div>';})
+      .apiList();
+  }
+  function postNote(){
+    var ta=document.getElementById('ta'),st=document.getElementById('status'),btn=document.getElementById('post');
+    var text=(ta.value||'').trim();
+    if(!text){st.className='status err';st.textContent='⚠️ メモを入力してください';return;}
+    btn.disabled=true;st.className='status';st.textContent='投稿中...';
+    google.script.run
+      .withSuccessHandler(function(d){NOTES=d||[];ta.value='';st.className='status';st.textContent='✅ 投稿ありがとう！';btn.disabled=false;render();setTimeout(function(){st.textContent='';},2800);})
+      .withFailureHandler(function(e){st.className='status err';st.textContent='❌ '+((e&&e.message)||'失敗しました');btn.disabled=false;})
+      .apiAdd(text);
+  }
+  function toggleTeacher(){
+    if(isTeacher){isTeacher=false;pin='';document.getElementById('teacherBtn').textContent='🔒 先生用';render();return;}
+    var p=prompt('先生用の暗証番号を入力してください');
+    if(p==null)return;
+    pin=p;isTeacher=true;document.getElementById('teacherBtn').textContent='🔓 先生用（管理中・削除できます）';render();
+  }
+  function del(ts){
+    if(!confirm('この気づきを削除しますか？'))return;
+    google.script.run
+      .withSuccessHandler(function(d){NOTES=d||[];render();})
+      .withFailureHandler(function(e){alert((e&&e.message)||'削除できません（暗証番号を確認）');})
+      .apiDel(ts,pin);
+  }
+  load();
+  setInterval(load,15000);   // 15秒ごとに自動更新（他の人の投稿も反映）
+</script>
+</body>
+</html>
