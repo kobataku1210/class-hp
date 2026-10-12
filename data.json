@@ -5,7 +5,12 @@
       "youtubeId": "z-ghPdIAQ-0",
       "title": "お手本の合唱「証」",
       "note": "",
-      "markers": []
+      "markers": [
+        {
+          "label": "イントロ",
+          "t": 0
+        }
+      ]
     },
     "tracks": [
       {
