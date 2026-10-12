@@ -13,6 +13,12 @@
   .sub{font-size:.85rem;color:#64748b;margin-top:6px;line-height:1.5;}
   .card{background:#fff;border-radius:20px;padding:18px 16px;border:2px solid #ddd6fe;
     box-shadow:0 10px 32px rgba(76,29,149,.09);margin-bottom:16px;}
+  .who-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+  .name-in{flex:1;min-width:150px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:11px;
+    font-family:inherit;font-size:.9rem;color:#1e293b;}
+  .name-in:disabled{background:#f1f5f9;color:#94a3b8;}
+  .anon-lbl{display:inline-flex;align-items:center;gap:6px;font-size:.88rem;font-weight:800;color:#6d28d9;cursor:pointer;white-space:nowrap;}
+  .anon-lbl input{width:17px;height:17px;accent-color:#7c3aed;cursor:pointer;}
   .input{display:flex;gap:9px;align-items:stretch;}
   .input textarea{flex:1;min-width:0;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:12px;
     font-family:inherit;font-size:.95rem;line-height:1.5;resize:vertical;color:#1e293b;}
@@ -25,7 +31,9 @@
   .item{background:#fff;border-left:5px solid #a78bda;border-radius:12px;padding:12px 14px;
     box-shadow:0 4px 14px rgba(76,29,149,.06);}
   .text{font-size:.95rem;color:#1e293b;font-weight:600;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
-  .meta{display:flex;align-items:center;gap:10px;margin-top:7px;}
+  .meta{display:flex;align-items:center;gap:9px;margin-bottom:5px;}
+  .who{font-size:.8rem;font-weight:900;color:#6d28d9;background:#ede9fe;border-radius:20px;padding:2px 10px;}
+  .who.anon{color:#64748b;background:#f1f5f9;}
   .time{font-size:.74rem;color:#a78bda;font-weight:800;font-variant-numeric:tabular-nums;}
   .del{margin-left:auto;padding:4px 12px;border:none;border-radius:8px;cursor:pointer;
     background:#fee2e2;color:#dc2626;font-weight:900;font-family:inherit;font-size:.74rem;}
@@ -38,10 +46,14 @@
 <div class="wrap">
   <div class="head">
     <div class="title">💡 合唱 気づきメモ</div>
-    <div class="sub">聴いて気づいたこと・曲のポイントを、クラスみんなで共有しよう（だれが書いたかは出ません）</div>
+    <div class="sub">聴いて気づいたこと・曲のポイントを、クラスみんなで共有しよう（名前を入れる／匿名、どちらでもOK）</div>
   </div>
 
   <div class="card">
+    <div class="who-row">
+      <input id="name" class="name-in" maxlength="20" placeholder="名前（ニックネーム可）">
+      <label class="anon-lbl"><input type="checkbox" id="anon" onchange="onAnon()"> 匿名で出す</label>
+    </div>
     <div class="input">
       <textarea id="ta" rows="3" maxlength="200" placeholder="例）サビの「あふれ」をもっと強く！／ブレスの位置をそろえる など"></textarea>
       <button id="post" onclick="postNote()">投稿</button>
@@ -64,11 +76,27 @@
     var el=document.getElementById('list');
     if(!NOTES.length){el.innerHTML='<div class="empty">まだ気づきがありません。<br>最初の1件を書いてみよう！</div>';return;}
     el.innerHTML=NOTES.map(function(n){
-      return '<div class="item"><div class="text">'+esc(n.t)+'</div>'
-        +'<div class="meta"><span class="time">'+fmt(n.ts)+'</span>'
+      var who=n.n ? '<span class="who">'+esc(n.n)+'</span>' : '<span class="who anon">匿名</span>';
+      return '<div class="item">'
+        +'<div class="meta">'+who+'<span class="time">'+fmt(n.ts)+'</span>'
         +(isTeacher?'<button class="del" onclick="del('+n.ts+')">削除</button>':'')
-        +'</div></div>';
+        +'</div>'
+        +'<div class="text">'+esc(n.t)+'</div></div>';
     }).join('');
+  }
+  // 名前欄・匿名チェックの記憶と切り替え
+  function onAnon(){
+    var anon=document.getElementById('anon').checked;
+    document.getElementById('name').disabled=anon;
+    try{ localStorage.setItem('chorusAnon', anon?'1':'0'); }catch(e){}
+  }
+  function restorePrefs(){
+    try{
+      var nm=localStorage.getItem('chorusName'); if(nm) document.getElementById('name').value=nm;
+      var anon=localStorage.getItem('chorusAnon')==='1';
+      document.getElementById('anon').checked=anon;
+      document.getElementById('name').disabled=anon;
+    }catch(e){}
   }
   function load(){
     google.script.run
@@ -80,11 +108,15 @@
     var ta=document.getElementById('ta'),st=document.getElementById('status'),btn=document.getElementById('post');
     var text=(ta.value||'').trim();
     if(!text){st.className='status err';st.textContent='⚠️ メモを入力してください';return;}
+    var anon=document.getElementById('anon').checked;
+    var name=anon?'':document.getElementById('name').value.trim();
+    if(!anon && !name){st.className='status err';st.textContent='⚠️ 名前を入れるか「匿名で出す」にチェックしてください';return;}
+    try{ localStorage.setItem('chorusName', document.getElementById('name').value.trim()); localStorage.setItem('chorusAnon', anon?'1':'0'); }catch(e){}
     btn.disabled=true;st.className='status';st.textContent='投稿中...';
     google.script.run
       .withSuccessHandler(function(d){NOTES=d||[];ta.value='';st.className='status';st.textContent='✅ 投稿ありがとう！';btn.disabled=false;render();setTimeout(function(){st.textContent='';},2800);})
       .withFailureHandler(function(e){st.className='status err';st.textContent='❌ '+((e&&e.message)||'失敗しました');btn.disabled=false;})
-      .apiAdd(text);
+      .apiAdd(name, text);
   }
   function toggleTeacher(){
     if(isTeacher){isTeacher=false;pin='';document.getElementById('teacherBtn').textContent='🔒 先生用';render();return;}
@@ -99,6 +131,7 @@
       .withFailureHandler(function(e){alert((e&&e.message)||'削除できません（暗証番号を確認）');})
       .apiDel(ts,pin);
   }
+  restorePrefs();
   load();
   setInterval(load,15000);   // 15秒ごとに自動更新（他の人の投稿も反映）
 </script>

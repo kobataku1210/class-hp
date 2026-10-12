@@ -32,7 +32,13 @@ function doGet() {
 function getSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) { sh = ss.insertSheet(SHEET_NAME); sh.appendRow(['text', 'ts']); }
+  if (!sh) { sh = ss.insertSheet(SHEET_NAME); sh.appendRow(['name', 'text', 'ts']); return sh; }
+  // 古い列構成（名前なし）だったら、新しい構成に作り直す
+  var h = sh.getRange(1, 1, 1, 3).getValues()[0];
+  if (String(h[0]) !== 'name' || String(h[1]) !== 'text' || String(h[2]) !== 'ts') {
+    sh.clear();
+    sh.appendRow(['name', 'text', 'ts']);
+  }
   return sh;
 }
 
@@ -40,19 +46,21 @@ function apiList() {
   var sh = getSheet_();
   var last = sh.getLastRow();
   if (last < 2) return [];
-  var rows = sh.getRange(2, 1, last - 1, 2).getValues();
+  var rows = sh.getRange(2, 1, last - 1, 3).getValues();
   var out = [];
   for (var i = 0; i < rows.length; i++) {
-    var t = String(rows[i][0] || '');
-    var ts = Number(rows[i][1]) || 0;
-    if (t) out.push({ t: t, ts: ts });
+    var name = String(rows[i][0] || '');
+    var t = String(rows[i][1] || '');
+    var ts = Number(rows[i][2]) || 0;
+    if (t) out.push({ n: name, t: t, ts: ts });            // n:名前（空＝匿名）
   }
   out.sort(function (a, b) { return b.ts - a.ts; });        // 新しい順
   if (out.length > MAX_NOTES) out = out.slice(0, MAX_NOTES);
   return out;
 }
 
-function apiAdd(text) {
+function apiAdd(name, text) {
+  name = String(name || '').replace(/[\r\n\t]+/g, ' ').trim().slice(0, 20);  // 空＝匿名
   text = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
   if (!text) throw new Error('メモが空です');
   var lock = LockService.getScriptLock();
@@ -60,9 +68,9 @@ function apiAdd(text) {
   try {
     var sh = getSheet_();
     var last = sh.getLastRow();
-    var lastTs = (last >= 2) ? (Number(sh.getRange(last, 2).getValue()) || 0) : 0;
+    var lastTs = (last >= 2) ? (Number(sh.getRange(last, 3).getValue()) || 0) : 0;
     var ts = Math.max(Date.now(), lastTs + 1);              // 一意・増加するts
-    sh.appendRow([text, ts]);
+    sh.appendRow([name, text, ts]);
   } finally { lock.releaseLock(); }
   return apiList();
 }
@@ -76,9 +84,9 @@ function apiDel(ts, pin) {
     var sh = getSheet_();
     var last = sh.getLastRow();
     if (last >= 2) {
-      var rows = sh.getRange(2, 1, last - 1, 2).getValues();
+      var rows = sh.getRange(2, 1, last - 1, 3).getValues();
       for (var i = rows.length - 1; i >= 0; i--) {
-        if (Number(rows[i][1]) === ts) sh.deleteRow(i + 2);
+        if (Number(rows[i][2]) === ts) sh.deleteRow(i + 2);
       }
     }
   } finally { lock.releaseLock(); }
