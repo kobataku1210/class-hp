@@ -148,6 +148,26 @@
   .notes-link:active { transform: translateY(1px); }
   .notes-link-sub { font-size: 0.76rem; font-weight: 700; color: #9333ea; }
   .notes-setup { font-size: 0.8rem; color: #b45309; background: #fffbeb; border: 1.5px dashed #fcd34d; border-radius: 10px; padding: 9px 11px; font-weight: 700; line-height: 1.5; }
+
+  /* 聴き比べ（お手本↔練習のくり返し） */
+  .cmp-desc { font-size: 0.84rem; color: #475569; font-weight: 600; line-height: 1.55; margin-bottom: 12px; }
+  .cmp-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 11px; }
+  .cmp-label { font-size: 0.8rem; font-weight: 800; color: #64748b; }
+  .cmp-select { padding: 8px 11px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-family: inherit; font-size: 0.88rem; color: #1e293b; background: #fff; max-width: 220px; }
+  .cmp-len { display: flex; gap: 6px; }
+  .cmp-len button { padding: 6px 12px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; font-weight: 800; font-size: 0.78rem; font-family: inherit; cursor: pointer; }
+  .cmp-len button.sel { background: #ede9fe; border-color: #c4b5fd; color: #6d28d9; }
+  .cmp-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .cmp-chip { padding: 9px 15px; border-radius: 30px; border: 1.5px solid #c4b5fd; background: #fff; color: #6d28d9; font-weight: 900; font-size: 0.88rem; font-family: inherit; cursor: pointer; }
+  .cmp-chip:hover { background: #f5f3ff; }
+  .cmp-chip:active { transform: translateY(1px); }
+  .cmp-chip.active { background: linear-gradient(135deg,#8b5cf6,#6d28d9); color: #fff; border-color: #6d28d9; }
+  .cmp-now { display: flex; align-items: center; gap: 11px; margin-top: 13px; min-height: 30px; flex-wrap: wrap; }
+  .cmp-badge { font-size: 0.92rem; font-weight: 900; padding: 7px 14px; border-radius: 11px; }
+  .cmp-badge.ref { background: #ede9fe; color: #6d28d9; }
+  .cmp-badge.trk { background: #dcfce7; color: #15803d; }
+  .cmp-stop { padding: 8px 17px; border: none; border-radius: 10px; background: #fee2e2; color: #dc2626; font-weight: 900; font-family: inherit; font-size: 0.85rem; cursor: pointer; }
+  .cmp-hint { font-size: 0.8rem; color: #94a3b8; }
 </style>
 </head>
 <body>
@@ -160,16 +180,22 @@
     <div class="page-sub">練習の音源をいつでも聴けます。何度も聴いて合わせよう！</div>
   </div>
 
+  <!-- 気づきメモ（クラス共有） -->
+  <div class="card" id="notes-card">
+    <div class="card-title">💡 気づき・曲のポイント</div>
+    <div id="notes-entry"></div>
+  </div>
+
   <!-- 参考音源（お手本） -->
   <div class="card">
     <div class="card-title">📺 参考音源（お手本）</div>
     <div id="ref-view"></div>
   </div>
 
-  <!-- 気づきメモ（クラス共有） -->
-  <div class="card" id="notes-card">
-    <div class="card-title">💡 気づき・曲のポイント</div>
-    <div id="notes-entry"></div>
+  <!-- 聴き比べ（お手本↔練習のくり返し） -->
+  <div class="card" id="compare-card" style="display:none">
+    <div class="card-title">🔁 お手本と聴き比べ</div>
+    <div id="compare-body"></div>
   </div>
 
   <!-- 練習音源リスト -->
@@ -302,6 +328,7 @@ function schedulePush(){
 function render(){
   renderReference();
   renderNotes();
+  renderCompare();
   const el=document.getElementById('track-list');
   const tracks=getTracks().slice().sort((a,b)=> (a.date||'')<(b.date||'')?1:(a.date||'')>(b.date||'')?-1:0);
   if(tracks.length===0){
@@ -414,6 +441,7 @@ async function addMarker(key){
   const arr=getMarkers(key).slice(); arr.push({label, t}); setMarkers(key, arr);
   await saveLocal(); schedulePush();
   const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=markersHtml(key);
+  renderCompare();
 }
 async function delMarker(key, idx){
   const arr=getMarkers(key).slice().sort((a,b)=>a.t-b.t);
@@ -421,6 +449,123 @@ async function delMarker(key, idx){
   arr.splice(idx,1); setMarkers(key, arr);
   await saveLocal(); schedulePush();
   const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=markersHtml(key);
+  renderCompare();
+}
+
+/* ===== 聴き比べ（お手本↔練習を同じ箇所でくり返し再生） ===== */
+let _cmpTrackId='', _cmpLen=10;
+let _cmp={active:false, trackId:'', label:'', phase:'ref', end:0, lockUntil:0};
+let _cmpTimer=null;
+
+function comparableTracks(){
+  const refLabels=new Set(getMarkers('ref').map(m=>m.label));
+  if(!refLabels.size) return [];
+  return getTracks().filter(t=> (t.markers||[]).some(m=>refLabels.has(m.label)));
+}
+function commonLabels(trackId){
+  const trSet=new Set(getMarkers(trackId).map(m=>m.label));
+  return getMarkers('ref').slice().sort((a,b)=>a.t-b.t).filter(m=>trSet.has(m.label)).map(m=>m.label);
+}
+function sectionBounds(key, label){
+  const ms=getMarkers(key).slice().sort((a,b)=>a.t-b.t);
+  const idx=ms.findIndex(m=>m.label===label);
+  if(idx<0) return null;
+  const start=ms[idx].t;
+  const nextT=(idx+1<ms.length)?ms[idx+1].t:null;
+  let end;
+  if(_cmpLen==='full'){ end = nextT!=null?nextT:start+30; }
+  else { end=start+_cmpLen; if(nextT!=null) end=Math.min(end,nextT); }
+  let dur=0;
+  if(key==='ref'){ dur=(ytPlayer&&ytPlayer.getDuration&&ytPlayer.getDuration())||0; }
+  else { const a=document.getElementById('au-'+key); dur=(a&&isFinite(a.duration))?a.duration:0; }
+  if(dur>0) end=Math.min(end, dur-0.3);
+  if(end<=start) end=start+8;
+  return {start, end};
+}
+function renderCompare(){
+  const card=document.getElementById('compare-card'), body=document.getElementById('compare-body');
+  if(!card||!body) return;
+  const tracks=comparableTracks();
+  if(!tracks.length){ card.style.display='none'; if(_cmp.active) stopCompare(true); return; }
+  card.style.display='block';
+  if(!_cmpTrackId || !tracks.find(t=>t.id===_cmpTrackId)) _cmpTrackId=tracks[0].id;
+  const labels=commonLabels(_cmpTrackId);
+  const lenOpts=[{v:10,t:'10秒'},{v:20,t:'20秒'},{v:'full',t:'区間まるごと'}];
+  body.innerHTML=`
+    <div class="cmp-desc">同じ箇所を「お手本 → 練習」の順でくり返し再生します。聴きたい箇所を押してください。</div>
+    <div class="cmp-row">
+      <span class="cmp-label">練習音源</span>
+      <select class="cmp-select" id="cmp-track" onchange="onCmpTrack(this.value)">
+        ${tracks.map(t=>`<option value="${escHtml(t.id)}" ${t.id===_cmpTrackId?'selected':''}>${escHtml(t.title)}</option>`).join('')}
+      </select>
+      <span class="cmp-label">長さ</span>
+      <span class="cmp-len">${lenOpts.map(o=>`<button class="${_cmpLen===o.v?'sel':''}" onclick="setCmpLen(${o.v==='full'?"'full'":o.v})">${o.t}</button>`).join('')}</span>
+    </div>
+    <div class="cmp-chips">
+      ${labels.length?labels.map(l=>`<button class="cmp-chip${(_cmp.active&&_cmp.label===l)?' active':''}" onclick="startCompare('${escHtml(l)}')">${escHtml(l)}</button>`).join(''):'<span class="cmp-hint">お手本とこの練習に共通する箇所がありません。</span>'}
+    </div>
+    <div class="cmp-now" id="cmp-now"></div>`;
+  updateCmpStatus();
+}
+function onCmpTrack(id){ stopCompare(true); _cmpTrackId=id; renderCompare(); }
+function setCmpLen(v){ _cmpLen=v; renderCompare(); }
+function startCompare(label){
+  if(!ytPlayer||!ytPlayer.seekTo){ alert('お手本の読み込み中です。少し待ってからもう一度押してください。'); return; }
+  // 練習音源の再生をユーザー操作中に解錠（後の自動再生ブロック対策）
+  const a=document.getElementById('au-'+_cmpTrackId);
+  if(a){ a.play().then(()=>a.pause()).catch(()=>{}); }
+  _cmp={active:true, trackId:_cmpTrackId, label:label, phase:'ref', end:0, lockUntil:0};
+  renderCompare();
+  playPhase();
+  if(_cmpTimer) clearInterval(_cmpTimer);
+  _cmpTimer=setInterval(cmpTick, 150);
+}
+function playPhase(){
+  const key=_cmp.phase==='ref'?'ref':_cmp.trackId;
+  const b=sectionBounds(key, _cmp.label);
+  if(!b){ stopCompare(); return; }
+  _cmp.end=b.end;
+  _cmp.lockUntil=Date.now()+700;
+  pauseOthers(key);
+  if(key==='ref'){ ytPlayer.seekTo(b.start, true); ytPlayer.playVideo(); }
+  else { const a=document.getElementById('au-'+key); if(a){ try{ a.currentTime=b.start; }catch(e){} a.play().catch(()=>{}); } }
+  updateCmpStatus();
+}
+function advancePhase(){
+  if(!_cmp.active) return;
+  _cmp.phase=_cmp.phase==='ref'?'track':'ref';
+  playPhase();
+}
+function cmpTick(){
+  if(!_cmp.active) return;
+  if(Date.now()<_cmp.lockUntil) return;
+  const key=_cmp.phase==='ref'?'ref':_cmp.trackId;
+  if(key==='ref'){
+    if(!ytPlayer||!ytPlayer.getCurrentTime) return;
+    const st=ytPlayer.getPlayerState&&ytPlayer.getPlayerState();
+    if(st===YT.PlayerState.ENDED){ advancePhase(); return; }
+    if((ytPlayer.getCurrentTime()||0)>=_cmp.end-0.1) advancePhase();
+  } else {
+    const a=document.getElementById('au-'+key); if(!a) return;
+    if(a.ended){ advancePhase(); return; }
+    if((a.currentTime||0)>=_cmp.end-0.1) advancePhase();
+  }
+}
+function updateCmpStatus(){
+  const el=document.getElementById('cmp-now'); if(!el) return;
+  if(!_cmp.active){ el.innerHTML=''; return; }
+  const title=(getTracks().find(t=>t.id===_cmp.trackId)||{}).title||'練習';
+  const isRef=_cmp.phase==='ref';
+  el.innerHTML=`<span class="cmp-badge ${isRef?'ref':'trk'}">▶ ${isRef?'お手本':escHtml(title)}：${escHtml(_cmp.label)}</span>`
+    +`<span class="cmp-hint">お手本↔練習をくり返し再生中…</span>`
+    +`<button class="cmp-stop" onclick="stopCompare()">⏹ 停止</button>`;
+}
+function stopCompare(silent){
+  _cmp.active=false;
+  if(_cmpTimer){ clearInterval(_cmpTimer); _cmpTimer=null; }
+  document.querySelectorAll('audio').forEach(a=>a.pause());
+  if(ytPlayer&&ytPlayer.pauseVideo){ try{ if(ytPlayer.getPlayerState&&ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }catch(e){} }
+  if(!silent) renderCompare();
 }
 
 /* ===== 気づきメモ（Google上の共有ページへのリンク・独立カード） ===== */
