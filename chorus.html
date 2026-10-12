@@ -276,6 +276,26 @@
 </div>
 
 <script>
+// ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
+const APP_VERSION = '2026-10-12-1';
+(async function checkVersion(){
+  try{
+    const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
+    if(!r.ok) return;
+    const v = await r.json();
+    const latest = v && v.chorus;
+    if(latest && latest !== APP_VERSION){
+      let once=false;
+      try{ const k='chorusV-'+latest; if(!sessionStorage.getItem(k)){ sessionStorage.setItem(k,'1'); once=true; } }catch(e){ once=true; }
+      if(once){
+        const u = new URL(location.href);
+        u.searchParams.set('v', latest);   // URLを変えてキャッシュを確実に回避
+        location.replace(u.toString());
+      }
+    }
+  }catch(e){}
+})();
+
 const SERVER = 'http://localhost:3456';
 let _data = {};
 let _adminPin = '';
