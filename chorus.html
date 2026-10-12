@@ -139,9 +139,8 @@
   .mk-add-btn { padding: 8px 15px; border-radius: 11px; border: none; background: linear-gradient(135deg,#f59e0b,#d97706); color: #fff; font-weight: 900; font-family: inherit; font-size: 0.83rem; cursor: pointer; white-space: nowrap; }
   .mk-add-btn:active { transform: translateY(1px); }
 
-  /* 気づきメモ（Google共有ページへのリンク） */
-  .notes { margin-top: 13px; padding-top: 12px; border-top: 1.5px dashed #e9d5ff; }
-  .notes-title { font-size: 0.87rem; font-weight: 900; color: #7c3aed; margin-bottom: 8px; }
+  /* 気づきメモ（Google共有ページへのリンク・独立カード） */
+  .notes-desc { font-size: 0.86rem; color: #475569; font-weight: 600; line-height: 1.55; margin-bottom: 11px; }
   .notes-link { display: flex; flex-direction: column; gap: 2px; text-decoration: none;
     background: linear-gradient(135deg,#faf5ff,#f3e8ff); border: 1.5px solid #d8b4fe; border-radius: 13px;
     padding: 12px 15px; color: #6d28d9; font-weight: 900; font-size: 0.95rem; }
@@ -165,6 +164,12 @@
   <div class="card">
     <div class="card-title">📺 参考音源（お手本）</div>
     <div id="ref-view"></div>
+  </div>
+
+  <!-- 気づきメモ（クラス共有） -->
+  <div class="card" id="notes-card">
+    <div class="card-title">💡 気づき・曲のポイント</div>
+    <div id="notes-entry"></div>
   </div>
 
   <!-- 練習音源リスト -->
@@ -296,6 +301,7 @@ function schedulePush(){
 /* ===== 描画 ===== */
 function render(){
   renderReference();
+  renderNotes();
   const el=document.getElementById('track-list');
   const tracks=getTracks().slice().sort((a,b)=> (a.date||'')<(b.date||'')?1:(a.date||'')>(b.date||'')?-1:0);
   if(tracks.length===0){
@@ -417,20 +423,22 @@ async function delMarker(key, idx){
   const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=markersHtml(key);
 }
 
-/* ===== 気づきメモ（Google上の共有ページへのリンク） ===== */
-// 各音源の下に表示。全音源から同じ気づきページ（NOTES_PAGE）に飛びます。
-function notesSectionHtml(key){
+/* ===== 気づきメモ（Google上の共有ページへのリンク・独立カード） ===== */
+function renderNotes(){
+  const el=document.getElementById('notes-entry');
+  if(!el) return;
   if(!NOTES_PAGE){
-    return adminOpen
-      ? `<div class="notes"><div class="notes-title">💡 気づきメモ</div><div class="notes-setup">未設定です。「合唱気づき_GASコード.gs／_Index.html」をデプロイし、/exec のURLを chorus.html の <b>NOTES_PAGE</b> に貼ってください。</div></div>`
-      : '';
+    el.innerHTML=adminOpen
+      ? `<div class="notes-setup">未設定です。「合唱気づき_GASコード.gs／_Index.html」をデプロイし、/exec のURLを chorus.html の <b>NOTES_PAGE</b> に貼ってください。</div>`
+      : `<div class="notes-desc">準備中です。</div>`;
+    return;
   }
-  return `<div class="notes">
+  el.innerHTML=`
+    <div class="notes-desc">聴いて気づいたこと・曲のポイントを、クラスみんなで共有しよう（名前／匿名どちらでもOK）。</div>
     <a class="notes-link" href="${escHtml(NOTES_PAGE)}" target="_blank" rel="noopener">
       💡 気づき・曲のポイントを書く／見る
       <span class="notes-link-sub">みんなの気づきをまとめて共有 ↗</span>
-    </a>
-  </div>`;
+    </a>`;
 }
 
 /* ===== 参考音源（YouTube・音声のみ） ===== */
@@ -477,7 +485,6 @@ function renderReference(){
   // 同じ音源を表示中なら作り直さない（再生を止めない）。マーカー欄・メモ欄だけ更新。
   if(id===ytDisplayedId && ytPlayer){
     const w=document.getElementById('mk-wrap-ref'); if(w) w.innerHTML=markersHtml('ref');
-    const nw=document.getElementById('notes-wrap-ref'); if(nw) nw.innerHTML=notesSectionHtml('ref');
     return;
   }
   ytDisplayedId=id;
@@ -500,7 +507,6 @@ function renderReference(){
         <span class="hint" style="font-size:.74rem">※映像は表示せず、音声だけ流れます</span>
       </div>
       <div id="mk-wrap-ref">${markersHtml('ref')}</div>
-      <div id="notes-wrap-ref">${notesSectionHtml('ref')}</div>
       <div id="yt-holder"><div id="yt-player"></div></div>
     </div>`;
   mountYtPlayer(id);
