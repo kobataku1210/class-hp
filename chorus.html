@@ -64,6 +64,18 @@
   .track-del { margin-left: auto; padding: 5px 12px; border-radius: 9px; border: none; cursor: pointer; font-size: 0.78rem; font-weight: 900; font-family: inherit; background: #fee2e2; color: #dc2626; }
   .empty { text-align: center; color: #94a3b8; font-size: 0.9rem; padding: 24px 10px; }
 
+  /* 発声方法（パート別） */
+  .vocal-sub { font-size: 0.82rem; color: #64748b; font-weight: 600; margin: -4px 0 12px; }
+  .vocal-list { display: flex; flex-direction: column; gap: 14px; }
+  .vocal-item { background: #faf5ff; border: 1.5px solid #e9d5ff; border-radius: 18px; padding: 14px 16px; }
+  .vocal-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+  .vocal-title { font-size: 1rem; font-weight: 900; color: #5b21b6; }
+  .part-badge { font-size: 0.78rem; font-weight: 900; border-radius: 20px; padding: 3px 12px; flex-shrink: 0; }
+  .part-badge.sop { color: #be123c; background: #ffe4e6; }
+  .part-badge.alt { color: #15803d; background: #dcfce7; }
+  .part-badge.male { color: #1d4ed8; background: #dbeafe; }
+  .vocal-item audio { width: 100%; height: 42px; margin-top: 4px; }
+
   /* 先生用パネル */
   #admin-card { display: none; }
   #admin-body { display: none; }
@@ -228,6 +240,13 @@
     <div id="ref-view"></div>
   </div>
 
+  <!-- 発声方法（パート別） -->
+  <div class="card" id="vocal-card" style="display:none">
+    <div class="card-title">🗣 発声方法</div>
+    <div class="vocal-sub">パートごとの発声練習の音源です。くり返しまねして声を作ろう！</div>
+    <div class="vocal-list" id="vocal-list"></div>
+  </div>
+
   <!-- 練習音源リスト -->
   <div class="card">
     <div class="card-title">🎧 練習音源</div>
@@ -307,7 +326,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-15-1';
+const APP_VERSION = '2026-10-15-2';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -379,6 +398,7 @@ function render(){
   renderReference();
   renderNotes();
   renderCompare();
+  renderVocal();
   const el=document.getElementById('track-list');
   const tracks=getTracks().slice().sort((a,b)=> (a.date||'')<(b.date||'')?1:(a.date||'')>(b.date||'')?-1:0);
   if(tracks.length===0){
@@ -666,6 +686,42 @@ function stopCompare(silent){
   document.querySelectorAll('audio').forEach(a=>a.pause());
   if(ytPlayer&&ytPlayer.pauseVideo){ try{ if(ytPlayer.getPlayerState&&ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }catch(e){} }
   if(!silent) renderCompare();
+}
+
+/* ===== 発声方法（パート別の発声練習音源） ===== */
+function getVocal(){ const c=ensureChorus(); return c.vocal||[]; }
+function renderVocal(){
+  const card=document.getElementById('vocal-card');
+  const el=document.getElementById('vocal-list');
+  if(!card||!el) return;
+  const list=getVocal();
+  if(!list.length){ card.style.display='none'; return; }
+  card.style.display='block';
+  el.innerHTML=list.map(v=>{
+    const del=adminOpen?`<button class="track-del" onclick="deleteVocal('${v.id}')">🗑 削除</button>`:'';
+    const pc = v.part==='ソプラノ'?'sop':(v.part==='アルト'?'alt':'male');
+    const badge = v.part?`<span class="part-badge ${pc}">${escHtml(v.part)}</span>`:'';
+    return `<div class="vocal-item">
+      <div class="vocal-head">${badge}<span class="vocal-title">${escHtml(v.title)}</span></div>
+      <audio id="vo-${escHtml(v.id)}" controls preload="none" src="${escHtml(v.file)}" onplay="onAnyPlay(this)"></audio>
+      <div class="track-foot">
+        <a class="track-dl" href="${escHtml(v.file)}" download>⬇ ダウンロード</a>
+        <span class="track-size">${fmtSize(v.size)}</span>
+        ${del}
+      </div>
+    </div>`;
+  }).join('');
+}
+async function deleteVocal(id){
+  const list=getVocal();
+  const v=list.find(x=>x.id===id);
+  if(!v) return;
+  if(!confirm(`「${v.title}」を削除しますか？`)) return;
+  const pin=_adminPin||_data.adminPIN||'1210';
+  try{ await fetch(SERVER+'/api/delete-audio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin,path:v.file})}); }catch(e){}
+  const idx=list.findIndex(x=>x.id===id); if(idx>=0) list.splice(idx,1);
+  await saveData();
+  render();
 }
 
 /* ===== 気づきメモ（Google上の共有ページへのリンク・独立カード） ===== */
