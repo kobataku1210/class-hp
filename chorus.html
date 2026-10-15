@@ -147,6 +147,22 @@
   .mk-add-btn { padding: 8px 15px; border-radius: 11px; border: none; background: linear-gradient(135deg,#f59e0b,#d97706); color: #fff; font-weight: 900; font-family: inherit; font-size: 0.83rem; cursor: pointer; white-space: nowrap; }
   .mk-add-btn:active { transform: translateY(1px); }
 
+  /* 歌詞のポイント（区間マーカーとは別・時間指定コメント） */
+  .points-label { font-size: 0.8rem; font-weight: 900; color: #d97706; margin: 13px 0 6px; }
+  .points { display: flex; flex-direction: column; gap: 7px; }
+  .point-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; cursor: pointer; }
+  .point-item:hover { background: #fef3c7; }
+  .point-item:active { transform: translateY(1px); }
+  .point-time { flex-shrink: 0; font-size: 0.76rem; font-weight: 900; color: #b45309; background: #fef3c7; border-radius: 20px; padding: 3px 10px; font-variant-numeric: tabular-nums; }
+  .point-text { flex: 1; font-size: 0.9rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word; }
+  .point-del { flex-shrink: 0; padding: 4px 11px; border: none; border-radius: 8px; background: #fee2e2; color: #dc2626; font-weight: 900; font-family: inherit; font-size: 0.72rem; cursor: pointer; }
+  .pt-edit { margin-top: 11px; padding: 12px 13px; background: #fff7ed; border: 1.5px dashed #fdba74; border-radius: 13px; }
+  .pt-edit-title { font-size: 0.8rem; font-weight: 900; color: #c2410c; margin-bottom: 9px; line-height: 1.4; }
+  .pt-add-row { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+  .pt-add-row input { flex: 1; min-width: 150px; padding: 8px 11px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-family: inherit; font-size: 0.86rem; color: #1e293b; }
+  .pt-add-btn { padding: 8px 15px; border-radius: 11px; border: none; background: linear-gradient(135deg,#fb923c,#ea580c); color: #fff; font-weight: 900; font-family: inherit; font-size: 0.83rem; cursor: pointer; white-space: nowrap; }
+  .pt-add-btn:active { transform: translateY(1px); }
+
   /* 気づきメモ（Google共有ページへのリンク・独立カード） */
   .notes-desc { font-size: 0.86rem; color: #475569; font-weight: 600; line-height: 1.55; margin-bottom: 11px; }
   .notes-link { display: flex; flex-direction: column; gap: 2px; text-decoration: none;
@@ -383,7 +399,7 @@ function render(){
         <button class="skip-btn" onclick="skipAudio('au-${escHtml(t.id)}',-5)">⏪ 5秒</button>
         <button class="skip-btn" onclick="skipAudio('au-${escHtml(t.id)}',5)">5秒 ⏩</button>
       </div>
-      <div id="mk-wrap-${escHtml(t.id)}">${markersHtml(t.id)}</div>
+      <div id="mk-wrap-${escHtml(t.id)}">${pinsHtml(t.id)}</div>
       <div class="track-foot">
         <a class="track-dl" href="${escHtml(t.file)}" download>⬇ ダウンロード</a>
         <span class="track-size">${fmtSize(t.size)}</span>
@@ -412,6 +428,15 @@ function setMarkers(key, arr){
   if(key==='ref'){ const r=getReference(); if(r) r.markers=arr; }
   else { const t=getTracks().find(x=>x.id===key); if(t) t.markers=arr; }
 }
+// 歌詞のポイント（区間マーカーとは別。時間指定のコメント）
+function getPoints(key){
+  if(key==='ref'){ const r=getReference(); return (r&&r.points)||[]; }
+  const t=getTracks().find(x=>x.id===key); return (t&&t.points)||[];
+}
+function setPoints(key, arr){
+  if(key==='ref'){ const r=getReference(); if(r) r.points=arr; }
+  else { const t=getTracks().find(x=>x.id===key); if(t) t.points=arr; }
+}
 function playerCurrentTime(key){
   if(key==='ref'){ return (ytPlayer&&ytPlayer.getCurrentTime)?(ytPlayer.getCurrentTime()||0):0; }
   const a=document.getElementById('au-'+key); return a?(a.currentTime||0):0;
@@ -428,8 +453,9 @@ function onAnyPlay(el){
   document.querySelectorAll('audio').forEach(a=>{ if(a!==el) a.pause(); });
   if(ytPlayer && ytPlayer.getPlayerState){ try{ if(ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }catch(e){} }
 }
-// マーカーの位置へジャンプして再生
+// マーカー／ポイントの位置へジャンプして再生
 function jumpTo(key, t){
+  if(typeof _cmp!=='undefined' && _cmp.active) stopCompare(true);  // 聴き比べ中なら止めてから
   pauseOthers(key);
   if(key==='ref'){
     if(ytPlayer && ytPlayer.seekTo){ ytPlayer.seekTo(t, true); ytPlayer.playVideo(); updateRefTime(); }
@@ -452,7 +478,7 @@ function markersHtml(key){
   }
   if(adminOpen){
     html+=`<div class="mk-edit">
-      <div class="mk-edit-title">🏷 マーカーを打つ：再生して歌詞の位置まで来たら、ラベルを選んで「＋ここに印」</div>
+      <div class="mk-edit-title">🏷 区間マーカーを打つ（聴き比べ用）：再生して位置まで来たら、ラベルを選んで「＋ここに印」</div>
       <div class="mk-presets">${MARKER_LABELS.map(l=>`<button class="mk-preset${_mkSel[key]===l?' sel':''}" onclick="selPreset('${key}',this.textContent)">${l}</button>`).join('')}</div>
       <div class="mk-add-row">
         <input type="text" id="mkin-${key}" placeholder="ラベル（例: サビ）" value="${escHtml(_mkSel[key]||'')}">
@@ -461,6 +487,48 @@ function markersHtml(key){
     </div>`;
   }
   return html;
+}
+// 歌詞のポイント表示＋（先生用）編集UIのHTML
+function pointsHtml(key){
+  const arr=getPoints(key).slice().sort((a,b)=>a.t-b.t);
+  let html='';
+  if(arr.length){
+    html+='<div class="points-label">📝 歌詞のポイント（押すとその場所から再生）</div><div class="points">';
+    html+=arr.map((p,i)=>`<div class="point-item" onclick="jumpTo('${key}',${p.t})">`
+      +`<span class="point-time">${fmtTime(p.t)}</span>`
+      +`<span class="point-text">${escHtml(p.text)}</span>`
+      +(adminOpen?`<button class="point-del" onclick="event.stopPropagation();delPoint('${key}',${i})" title="削除">削除</button>`:'')
+      +`</div>`).join('');
+    html+='</div>';
+  }
+  if(adminOpen){
+    html+=`<div class="pt-edit">
+      <div class="pt-edit-title">📝 歌詞のポイントを打つ：再生して位置まで来たら、内容を書いて「＋ここに印」</div>
+      <div class="pt-add-row">
+        <input type="text" id="ptin-${key}" maxlength="60" placeholder="例：ここは強く／ブレス注意／言葉を立てる">
+        <button class="pt-add-btn" onclick="addPoint('${key}')">＋ ここに印</button>
+      </div>
+    </div>`;
+  }
+  return html;
+}
+// 区間マーカー＋歌詞ポイントをまとめて描画
+function pinsHtml(key){ return markersHtml(key)+pointsHtml(key); }
+async function addPoint(key){
+  const inp=document.getElementById('ptin-'+key);
+  const text=((inp&&inp.value.trim())||'').trim();
+  if(!text){ alert('ポイントの内容を入力してください'); return; }
+  const t=Math.max(0, Math.round(playerCurrentTime(key)*10)/10);
+  const arr=getPoints(key).slice(); arr.push({t, text}); setPoints(key, arr);
+  await saveLocal(); schedulePush();
+  const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
+}
+async function delPoint(key, idx){
+  const arr=getPoints(key).slice().sort((a,b)=>a.t-b.t);
+  if(idx<0||idx>=arr.length) return;
+  arr.splice(idx,1); setPoints(key, arr);
+  await saveLocal(); schedulePush();
+  const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
 }
 function selPreset(key, label){
   _mkSel[key]=label;
@@ -475,7 +543,7 @@ async function addMarker(key){
   const t=Math.max(0, Math.round(playerCurrentTime(key)*10)/10);
   const arr=getMarkers(key).slice(); arr.push({label, t}); setMarkers(key, arr);
   await saveLocal(); schedulePush();
-  const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=markersHtml(key);
+  const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
   renderCompare();
 }
 async function delMarker(key, idx){
@@ -483,7 +551,7 @@ async function delMarker(key, idx){
   if(idx<0||idx>=arr.length) return;
   arr.splice(idx,1); setMarkers(key, arr);
   await saveLocal(); schedulePush();
-  const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=markersHtml(key);
+  const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
   renderCompare();
 }
 
@@ -661,7 +729,7 @@ function renderReference(){
   }
   // 同じ音源を表示中なら作り直さない（再生を止めない）。マーカー欄・メモ欄だけ更新。
   if(id===ytDisplayedId && ytPlayer){
-    const w=document.getElementById('mk-wrap-ref'); if(w) w.innerHTML=markersHtml('ref');
+    const w=document.getElementById('mk-wrap-ref'); if(w) w.innerHTML=pinsHtml('ref');
     return;
   }
   ytDisplayedId=id;
@@ -683,7 +751,7 @@ function renderReference(){
         <a class="ref-yt-link" href="https://youtu.be/${encodeURIComponent(id)}" target="_blank" rel="noopener">YouTubeで開く ↗</a>
         <span class="hint" style="font-size:.74rem">※映像は表示せず、音声だけ流れます</span>
       </div>
-      <div id="mk-wrap-ref">${markersHtml('ref')}</div>
+      <div id="mk-wrap-ref">${pinsHtml('ref')}</div>
       <div id="yt-holder"><div id="yt-player"></div></div>
     </div>`;
   mountYtPlayer(id);
