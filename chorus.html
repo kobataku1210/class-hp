@@ -326,7 +326,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-15-2';
+const APP_VERSION = '2026-10-15-3';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -414,7 +414,7 @@ function render(){
         <span class="track-date">${fmtDate(t.date)}</span>
       </div>
       ${note}
-      <audio id="au-${escHtml(t.id)}" controls preload="none" src="${escHtml(t.file)}" onplay="onAnyPlay(this)"></audio>
+      <audio id="au-${escHtml(t.id)}" controls preload="none" loop src="${escHtml(t.file)}" onplay="onAnyPlay(this)"></audio>
       <div class="skip-row">
         <button class="skip-btn" onclick="skipAudio('au-${escHtml(t.id)}',-5)">⏪ 5秒</button>
         <button class="skip-btn" onclick="skipAudio('au-${escHtml(t.id)}',5)">5秒 ⏩</button>
@@ -703,7 +703,7 @@ function renderVocal(){
     const badge = v.part?`<span class="part-badge ${pc}">${escHtml(v.part)}</span>`:'';
     return `<div class="vocal-item">
       <div class="vocal-head">${badge}<span class="vocal-title">${escHtml(v.title)}</span></div>
-      <audio id="vo-${escHtml(v.id)}" controls preload="none" src="${escHtml(v.file)}" onplay="onAnyPlay(this)"></audio>
+      <audio id="vo-${escHtml(v.id)}" controls preload="none" loop src="${escHtml(v.file)}" onplay="onAnyPlay(this)"></audio>
       <div class="track-foot">
         <a class="track-dl" href="${escHtml(v.file)}" download>⬇ ダウンロード</a>
         <span class="track-size">${fmtSize(v.size)}</span>
@@ -825,6 +825,11 @@ async function mountYtPlayer(id){
 }
 function onRefState(e){
   const btn=document.getElementById('ref-play');
+  // 曲が終わったら頭から繰り返す（聴き比べ中は専用スケジューラに任せる）
+  if(e.data===YT.PlayerState.ENDED && !(typeof _cmp!=='undefined' && _cmp.active)){
+    try{ ytPlayer.seekTo(0, true); ytPlayer.playVideo(); }catch(err){}
+    return;
+  }
   if(e.data===YT.PlayerState.PLAYING){ document.querySelectorAll('audio').forEach(a=>a.pause()); if(btn) btn.textContent='⏸'; if(ytPollTimer) clearInterval(ytPollTimer); ytPollTimer=setInterval(updateRefTime,400); }
   else { if(btn) btn.textContent='▶'; if(e.data!==YT.PlayerState.BUFFERING && ytPollTimer){ clearInterval(ytPollTimer); ytPollTimer=null; updateRefTime(); } }
 }
