@@ -275,7 +275,12 @@
         "note": "",
         "file": "chorus_audio/1790932201611_10.2_放課後.mp3",
         "size": 4633660,
-        "markers": []
+        "markers": [
+          {
+            "label": "イントロ",
+            "t": 0
+          }
+        ]
       }
     ]
   },
