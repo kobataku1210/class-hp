@@ -59,6 +59,8 @@
   .skip-btn:active { transform: translateY(1px); }
   .skip-btn.stop { background: #fee2e2; border-color: #fecaca; color: #dc2626; }
   .skip-btn.stop:hover { background: #fecaca; }
+  .skip-btn.play { background: #dcfce7; border-color: #bbf7d0; color: #15803d; }
+  .skip-btn.play:hover { background: #bbf7d0; }
   .track-foot { display: flex; align-items: center; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
   .track-dl { font-size: 0.8rem; color: #7c3aed; font-weight: 800; text-decoration: none; }
   .track-dl:hover { text-decoration: underline; }
@@ -352,7 +354,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-17-7';
+const APP_VERSION = '2026-10-17-8';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -565,6 +567,12 @@ function pausePlayer(key){
   if(key==='ref'){ if(ytPlayer&&ytPlayer.pauseVideo){ try{ ytPlayer.pauseVideo(); }catch(e){} } }
   else { const a=document.getElementById('au-'+key); if(a) a.pause(); }
 }
+// プレーヤーを今の位置から再生（他は止める）
+function playPlayer(key){
+  pauseOthers(key);
+  if(key==='ref'){ if(ytPlayer&&ytPlayer.playVideo){ try{ ytPlayer.playVideo(); }catch(e){} } }
+  else { const a=document.getElementById('au-'+key); if(a) a.play().catch(()=>{}); }
+}
 // 歌詞のポイント表示＋（先生用）編集UIのHTML
 function pointsHtml(key){
   const arr=getPoints(key).slice().sort((a,b)=>a.t-b.t);
@@ -605,6 +613,7 @@ function pointsHtml(key){
         <button class="pt-add-btn" onclick="addPoint('${key}')">＋ ここに印</button>
       </div>
       <div class="skip-row" style="margin-top:9px">
+        <button class="skip-btn play" onclick="playPlayer('${key}')">▶ 再生</button>
         <button class="skip-btn" onclick="skipPlayer('${key}',-5)">⏪ 5秒</button>
         <button class="skip-btn" onclick="skipPlayer('${key}',-2)">⏪ 2秒</button>
         <button class="skip-btn" onclick="skipPlayer('${key}',2)">2秒 ⏩</button>
