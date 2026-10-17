@@ -682,6 +682,16 @@ async function delMarker(key, idx){
   warnIfNotSaved(ok);
 }
 
+// すべての区間マーカーを一括削除（先生が今の端末から実行＝確実。歌詞ポイント・気づきは残す）
+async function clearAllMarkers(){
+  if(!confirm('すべての音源の区間マーカーを削除します。よろしいですか？\n（歌詞ポイント・気づきメモは消えません）')) return;
+  setMarkers('ref', []);
+  getTracks().forEach(t=>{ t.markers=[]; });
+  const ok=await saveLocal(); schedulePush();
+  render();
+  if(ok) alert('区間マーカーを全部消しました。'); else warnIfNotSaved(ok);
+}
+
 /* ===== 聴き比べ（お手本↔練習を同じ箇所でくり返し再生） ===== */
 let _cmpTrackId='', _cmpLen='full';   // 常に区間まるごと
 let _cmp={active:false, trackId:'', label:'', phase:'ref', end:0, lockUntil:0};
