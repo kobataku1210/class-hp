@@ -339,7 +339,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-17-2';
+const APP_VERSION = '2026-10-17-3';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -365,7 +365,7 @@ const SERVER = HOME_ONLY ? 'http://localhost:3456' : location.origin;
 let _data = {};
 let _adminPin = '';
 let adminOpen = false;
-const MARKER_LABELS = ['イントロ','Aメロ','Bメロ','サビ','2番Aメロ','2番サビ','大サビ','ラスト'];
+const MARKER_LABELS = ['①前を向きなよ','②声にだしたら','③あたりまえの','④溢れ出す涙','⑤我侭だって','⑥僕がもしも','⑦君の指差す','⑧またねって','⑨溢れ出す涙'];
 let _mkSel = {};        // playerKey -> 選択中のプリセットラベル（先生用）
 const POINT_PARTS = ['ソプラノ','アルト','テノール','全体'];
 let _ptSel = {};        // playerKey -> 選択中のパート（歌詞ポイント用）
@@ -526,7 +526,7 @@ function markersHtml(key){
       <div class="mk-edit-title">🏷 区間マーカーを打つ（聴き比べ用）：再生して位置まで来たら、ラベルを選んで「＋ここに印」</div>
       <div class="mk-presets">${MARKER_LABELS.map(l=>`<button class="mk-preset${_mkSel[key]===l?' sel':''}" onclick="selPreset('${key}',this.textContent)">${l}</button>`).join('')}</div>
       <div class="mk-add-row">
-        <input type="text" id="mkin-${key}" placeholder="ラベル（例: サビ）" value="${escHtml(_mkSel[key]||'')}">
+        <input type="text" id="mkin-${key}" placeholder="ラベル（例: ①前を向きなよ）" value="${escHtml(_mkSel[key]||'')}">
         <button class="mk-add-btn" onclick="addMarker('${key}')">＋ ここに印</button>
       </div>
     </div>`;
