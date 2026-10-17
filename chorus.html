@@ -57,6 +57,8 @@
   }
   .skip-btn:hover { background: #ede9fe; }
   .skip-btn:active { transform: translateY(1px); }
+  .skip-btn.stop { background: #fee2e2; border-color: #fecaca; color: #dc2626; }
+  .skip-btn.stop:hover { background: #fecaca; }
   .track-foot { display: flex; align-items: center; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
   .track-dl { font-size: 0.8rem; color: #7c3aed; font-weight: 800; text-decoration: none; }
   .track-dl:hover { text-decoration: underline; }
@@ -350,7 +352,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-17-6';
+const APP_VERSION = '2026-10-17-7';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -554,6 +556,15 @@ function markersHtml(key){
   }
   return html;
 }
+// プレーヤー種別に応じて±秒スキップ（ref=お手本/それ以外=練習音源）
+function skipPlayer(key, delta){
+  if(key==='ref') skipRef(delta); else skipAudio('au-'+key, delta);
+}
+// プレーヤーを止める
+function pausePlayer(key){
+  if(key==='ref'){ if(ytPlayer&&ytPlayer.pauseVideo){ try{ ytPlayer.pauseVideo(); }catch(e){} } }
+  else { const a=document.getElementById('au-'+key); if(a) a.pause(); }
+}
 // 歌詞のポイント表示＋（先生用）編集UIのHTML
 function pointsHtml(key){
   const arr=getPoints(key).slice().sort((a,b)=>a.t-b.t);
@@ -592,6 +603,13 @@ function pointsHtml(key){
       <div class="pt-add-row">
         <input type="text" id="ptin-${key}" maxlength="60" placeholder="例：ここは強く／ブレス注意／言葉を立てる">
         <button class="pt-add-btn" onclick="addPoint('${key}')">＋ ここに印</button>
+      </div>
+      <div class="skip-row" style="margin-top:9px">
+        <button class="skip-btn" onclick="skipPlayer('${key}',-5)">⏪ 5秒</button>
+        <button class="skip-btn" onclick="skipPlayer('${key}',-2)">⏪ 2秒</button>
+        <button class="skip-btn" onclick="skipPlayer('${key}',2)">2秒 ⏩</button>
+        <button class="skip-btn" onclick="skipPlayer('${key}',5)">5秒 ⏩</button>
+        <button class="skip-btn stop" onclick="pausePlayer('${key}')">⏸ 止める</button>
       </div>
     </div>`;
   }
