@@ -174,6 +174,19 @@
   .pt-add-row input { flex: 1; min-width: 150px; padding: 8px 11px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-family: inherit; font-size: 0.86rem; color: #1e293b; }
   .pt-add-btn { padding: 8px 15px; border-radius: 11px; border: none; background: linear-gradient(135deg,#fb923c,#ea580c); color: #fff; font-weight: 900; font-family: inherit; font-size: 0.83rem; cursor: pointer; white-space: nowrap; }
   .pt-add-btn:active { transform: translateY(1px); }
+  /* パート選択ボタン */
+  .pt-parts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 9px; }
+  .pt-part { padding: 6px 13px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; font-weight: 800; font-size: 0.8rem; font-family: inherit; cursor: pointer; }
+  .pt-part.sel.sop { background: #ffe4e6; border-color: #fda4af; color: #be123c; }
+  .pt-part.sel.alt { background: #dcfce7; border-color: #86efac; color: #15803d; }
+  .pt-part.sel.ten { background: #dbeafe; border-color: #93c5fd; color: #1d4ed8; }
+  .pt-part.sel.all { background: #ede9fe; border-color: #c4b5fd; color: #6d28d9; }
+  /* ポイント一覧のパートバッジ */
+  .pt-badge { flex-shrink: 0; font-size: 0.72rem; font-weight: 900; border-radius: 20px; padding: 2px 9px; }
+  .pt-badge.sop { color: #be123c; background: #ffe4e6; }
+  .pt-badge.alt { color: #15803d; background: #dcfce7; }
+  .pt-badge.ten { color: #1d4ed8; background: #dbeafe; }
+  .pt-badge.all { color: #6d28d9; background: #ede9fe; }
 
   /* 気づきメモ（Google共有ページへのリンク・独立カード） */
   .notes-desc { font-size: 0.86rem; color: #475569; font-weight: 600; line-height: 1.55; margin-bottom: 11px; }
@@ -326,7 +339,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-17-1';
+const APP_VERSION = '2026-10-17-2';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -354,6 +367,9 @@ let _adminPin = '';
 let adminOpen = false;
 const MARKER_LABELS = ['イントロ','Aメロ','Bメロ','サビ','2番Aメロ','2番サビ','大サビ','ラスト'];
 let _mkSel = {};        // playerKey -> 選択中のプリセットラベル（先生用）
+const POINT_PARTS = ['ソプラノ','アルト','テノール','全体'];
+let _ptSel = {};        // playerKey -> 選択中のパート（歌詞ポイント用）
+function partClass(p){ return p==='ソプラノ'?'sop':(p==='アルト'?'alt':(p==='テノール'?'ten':'all')); }
 let _pushTimer = null;  // git push のまとめ送信用
 
 // ===== 気づきメモ（Google上の共有ページへ。家でも学校でも・学校アカウントでログイン時）=====
@@ -523,16 +539,22 @@ function pointsHtml(key){
   let html='';
   if(arr.length){
     html+='<div class="points-label">📝 歌詞のポイント（押すとその場所から再生）</div><div class="points">';
-    html+=arr.map((p,i)=>`<div class="point-item" onclick="jumpTo('${key}',${p.t})">`
-      +`<span class="point-time">${fmtTime(p.t)}</span>`
-      +`<span class="point-text">${escHtml(p.text)}</span>`
-      +(adminOpen?`<button class="point-del" onclick="event.stopPropagation();delPoint('${key}',${i})" title="削除">削除</button>`:'')
-      +`</div>`).join('');
+    html+=arr.map((p,i)=>{
+      const badge=p.part?`<span class="pt-badge ${partClass(p.part)}">${escHtml(p.part)}</span>`:'';
+      return `<div class="point-item" onclick="jumpTo('${key}',${p.t})">`
+        +`<span class="point-time">${fmtTime(p.t)}</span>`
+        +badge
+        +`<span class="point-text">${escHtml(p.text)}</span>`
+        +(adminOpen?`<button class="point-del" onclick="event.stopPropagation();delPoint('${key}',${i})" title="削除">削除</button>`:'')
+        +`</div>`;
+    }).join('');
     html+='</div>';
   }
   if(adminOpen){
+    const sel=_ptSel[key]||'全体';
     html+=`<div class="pt-edit">
-      <div class="pt-edit-title">📝 歌詞のポイントを打つ：再生して位置まで来たら、内容を書いて「＋ここに印」</div>
+      <div class="pt-edit-title">📝 歌詞のポイントを打つ：パートを選び、内容を書いて「＋ここに印」</div>
+      <div class="pt-parts">${POINT_PARTS.map(p=>`<button class="pt-part ${partClass(p)}${sel===p?' sel':''}" onclick="selPart('${key}','${p}')">${p}</button>`).join('')}</div>
       <div class="pt-add-row">
         <input type="text" id="ptin-${key}" maxlength="60" placeholder="例：ここは強く／ブレス注意／言葉を立てる">
         <button class="pt-add-btn" onclick="addPoint('${key}')">＋ ここに印</button>
@@ -543,12 +565,18 @@ function pointsHtml(key){
 }
 // 区間マーカー＋歌詞ポイントをまとめて描画
 function pinsHtml(key){ return markersHtml(key)+pointsHtml(key); }
+function selPart(key, part){
+  _ptSel[key]=part;
+  const wrap=document.getElementById('mk-wrap-'+key);
+  if(wrap) wrap.querySelectorAll('.pt-part').forEach(b=>b.classList.toggle('sel', b.textContent===part));
+}
 async function addPoint(key){
   const inp=document.getElementById('ptin-'+key);
   const text=((inp&&inp.value.trim())||'').trim();
   if(!text){ alert('ポイントの内容を入力してください'); return; }
+  const part=_ptSel[key]||'全体';
   const t=Math.max(0, Math.round(playerCurrentTime(key)*10)/10);
-  const arr=getPoints(key).slice(); arr.push({t, text}); setPoints(key, arr);
+  const arr=getPoints(key).slice(); arr.push({t, text, part}); setPoints(key, arr);
   const ok=await saveLocal(); schedulePush();
   const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
   if(inp && ok) inp.value='';
