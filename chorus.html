@@ -345,7 +345,10 @@ const APP_VERSION = '2026-10-15-3';
   }catch(e){}
 })();
 
-const SERVER = 'http://localhost:3456';
+// github.io / file:// は保存用サーバーなし（閲覧のみ）。それ以外は「開いたアドレス」を保存先にする
+// → 学校PCのLAN IP（例 http://100.64.1.29:3456/chorus.html）でスマホから開けば、学校PCに保存できる
+const HOME_ONLY = (location.protocol==='file:') || /(^|\.)github\.io$/i.test(location.hostname);
+const SERVER = HOME_ONLY ? 'http://localhost:3456' : location.origin;
 let _data = {};
 let _adminPin = '';
 let adminOpen = false;
@@ -382,7 +385,13 @@ async function saveData(){
 // data.json へ即時保存（git push はしない。マーカー連打用）
 async function saveLocal(){
   const pin=_adminPin||_data.adminPIN||'1210';
-  try{ await fetch(SERVER+'/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin,data:_data})}); return true; }catch(e){ return false; }
+  try{ const r=await fetch(SERVER+'/api/data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin,data:_data})}); return r.ok; }catch(e){ return false; }
+}
+// 保存できなかったら、はっきり知らせる（スマホでgithub.ioから編集しようとした等）
+function warnIfNotSaved(ok){
+  if(ok) return true;
+  alert('⚠️ 保存できませんでした（この画面からは保存できません）。\n\nマーカーや歌詞ポイントの編集は、学校のサーバーから開いたときだけ保存されます。\n・学校のPC：そのまま編集できます\n・スマホ：学校のWi-Fiにつないで、サーバーのアドレス（http://100.64.1.29:3456/chorus.html）から開いてください\n（QRコードのページ＝github.io は閲覧専用です）');
+  return false;
 }
 // 編集が落ち着いたら1回だけ git push（家用GitHub Pagesへ反映）
 function schedulePush(){
@@ -540,15 +549,18 @@ async function addPoint(key){
   if(!text){ alert('ポイントの内容を入力してください'); return; }
   const t=Math.max(0, Math.round(playerCurrentTime(key)*10)/10);
   const arr=getPoints(key).slice(); arr.push({t, text}); setPoints(key, arr);
-  await saveLocal(); schedulePush();
+  const ok=await saveLocal(); schedulePush();
   const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
+  if(inp && ok) inp.value='';
+  warnIfNotSaved(ok);
 }
 async function delPoint(key, idx){
   const arr=getPoints(key).slice().sort((a,b)=>a.t-b.t);
   if(idx<0||idx>=arr.length) return;
   arr.splice(idx,1); setPoints(key, arr);
-  await saveLocal(); schedulePush();
+  const ok=await saveLocal(); schedulePush();
   const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
+  warnIfNotSaved(ok);
 }
 function selPreset(key, label){
   _mkSel[key]=label;
@@ -562,17 +574,19 @@ async function addMarker(key){
   if(!label){ alert('ラベルを選ぶか入力してください'); return; }
   const t=Math.max(0, Math.round(playerCurrentTime(key)*10)/10);
   const arr=getMarkers(key).slice(); arr.push({label, t}); setMarkers(key, arr);
-  await saveLocal(); schedulePush();
+  const ok=await saveLocal(); schedulePush();
   const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
   renderCompare();
+  warnIfNotSaved(ok);
 }
 async function delMarker(key, idx){
   const arr=getMarkers(key).slice().sort((a,b)=>a.t-b.t);
   if(idx<0||idx>=arr.length) return;
   arr.splice(idx,1); setMarkers(key, arr);
-  await saveLocal(); schedulePush();
+  const ok=await saveLocal(); schedulePush();
   const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
   renderCompare();
+  warnIfNotSaved(ok);
 }
 
 /* ===== 聴き比べ（お手本↔練習を同じ箇所でくり返し再生） ===== */
