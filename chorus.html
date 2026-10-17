@@ -162,7 +162,7 @@
   /* 歌詞のポイント（区間マーカーとは別・時間指定コメント） */
   .points-label { font-size: 0.8rem; font-weight: 900; color: #d97706; margin: 13px 0 6px; }
   .points { display: flex; flex-direction: column; gap: 7px; }
-  .point-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; cursor: pointer; }
+  .point-item { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; cursor: pointer; flex-wrap: wrap; }
   .point-item:hover { background: #fef3c7; }
   .point-item:active { transform: translateY(1px); }
   .point-time { flex-shrink: 0; font-size: 0.76rem; font-weight: 900; color: #b45309; background: #fef3c7; border-radius: 20px; padding: 3px 10px; font-variant-numeric: tabular-nums; }
@@ -187,6 +187,9 @@
   .pt-badge.alt { color: #15803d; background: #dcfce7; }
   .pt-badge.ten { color: #1d4ed8; background: #dbeafe; }
   .pt-badge.all { color: #6d28d9; background: #ede9fe; }
+  .point-edit { flex-shrink: 0; padding: 4px 11px; border: none; border-radius: 8px; background: #dbeafe; color: #1d4ed8; font-weight: 900; font-family: inherit; font-size: 0.72rem; cursor: pointer; }
+  .point-edit-box { background: #fff7ed; border: 1.5px solid #fdba74; border-radius: 12px; padding: 11px 12px; }
+  .pt-cancel-btn { padding: 8px 14px; border-radius: 11px; border: none; background: #e2e8f0; color: #475569; font-weight: 900; font-family: inherit; font-size: 0.83rem; cursor: pointer; white-space: nowrap; }
 
   /* 気づきメモ（Google共有ページへのリンク・独立カード） */
   .notes-desc { font-size: 0.86rem; color: #475569; font-weight: 600; line-height: 1.55; margin-bottom: 11px; }
@@ -368,8 +371,16 @@ let adminOpen = false;
 const MARKER_LABELS = ['①前を向きなよ','②声にだしたら','③あたりまえの','④溢れ出す涙','⑤我侭だって','⑥僕がもしも','⑦君の指差す','⑧またねって','⑨溢れ出す涙'];
 let _mkSel = {};        // playerKey -> 選択中のプリセットラベル（先生用）
 const POINT_PARTS = ['ソプラノ','アルト','テノール','全体'];
-let _ptSel = {};        // playerKey -> 選択中のパート（歌詞ポイント用）
+let _ptSel = {};        // playerKey -> 選択中のパート配列（新規追加・複数可）
+let _ptEdit = {key:'', idx:-1};  // 編集中の歌詞ポイント
+let _ptEditParts = [];           // 編集中に選んでいるパート（複数可）
 function partClass(p){ return p==='ソプラノ'?'sop':(p==='アルト'?'alt':(p==='テノール'?'ten':'all')); }
+// ポイントのパート配列を取り出す（旧データ：part文字列／新データ：parts配列 の両対応）。SATB順にそろえる
+function pointParts(p){
+  let a = Array.isArray(p.parts) ? p.parts.slice() : (p.part ? [p.part] : []);
+  return a.sort((x,y)=>POINT_PARTS.indexOf(x)-POINT_PARTS.indexOf(y));
+}
+function selParts(key){ if(!Array.isArray(_ptSel[key])) _ptSel[key]=['全体']; return _ptSel[key]; }
 let _pushTimer = null;  // git push のまとめ送信用
 
 // ===== 気づきメモ（Google上の共有ページへ。家でも学校でも・学校アカウントでログイン時）=====
@@ -540,21 +551,34 @@ function pointsHtml(key){
   if(arr.length){
     html+='<div class="points-label">📝 歌詞のポイント（押すとその場所から再生）</div><div class="points">';
     html+=arr.map((p,i)=>{
-      const badge=p.part?`<span class="pt-badge ${partClass(p.part)}">${escHtml(p.part)}</span>`:'';
+      // 編集中のポイントはフォームを表示
+      if(adminOpen && _ptEdit.key===key && _ptEdit.idx===i){
+        return `<div class="point-edit-box">
+          <div class="pt-edit-title">✏️ ポイントを編集（${fmtTime(p.t)}・パートは複数選べます）</div>
+          <div class="pt-parts">${POINT_PARTS.map(pp=>`<button class="pt-part ${partClass(pp)}${_ptEditParts.includes(pp)?' sel':''}" onclick="selEditPart('${pp}')">${pp}</button>`).join('')}</div>
+          <div class="pt-add-row">
+            <input type="text" id="ptedit-${key}" maxlength="60" value="${escHtml(p.text)}">
+            <button class="pt-add-btn" onclick="savePointEdit('${key}')">保存</button>
+            <button class="pt-cancel-btn" onclick="cancelPointEdit('${key}')">やめる</button>
+          </div>
+        </div>`;
+      }
+      const badge=pointParts(p).map(pt=>`<span class="pt-badge ${partClass(pt)}">${escHtml(pt)}</span>`).join('');
       return `<div class="point-item" onclick="jumpTo('${key}',${p.t})">`
         +`<span class="point-time">${fmtTime(p.t)}</span>`
         +badge
         +`<span class="point-text">${escHtml(p.text)}</span>`
+        +(adminOpen?`<button class="point-edit" onclick="event.stopPropagation();startPointEdit('${key}',${i})" title="編集">編集</button>`:'')
         +(adminOpen?`<button class="point-del" onclick="event.stopPropagation();delPoint('${key}',${i})" title="削除">削除</button>`:'')
         +`</div>`;
     }).join('');
     html+='</div>';
   }
   if(adminOpen){
-    const sel=_ptSel[key]||'全体';
+    const sel=selParts(key);
     html+=`<div class="pt-edit">
-      <div class="pt-edit-title">📝 歌詞のポイントを打つ：パートを選び、内容を書いて「＋ここに印」</div>
-      <div class="pt-parts">${POINT_PARTS.map(p=>`<button class="pt-part ${partClass(p)}${sel===p?' sel':''}" onclick="selPart('${key}','${p}')">${p}</button>`).join('')}</div>
+      <div class="pt-edit-title">📝 歌詞のポイントを打つ：パートを選び（複数可）、内容を書いて「＋ここに印」</div>
+      <div class="pt-parts">${POINT_PARTS.map(p=>`<button class="pt-part ${partClass(p)}${sel.includes(p)?' sel':''}" onclick="selPart('${key}','${p}')">${p}</button>`).join('')}</div>
       <div class="pt-add-row">
         <input type="text" id="ptin-${key}" maxlength="60" placeholder="例：ここは強く／ブレス注意／言葉を立てる">
         <button class="pt-add-btn" onclick="addPoint('${key}')">＋ ここに印</button>
@@ -566,17 +590,50 @@ function pointsHtml(key){
 // 区間マーカー＋歌詞ポイントをまとめて描画
 function pinsHtml(key){ return markersHtml(key)+pointsHtml(key); }
 function selPart(key, part){
-  _ptSel[key]=part;
+  const a=selParts(key); const i=a.indexOf(part);
+  if(i>=0) a.splice(i,1); else a.push(part);     // トグル（複数選択）
   const wrap=document.getElementById('mk-wrap-'+key);
-  if(wrap) wrap.querySelectorAll('.pt-part').forEach(b=>b.classList.toggle('sel', b.textContent===part));
+  const box=wrap && wrap.querySelector('.pt-edit'); if(box) box.querySelectorAll('.pt-part').forEach(b=>b.classList.toggle('sel', a.includes(b.textContent)));
+}
+// ===== 歌詞ポイントの編集（確定後も直せる） =====
+function startPointEdit(key, idx){
+  const arr=getPoints(key).slice().sort((a,b)=>a.t-b.t);
+  if(!arr[idx]) return;
+  _ptEdit={key, idx};
+  _ptEditParts=pointParts(arr[idx]); if(!_ptEditParts.length) _ptEditParts=['全体'];
+  const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
+  const inp=document.getElementById('ptedit-'+key); if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+}
+function selEditPart(part){
+  const i=_ptEditParts.indexOf(part);
+  if(i>=0) _ptEditParts.splice(i,1); else _ptEditParts.push(part);  // トグル（複数選択）
+  const box=document.querySelector('.point-edit-box'); if(box) box.querySelectorAll('.pt-part').forEach(b=>b.classList.toggle('sel', _ptEditParts.includes(b.textContent)));
+}
+function cancelPointEdit(key){
+  _ptEdit={key:'', idx:-1};
+  const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
+}
+async function savePointEdit(key){
+  const inp=document.getElementById('ptedit-'+key);
+  const text=((inp&&inp.value.trim())||'').trim();
+  if(!text){ alert('内容を入力してください'); return; }
+  const arr=getPoints(key).slice().sort((a,b)=>a.t-b.t);
+  const idx=_ptEdit.idx;
+  const parts=_ptEditParts.length?_ptEditParts.slice():['全体'];
+  if(arr[idx]){ arr[idx].text=text; arr[idx].parts=parts; delete arr[idx].part; }
+  setPoints(key, arr);
+  _ptEdit={key:'', idx:-1};
+  const ok=await saveLocal(); schedulePush();
+  const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
+  warnIfNotSaved(ok);
 }
 async function addPoint(key){
   const inp=document.getElementById('ptin-'+key);
   const text=((inp&&inp.value.trim())||'').trim();
   if(!text){ alert('ポイントの内容を入力してください'); return; }
-  const part=_ptSel[key]||'全体';
+  const parts=selParts(key).length?selParts(key).slice():['全体'];
   const t=Math.max(0, Math.round(playerCurrentTime(key)*10)/10);
-  const arr=getPoints(key).slice(); arr.push({t, text, part}); setPoints(key, arr);
+  const arr=getPoints(key).slice(); arr.push({t, text, parts}); setPoints(key, arr);
   const ok=await saveLocal(); schedulePush();
   const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
   if(inp && ok) inp.value='';
