@@ -191,6 +191,7 @@
   .pt-badge.alt { color: #15803d; background: #dcfce7; }
   .pt-badge.ten { color: #1d4ed8; background: #dbeafe; }
   .pt-badge.all { color: #6d28d9; background: #ede9fe; }
+  .point-stop { flex-shrink: 0; padding: 4px 11px; border: none; border-radius: 8px; background: #fee2e2; color: #dc2626; font-weight: 900; font-family: inherit; font-size: 0.72rem; cursor: pointer; }
   .point-edit { flex-shrink: 0; padding: 4px 11px; border: none; border-radius: 8px; background: #dbeafe; color: #1d4ed8; font-weight: 900; font-family: inherit; font-size: 0.72rem; cursor: pointer; }
   .point-edit-box { background: #fff7ed; border: 1.5px solid #fdba74; border-radius: 12px; padding: 11px 12px; }
   .pt-cancel-btn { padding: 8px 14px; border-radius: 11px; border: none; background: #e2e8f0; color: #475569; font-weight: 900; font-family: inherit; font-size: 0.83rem; cursor: pointer; white-space: nowrap; }
@@ -354,7 +355,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-17-8';
+const APP_VERSION = '2026-10-17-9';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -597,6 +598,7 @@ function pointsHtml(key){
         +`<span class="point-time">${fmtTime(p.t)}</span>`
         +badge
         +`<span class="point-text">${escHtml(p.text)}</span>`
+        +`<button class="point-stop" onclick="event.stopPropagation();pausePlayer('${key}')" title="止める">⏸ 停止</button>`
         +(adminOpen?`<button class="point-edit" onclick="event.stopPropagation();startPointEdit('${key}',${i})" title="編集">編集</button>`:'')
         +(adminOpen?`<button class="point-del" onclick="event.stopPropagation();delPoint('${key}',${i})" title="削除">削除</button>`:'')
         +`</div>`;
