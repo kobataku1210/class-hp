@@ -461,6 +461,8 @@ function render(){
       <audio id="au-${escHtml(t.id)}" controls preload="none" loop src="${escHtml(t.file)}" onplay="onAnyPlay(this)"></audio>
       <div class="skip-row">
         <button class="skip-btn" onclick="skipAudio('au-${escHtml(t.id)}',-5)">⏪ 5秒</button>
+        <button class="skip-btn" onclick="skipAudio('au-${escHtml(t.id)}',-2)">⏪ 2秒</button>
+        <button class="skip-btn" onclick="skipAudio('au-${escHtml(t.id)}',2)">2秒 ⏩</button>
         <button class="skip-btn" onclick="skipAudio('au-${escHtml(t.id)}',5)">5秒 ⏩</button>
       </div>
       <div id="mk-wrap-${escHtml(t.id)}">${pinsHtml(t.id)}</div>
@@ -914,7 +916,9 @@ function renderReference(){
       ${note}
       <div class="ref-controls">
         <button class="skip-btn" onclick="skipRef(-5)" title="5秒戻す">⏪ 5秒</button>
+        <button class="skip-btn" onclick="skipRef(-2)" title="2秒戻す">⏪ 2秒</button>
         <button class="ref-play" id="ref-play" onclick="toggleRefPlay()" title="再生 / 一時停止">▶</button>
+        <button class="skip-btn" onclick="skipRef(2)" title="2秒進める">2秒 ⏩</button>
         <button class="skip-btn" onclick="skipRef(5)" title="5秒進める">5秒 ⏩</button>
         <input type="range" class="ref-seek" id="ref-seek" min="0" max="1000" value="0" step="1"
                oninput="seekRef(this.value)">
