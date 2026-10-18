@@ -176,6 +176,14 @@
   .point-time { flex-shrink: 0; font-size: 0.76rem; font-weight: 900; color: #b45309; background: #fef3c7; border-radius: 20px; padding: 3px 10px; font-variant-numeric: tabular-nums; }
   .point-text { flex: 1; font-size: 0.9rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word; }
   .point-del { flex-shrink: 0; padding: 4px 11px; border: none; border-radius: 8px; background: #fee2e2; color: #dc2626; font-weight: 900; font-family: inherit; font-size: 0.72rem; cursor: pointer; }
+  /* 歌詞ポイントの仕分け（絞り込み）ボタン */
+  .pt-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 9px; }
+  .pt-fbtn { padding: 6px 13px; border-radius: 20px; border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; font-weight: 800; font-size: 0.82rem; font-family: inherit; cursor: pointer; }
+  .pt-fbtn.sel.allf { background: #e2e8f0; border-color: #94a3b8; color: #334155; }
+  .pt-fbtn.sel.sop { background: #ffe4e6; border-color: #fda4af; color: #be123c; }
+  .pt-fbtn.sel.alt { background: #dcfce7; border-color: #86efac; color: #15803d; }
+  .pt-fbtn.sel.ten { background: #dbeafe; border-color: #93c5fd; color: #1d4ed8; }
+  .pt-fbtn.sel.all { background: #ede9fe; border-color: #c4b5fd; color: #6d28d9; }
   .pt-edit { margin-top: 11px; padding: 12px 13px; background: #fff7ed; border: 1.5px dashed #fdba74; border-radius: 13px; }
   .pt-edit-title { font-size: 0.8rem; font-weight: 900; color: #c2410c; margin-bottom: 9px; line-height: 1.4; }
   .pt-add-row { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
@@ -366,7 +374,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-18-2';
+const APP_VERSION = '2026-10-18-3';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -625,7 +633,7 @@ function pointsHtml(key){
         +(adminOpen?`<button class="point-del" onclick="event.stopPropagation();delPoint('${key}',${i})" title="削除">削除</button>`:'')
         +`</div>`;
     }).join('');
-    html+='</div>';
+    html+='<div class="points">'+(shownCount?itemsHtml:'<div class="notes-empty">この絞り込みに合うポイントはありません。</div>')+'</div>';
   }
   if(adminOpen){
     const sel=selParts(key);
@@ -650,6 +658,10 @@ function pointsHtml(key){
 }
 // 区間マーカー＋歌詞ポイントをまとめて描画
 function pinsHtml(key){ return markersHtml(key)+pointsHtml(key); }
+function selPtFilter(key, f){
+  _ptFilter[key]=f;
+  const wrap=document.getElementById('mk-wrap-'+key); if(wrap) wrap.innerHTML=pinsHtml(key);
+}
 function selPart(key, part){
   const a=selParts(key); const i=a.indexOf(part);
   if(i>=0) a.splice(i,1); else a.push(part);     // トグル（複数選択）
