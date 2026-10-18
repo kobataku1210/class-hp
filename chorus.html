@@ -79,10 +79,10 @@
   .part-badge.alt { color: #15803d; background: #dcfce7; }
   .part-badge.male { color: #1d4ed8; background: #dbeafe; }
   .vocal-item audio { width: 100%; height: 42px; margin-top: 4px; }
-  /* パート別音源（YouTube埋め込み） */
+  /* パート別音源（音声だけ） */
   .pv-item { background: #faf5ff; border: 1.5px solid #e9d5ff; border-radius: 18px; padding: 14px 16px; }
-  .pv-frame { position: relative; width: 100%; padding-top: 56.25%; border-radius: 12px; overflow: hidden; margin-top: 8px; background: #000; }
-  .pv-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .pv-item .ref-controls { margin-top: 8px; }
+  .yt-holder-off { position: absolute; left: -9999px; top: 0; width: 320px; height: 180px; pointer-events: none; }
 
   /* 先生用パネル */
   #admin-card { display: none; }
@@ -366,7 +366,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-18-1';
+const APP_VERSION = '2026-10-18-2';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -534,6 +534,7 @@ function pauseOthers(key){
 function onAnyPlay(el){
   if(typeof _cmp!=='undefined' && _cmp.active) return;  // 聴き比べ中は専用スケジューラが管理（お手本を止めない）
   document.querySelectorAll('audio').forEach(a=>{ if(a!==el) a.pause(); });
+  if(typeof pausePartPlayers==='function') pausePartPlayers();
   if(ytPlayer && ytPlayer.getPlayerState){ try{ if(ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }catch(e){} }
 }
 // マーカー／ポイントの位置へジャンプして再生
@@ -857,14 +858,64 @@ function renderPartVideos(){
   if(!list.length){ card.style.display='none'; return; }
   card.style.display='block';
   el.innerHTML=list.map(v=>{
-    const pc=partClass(v.part);
+    const pc=partClass(v.part), id=escHtml(v.id), yt=escHtml(v.youtubeId);
     return `<div class="pv-item">
       <div class="vocal-head"><span class="part-badge ${pc}">${escHtml(v.part)}</span><span class="vocal-title">${escHtml(v.title)}</span></div>
-      <div class="pv-frame"><iframe src="https://www.youtube.com/embed/${escHtml(v.youtubeId)}" title="${escHtml(v.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>
-      <div class="track-foot"><a class="track-dl" href="https://youtu.be/${escHtml(v.youtubeId)}" target="_blank" rel="noopener">YouTubeで開く ↗</a></div>
+      <div class="ref-controls">
+        <button class="skip-btn play" id="pvplay-${id}" onclick="pvToggle('${id}','${yt}')">▶ 再生</button>
+        <button class="skip-btn" onclick="pvSkip('${id}',-5)">⏪ 5秒</button>
+        <button class="skip-btn" onclick="pvSkip('${id}',-2)">⏪ 2秒</button>
+        <button class="skip-btn" onclick="pvSkip('${id}',2)">2秒 ⏩</button>
+        <button class="skip-btn" onclick="pvSkip('${id}',5)">5秒 ⏩</button>
+        <input type="range" class="ref-seek" id="pvseek-${id}" min="0" max="1000" value="0" oninput="pvSeek('${id}',this.value)">
+        <span class="ref-time" id="pvtime-${id}">0:00 / 0:00</span>
+      </div>
+      <div class="ref-foot">
+        <a class="ref-yt-link" href="https://youtu.be/${yt}" target="_blank" rel="noopener">YouTubeで開く ↗</a>
+        <span class="hint" style="font-size:.74rem">※映像は表示せず、音声だけ流れます</span>
+      </div>
+      <div class="yt-holder-off"><div id="ytp-${id}"></div></div>
     </div>`;
   }).join('');
 }
+/* パート別音源（音声だけ・複数プレーヤー） */
+let _pvPlayers={}, _pvPoll={};
+function pausePartPlayers(exceptId){
+  Object.keys(_pvPlayers).forEach(k=>{ if(k!==exceptId){ try{ const p=_pvPlayers[k]; if(p&&p.getPlayerState&&p.getPlayerState()===YT.PlayerState.PLAYING) p.pauseVideo(); }catch(e){} } });
+}
+function pvPauseOthers(exceptId){
+  pausePartPlayers(exceptId);
+  if(ytPlayer&&ytPlayer.pauseVideo){ try{ if(ytPlayer.getPlayerState&&ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }catch(e){} }
+  document.querySelectorAll('audio').forEach(a=>a.pause());
+}
+async function pvToggle(id, ytid){
+  await loadYTApi();
+  let p=_pvPlayers[id];
+  if(!p){
+    const holder=document.getElementById('ytp-'+id); if(!holder) return;
+    _pvPlayers[id]=new YT.Player(holder,{ videoId:ytid, width:'320', height:'180',
+      playerVars:{ playsinline:1, controls:0, rel:0, modestbranding:1, autoplay:1 },
+      events:{ onReady:(e)=>{ pvPauseOthers(id); e.target.playVideo(); pvUpdateTime(id); }, onStateChange:(e)=>pvState(id,e) } });
+    return;
+  }
+  if(p.getPlayerState && p.getPlayerState()===YT.PlayerState.PLAYING) p.pauseVideo();
+  else { pvPauseOthers(id); p.playVideo(); }
+}
+function pvState(id,e){
+  const btn=document.getElementById('pvplay-'+id);
+  if(e.data===YT.PlayerState.ENDED){ try{ _pvPlayers[id].seekTo(0,true); _pvPlayers[id].playVideo(); }catch(err){} return; } // くり返し
+  if(e.data===YT.PlayerState.PLAYING){ pvPauseOthers(id); if(btn) btn.textContent='⏸ 停止'; if(_pvPoll[id]) clearInterval(_pvPoll[id]); _pvPoll[id]=setInterval(()=>pvUpdateTime(id),400); }
+  else { if(btn) btn.textContent='▶ 再生'; if(e.data!==YT.PlayerState.BUFFERING && _pvPoll[id]){ clearInterval(_pvPoll[id]); _pvPoll[id]=null; pvUpdateTime(id); } }
+}
+function pvUpdateTime(id){
+  const p=_pvPlayers[id]; if(!p||!p.getDuration) return;
+  const dur=p.getDuration()||0, cur=p.getCurrentTime()||0;
+  const seek=document.getElementById('pvseek-'+id), time=document.getElementById('pvtime-'+id);
+  if(seek && dur>0 && document.activeElement!==seek) seek.value=Math.round(cur/dur*1000);
+  if(time) time.textContent=fmtTime(cur)+' / '+fmtTime(dur);
+}
+function pvSeek(id,v){ const p=_pvPlayers[id]; if(!p||!p.getDuration) return; const dur=p.getDuration()||0; if(dur>0){ p.seekTo(dur*(v/1000),true); pvUpdateTime(id); } }
+function pvSkip(id,delta){ const p=_pvPlayers[id]; if(!p||!p.getCurrentTime) return; const dur=p.getDuration()||0; let t=(p.getCurrentTime()||0)+delta; t=Math.max(0, dur>0?Math.min(dur,t):t); p.seekTo(t,true); pvUpdateTime(id); }
 
 /* ===== 発声方法（パート別の発声練習音源） ===== */
 function getVocal(){ const c=ensureChorus(); return c.vocal||[]; }
@@ -1010,7 +1061,7 @@ function onRefState(e){
     try{ ytPlayer.seekTo(0, true); ytPlayer.playVideo(); }catch(err){}
     return;
   }
-  if(e.data===YT.PlayerState.PLAYING){ document.querySelectorAll('audio').forEach(a=>a.pause()); if(btn) btn.textContent='⏸'; if(ytPollTimer) clearInterval(ytPollTimer); ytPollTimer=setInterval(updateRefTime,400); }
+  if(e.data===YT.PlayerState.PLAYING){ document.querySelectorAll('audio').forEach(a=>a.pause()); if(typeof pausePartPlayers==='function') pausePartPlayers(); if(btn) btn.textContent='⏸'; if(ytPollTimer) clearInterval(ytPollTimer); ytPollTimer=setInterval(updateRefTime,400); }
   else { if(btn) btn.textContent='▶'; if(e.data!==YT.PlayerState.BUFFERING && ytPollTimer){ clearInterval(ytPollTimer); ytPollTimer=null; updateRefTime(); } }
 }
 function updateRefTime(){
