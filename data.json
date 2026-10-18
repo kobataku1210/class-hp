@@ -117,7 +117,13 @@
         "id": "pv-alt-1",
         "part": "アルト",
         "title": "アルト パート音源",
-        "youtubeId": "P85hUQd_Pgs"
+        "youtubeId": "P85hUQd_Pgs",
+        "markers": [
+          {
+            "label": "①前を向きなよ",
+            "t": 0
+          }
+        ]
       },
       {
         "id": "pv-ten-1",
