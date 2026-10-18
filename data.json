@@ -73,7 +73,13 @@
         "id": "pv-sop-1",
         "part": "ソプラノ",
         "title": "ソプラノ パート音源",
-        "youtubeId": "adCuBMjYjZg"
+        "youtubeId": "adCuBMjYjZg",
+        "markers": [
+          {
+            "label": "①前を向きなよ",
+            "t": 12.6
+          }
+        ]
       },
       {
         "id": "pv-alt-1",
