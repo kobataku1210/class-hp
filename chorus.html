@@ -102,6 +102,13 @@
   #up-status { font-size: 0.84rem; font-weight: 800; margin-left: 4px; }
   #up-status.ok { color: #16a34a; } #up-status.err { color: #dc2626; } #up-status.go { color: #7c3aed; }
 
+  /* 全部とめるボタン（画面下・再生中に表示） */
+  #stopall-btn { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 9000;
+    display: flex; align-items: center; gap: 6px; padding: 13px 26px; border: none; border-radius: 30px;
+    background: linear-gradient(135deg,#ef4444,#dc2626); color: #fff; font-weight: 900; font-family: inherit;
+    font-size: 1rem; cursor: pointer; box-shadow: 0 8px 24px rgba(220,38,38,0.45); }
+  #stopall-btn:active { transform: translateX(-50%) translateY(1px); }
+
   .back-link { display: inline-block; margin-bottom: 14px; color: #64748b; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
   .back-link:hover { color: #6d28d9; }
 
@@ -353,6 +360,9 @@
   </div>
 </div>
 
+<!-- 全部とめる（再生中だけ表示） -->
+<button id="stopall-btn" onclick="stopAll()" style="display:none">⏹ 全部とめる</button>
+
 <!-- PINモーダル -->
 <div id="pin-modal">
   <div class="pin-box">
@@ -374,7 +384,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-18-4';
+const APP_VERSION = '2026-10-18-5';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -881,6 +891,21 @@ function stopCompare(silent){
   if(!silent) renderCompare();
 }
 
+/* ===== 全部とめる ===== */
+function anythingPlaying(){
+  try{ if(ytPlayer && ytPlayer.getPlayerState && ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) return true; }catch(e){}
+  for(const k in _pvPlayers){ try{ if(_pvPlayers[k].getPlayerState && _pvPlayers[k].getPlayerState()===YT.PlayerState.PLAYING) return true; }catch(e){} }
+  for(const a of document.querySelectorAll('audio')){ if(!a.paused) return true; }
+  return false;
+}
+function stopAll(){
+  if(typeof _cmp!=='undefined' && _cmp.active) stopCompare(true);
+  try{ if(ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo(); }catch(e){}
+  for(const k in _pvPlayers){ try{ _pvPlayers[k].pauseVideo(); }catch(e){} }
+  document.querySelectorAll('audio').forEach(a=>a.pause());
+  const b=document.getElementById('stopall-btn'); if(b) b.style.display='none';
+}
+
 /* ===== パート別音源（YouTube埋め込み） ===== */
 function getPartVideos(){ const c=ensureChorus(); return c.partVideos||[]; }
 let _pvRenderedSig='';
@@ -1249,6 +1274,8 @@ function submitPin(){
 document.addEventListener('DOMContentLoaded', async ()=>{
   _data=await loadData();
   render();
+  // 再生中だけ「全部とめる」ボタンを表示
+  setInterval(()=>{ const b=document.getElementById('stopall-btn'); if(b) b.style.display=anythingPlaying()?'flex':'none'; }, 600);
 });
 </script>
 </body>
