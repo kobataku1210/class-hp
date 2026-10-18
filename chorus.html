@@ -79,6 +79,10 @@
   .part-badge.alt { color: #15803d; background: #dcfce7; }
   .part-badge.male { color: #1d4ed8; background: #dbeafe; }
   .vocal-item audio { width: 100%; height: 42px; margin-top: 4px; }
+  /* パート別音源（YouTube埋め込み） */
+  .pv-item { background: #faf5ff; border: 1.5px solid #e9d5ff; border-radius: 18px; padding: 14px 16px; }
+  .pv-frame { position: relative; width: 100%; padding-top: 56.25%; border-radius: 12px; overflow: hidden; margin-top: 8px; background: #000; }
+  .pv-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
   /* 先生用パネル */
   #admin-card { display: none; }
@@ -261,6 +265,13 @@
     <div id="ref-view"></div>
   </div>
 
+  <!-- パート別音源（YouTube） -->
+  <div class="card" id="partvid-card" style="display:none">
+    <div class="card-title">🎼 パート別音源（YouTube）</div>
+    <div class="vocal-sub">自分のパートの音をくり返し聴いて覚えよう！</div>
+    <div class="vocal-list" id="partvid-list"></div>
+  </div>
+
   <!-- 発声方法（パート別） -->
   <div class="card" id="vocal-card" style="display:none">
     <div class="card-title">🗣 発声方法</div>
@@ -355,7 +366,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-17-9';
+const APP_VERSION = '2026-10-18-1';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -447,6 +458,7 @@ function render(){
   renderReference();
   renderNotes();
   renderCompare();
+  renderPartVideos();
   renderVocal();
   const el=document.getElementById('track-list');
   const tracks=getTracks().slice().sort((a,b)=> (a.date||'')<(b.date||'')?1:(a.date||'')>(b.date||'')?-1:0);
@@ -834,6 +846,24 @@ function stopCompare(silent){
   document.querySelectorAll('audio').forEach(a=>a.pause());
   if(ytPlayer&&ytPlayer.pauseVideo){ try{ if(ytPlayer.getPlayerState&&ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }catch(e){} }
   if(!silent) renderCompare();
+}
+
+/* ===== パート別音源（YouTube埋め込み） ===== */
+function getPartVideos(){ const c=ensureChorus(); return c.partVideos||[]; }
+function renderPartVideos(){
+  const card=document.getElementById('partvid-card'), el=document.getElementById('partvid-list');
+  if(!card||!el) return;
+  const list=getPartVideos();
+  if(!list.length){ card.style.display='none'; return; }
+  card.style.display='block';
+  el.innerHTML=list.map(v=>{
+    const pc=partClass(v.part);
+    return `<div class="pv-item">
+      <div class="vocal-head"><span class="part-badge ${pc}">${escHtml(v.part)}</span><span class="vocal-title">${escHtml(v.title)}</span></div>
+      <div class="pv-frame"><iframe src="https://www.youtube.com/embed/${escHtml(v.youtubeId)}" title="${escHtml(v.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>
+      <div class="track-foot"><a class="track-dl" href="https://youtu.be/${escHtml(v.youtubeId)}" target="_blank" rel="noopener">YouTubeで開く ↗</a></div>
+    </div>`;
+  }).join('');
 }
 
 /* ===== 発声方法（パート別の発声練習音源） ===== */

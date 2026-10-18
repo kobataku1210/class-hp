@@ -81,6 +81,26 @@
         "size": 98041
       }
     ],
+    "partVideos": [
+      {
+        "id": "pv-sop-1",
+        "part": "ソプラノ",
+        "title": "ソプラノ パート音源",
+        "youtubeId": "adCuBMjYjZg"
+      },
+      {
+        "id": "pv-alt-1",
+        "part": "アルト",
+        "title": "アルト パート音源",
+        "youtubeId": "P85hUQd_Pgs"
+      },
+      {
+        "id": "pv-ten-1",
+        "part": "テノール",
+        "title": "テノール パート音源",
+        "youtubeId": "HoKLcExmpHc"
+      }
+    ],
     "tracks": [
       {
         "id": "t1792154683847",
