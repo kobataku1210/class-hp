@@ -398,6 +398,7 @@ const POINT_PARTS = ['ソプラノ','アルト','テノール','全体'];
 let _ptSel = {};        // playerKey -> 選択中のパート配列（新規追加・複数可）
 let _ptEdit = {key:'', idx:-1};  // 編集中の歌詞ポイント
 let _ptEditParts = [];           // 編集中に選んでいるパート（複数可）
+let _ptFilter = {};              // key -> 絞り込み中のパート（すべて/ソプラノ/アルト/テノール/全体）
 function partClass(p){ return p==='ソプラノ'?'sop':(p==='アルト'?'alt':(p==='テノール'?'ten':'all')); }
 // ポイントのパート配列を取り出す（旧データ：part文字列／新データ：parts配列 の両対応）。SATB順にそろえる
 function pointParts(p){
@@ -592,10 +593,18 @@ function pointsHtml(key){
   const arr=getPoints(key).slice().sort((a,b)=>a.t-b.t);
   let html='';
   if(arr.length){
-    html+='<div class="points-label">📝 歌詞のポイント（押すとその場所から再生）</div><div class="points">';
-    html+=arr.map((p,i)=>{
+    const f=_ptFilter[key]||'すべて';
+    const FILTERS=['すべて','ソプラノ','アルト','テノール','全体'];
+    const match=(p)=>{ if(f==='すべて') return true; const ps=pointParts(p); return f==='全体'?ps.includes('全体'):(ps.includes(f)||ps.includes('全体')); };
+    html+='<div class="points-label">📝 歌詞のポイント（押すとその場所から再生）</div>';
+    html+='<div class="pt-filter">'+FILTERS.map(ff=>`<button class="pt-fbtn ${ff==='すべて'?'allf':partClass(ff)}${f===ff?' sel':''}" onclick="selPtFilter('${key}','${ff}')">${ff}</button>`).join('')+'</div>';
+    let shownCount=0;
+    const itemsHtml=arr.map((p,i)=>{
+      const editing = adminOpen && _ptEdit.key===key && _ptEdit.idx===i;
+      if(!editing && !match(p)) return '';
+      shownCount++;
       // 編集中のポイントはフォームを表示
-      if(adminOpen && _ptEdit.key===key && _ptEdit.idx===i){
+      if(editing){
         return `<div class="point-edit-box">
           <div class="pt-edit-title">✏️ ポイントを編集（${fmtTime(p.t)}・パートは複数選べます）</div>
           <div class="pt-parts">${POINT_PARTS.map(pp=>`<button class="pt-part ${partClass(pp)}${_ptEditParts.includes(pp)?' sel':''}" onclick="selEditPart('${pp}')">${pp}</button>`).join('')}</div>
