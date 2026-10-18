@@ -161,7 +161,13 @@
         "id": "pv-ten-1",
         "part": "テノール",
         "title": "テノール パート音源",
-        "youtubeId": "HoKLcExmpHc"
+        "youtubeId": "HoKLcExmpHc",
+        "markers": [
+          {
+            "label": "①前を向きなよ",
+            "t": 0
+          }
+        ]
       }
     ],
     "tracks": [
