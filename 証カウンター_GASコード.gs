@@ -30,18 +30,35 @@ function getState() {
   return { total: getTotal_(), goal: getGoal_() };
 }
 
+/* 生徒の加算は「目標−1」回で止まる（最後の1回は teacherFinal でクラスみんなで押す） */
 function addCount(n) {
   n = Math.floor(Number(n) || 0);
   if (n < 1) n = 1;
   if (n > MAX_ADD) n = MAX_ADD;
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
+  var asked = n;
   try {
     var sh = stateSheet_();
-    var t = (Number(sh.getRange('B1').getValue()) || 0) + n;
-    sh.getRange('B1').setValue(t);
+    var cur = Number(sh.getRange('B1').getValue()) || 0;
+    var cap = getGoal_() - 1;
+    n = Math.max(0, Math.min(n, cap - cur));
+    if (n > 0) sh.getRange('B1').setValue(cur + n);
   } finally { lock.releaseLock(); }
-  return { ok: true, added: n, total: getTotal_(), goal: getGoal_() };
+  return { ok: true, added: n, capped: n < asked, total: getTotal_(), goal: getGoal_() };
+}
+
+/* 最後の1回（先生の端末からクラスみんなで押す）：合計を目標回数にする */
+function teacherFinal(pin) {
+  if (String(pin) !== ADMIN_PIN) return { ok: false, error: '暗証番号が違います' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    var sh = stateSheet_();
+    var cur = Number(sh.getRange('B1').getValue()) || 0;
+    if (cur < getGoal_()) sh.getRange('B1').setValue(getGoal_());
+  } finally { lock.releaseLock(); }
+  return { ok: true, total: getTotal_(), goal: getGoal_() };
 }
 
 function getNotes() {
