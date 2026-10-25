@@ -74,6 +74,14 @@
     ],
     "partVideos": [
       {
+        "id": "pv-ref2",
+        "part": "",
+        "title": "お手本②「証」",
+        "youtubeId": "qrdilmxSe7w",
+        "kind": "ref2",
+        "markers": []
+      },
+      {
         "id": "pv-sop-1",
         "part": "ソプラノ",
         "title": "ソプラノ パート音源",
@@ -250,10 +258,6 @@
           {
             "label": "⑨溢れ出す涙",
             "t": 224.3
-          },
-          {
-            "label": "Waー",
-            "t": 254.1
           }
         ]
       },

@@ -72,6 +72,11 @@
   .ly-line{ opacity:.12; filter:blur(2.5px); transition:opacity .7s ease, filter .7s ease; }
   .ly-line.on{ opacity:1; filter:none; color:var(--gold-soft); text-shadow:0 0 10px rgba(244,200,74,.25); }
   .ly-blank{ height:.7em; }
+  /* 先生からのメッセージ（歌詞の下） */
+  .tmsg{ border-color:rgba(244,200,74,.35); animation:fadeIn .8s ease; }
+  .tmsg .ly-line{ text-indent:1em; line-height:1.9; margin-bottom:.6em; }
+  .tmsg .ly-line.on{ color:var(--text); text-shadow:none; }
+  .tmsg .ly-line.last.on{ color:var(--gold-soft); text-shadow:0 0 10px rgba(244,200,74,.25); font-weight:700; }
   .sparkle-layer{ position:absolute; inset:0; pointer-events:none; }
   .spark{ position:absolute; font-size:26px; animation:sparkPop 1s ease-out forwards;
     filter:drop-shadow(0 0 6px rgba(244,200,74,.9)); }
@@ -126,6 +131,53 @@
     background:rgba(10,16,41,.95); border:1px solid rgba(244,200,74,.5); color:var(--gold-soft);
     padding:10px 18px; border-radius:99px; font-size:14px; z-index:20; transition:.3s; pointer-events:none; }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .msg-cap{ font-size:15px; line-height:1.8; color:var(--gold-soft); font-weight:700; margin:-6px 0 16px;
+    padding:10px 12px; border:1px solid rgba(244,200,74,.45); border-radius:10px; background:rgba(244,200,74,.08); }
+
+  /* ===== 最後の1回（みんなで押す）ボタン ===== */
+  .final-btn{ width:100%; margin-bottom:12px; font-size:24px; padding:22px 16px; letter-spacing:.06em;
+    background:linear-gradient(180deg,#fff7d6,#ffd96a 45%,#e8a92a); color:#3a2300;
+    border:2px solid #fff3c4; animation:finalPulse 1.6s ease-in-out infinite; }
+  @keyframes finalPulse{ 0%,100%{ box-shadow:0 0 18px rgba(255,214,100,.5), 0 0 0 0 rgba(255,214,100,.5);} 50%{ box-shadow:0 0 40px rgba(255,214,100,.95), 0 0 0 14px rgba(255,214,100,0);} }
+
+  /* ===== 2011回目の演出 ===== */
+  .finale{ position:fixed; inset:0; z-index:50; overflow:hidden; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 50% 45%, #2a2160 0%, #0b0f2c 55%, #04060f 100%); animation:finIn .6s ease; }
+  @keyframes finIn{ from{opacity:0} to{opacity:1} }
+  #fxCanvas{ position:absolute; inset:0; width:100%; height:100%; }
+  .fin-rays{ position:absolute; left:50%; top:45%; width:180vmax; height:180vmax; margin:-90vmax 0 0 -90vmax; opacity:0;
+    background:repeating-conic-gradient(rgba(255,220,120,.22) 0deg 6deg, transparent 6deg 18deg);
+    -webkit-mask:radial-gradient(circle, #000 0%, transparent 60%); mask:radial-gradient(circle, #000 0%, transparent 60%); }
+  .finale.go .fin-rays{ animation:raysIn 1.2s ease forwards, raysSpin 40s linear infinite; }
+  @keyframes raysIn{ to{ opacity:1; } }
+  @keyframes raysSpin{ to{ transform:rotate(360deg); } }
+  .fin-flash{ position:absolute; inset:0; background:radial-gradient(circle at 50% 45%, #fff 0%, #ffe9a8 35%, rgba(255,233,168,0) 75%);
+    opacity:0; pointer-events:none; }
+  .finale.go .fin-flash{ animation:flash 1.4s ease-out; }
+  @keyframes flash{ 0%{opacity:0} 8%{opacity:1} 100%{opacity:0} }
+  .fin-center{ position:relative; z-index:2; text-align:center; padding:16px; }
+  .fin-count{ font-size:clamp(40px,9vw,84px); font-weight:800; color:#ffe9a8; letter-spacing:.04em;
+    text-shadow:0 0 24px rgba(255,214,100,.8); font-variant-numeric:tabular-nums; }
+  .fin-count small{ font-size:.45em; margin-left:.15em; }
+  .fin-count.pop{ animation:countPop .7s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes countPop{ 0%{ transform:scale(1);} 40%{ transform:scale(1.6); color:#fff; } 100%{ transform:scale(1);} }
+  .fin-kanji{ font-family:'游明朝','Yu Mincho',serif; font-weight:700; font-size:clamp(150px,34vmin,320px); line-height:1.05;
+    background:linear-gradient(170deg,#fff7ec 10%,#ffe7a6 30%,#f7cf63 50%,#eaa84a 70%,#c9743b 90%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 30px rgba(255,214,100,.85)); opacity:0; }
+  .finale.go .fin-kanji{ animation:kanjiIn 1.6s cubic-bezier(.16,1,.3,1) .1s forwards, kanjiGlow 3s ease-in-out 1.8s infinite; }
+  @keyframes kanjiIn{ 0%{ opacity:0; transform:scale(3); filter:blur(18px) drop-shadow(0 0 30px rgba(255,214,100,.85)); }
+    100%{ opacity:1; transform:scale(1); filter:blur(0) drop-shadow(0 0 30px rgba(255,214,100,.85)); } }
+  @keyframes kanjiGlow{ 0%,100%{ filter:drop-shadow(0 0 26px rgba(255,214,100,.75)); } 50%{ filter:drop-shadow(0 0 60px rgba(255,236,170,1)); } }
+  .fin-title{ font-size:clamp(26px,5.5vw,46px); font-weight:800; color:#fff; letter-spacing:.12em; margin-top:6px;
+    text-shadow:0 0 18px rgba(255,214,100,.9), 0 2px 0 #b5781e; }
+  .fin-title span{ display:inline-block; opacity:0; transform:translateY(24px) scale(.6); }
+  .fin-title span.on{ animation:charIn .5s cubic-bezier(.2,1.6,.4,1) forwards; }
+  @keyframes charIn{ to{ opacity:1; transform:none; } }
+  .fin-sub{ font-size:clamp(15px,2.6vw,20px); color:#ffe9a8; margin-top:12px; letter-spacing:.1em; opacity:0; transition:opacity 1s; }
+  .fin-sub.on{ opacity:1; }
+  .tmsg .ly-line.last.shine{ animation:lastShine 2.4s ease-in-out 3; }
+  @keyframes lastShine{ 0%,100%{ text-shadow:0 0 10px rgba(244,200,74,.25);} 50%{ text-shadow:0 0 26px rgba(255,230,150,1);} }
 </style>
 </head>
 <body>
@@ -138,6 +190,7 @@
   <div class="card">
     <div class="showcase">
       <div class="lyrics" id="lyrics"></div>
+      <div class="lyrics tmsg hidden" id="teacherMsg"></div>
       <div class="gauge-wrap">
         <div class="gauge-title">証ゲージ</div>
         <svg id="gauge" viewBox="0 0 400 400" aria-label="証ゲージ">
@@ -165,9 +218,10 @@
     <div class="count">クラス合計 <b id="curCount">0</b>/ <span id="goalCount">1000</span> 回</div>
     <div class="bar"><i id="barFill"></i></div>
     <div class="remain" id="remainText">あと <b>1000</b> 回で証ゲージが満タン＆歌詞が完成！</div>
-    <div id="doneMsg" class="doneMsg hidden">🎉 証ゲージ満タン！　クラスみんなの「証」と歌詞が完成しました！</div>
+    <div id="doneMsg" class="doneMsg hidden">🎉 証ゲージ満タン！　クラスみんなの「証」が完成しました！</div>
 
     <div class="report">
+      <button id="finalBtn" class="btn final-btn hidden" type="button">🎉 みんなで押す！ 最後の1回</button>
       <button id="addOne" class="btn big" type="button">🎵 1回 聴いた！</button>
       <div class="row">
         <input id="addMany" type="number" min="1" max="1000" placeholder="まとめて入力（最大1000）">
@@ -196,6 +250,7 @@
     <div class="foot">
       <button id="closeTeacher" class="btn ghost" type="button">閉じる</button>
       <button id="changeGoal" class="btn ghost" type="button">目標回数を変更</button>
+      <button id="finalUnlock" class="btn" type="button">🎉 最後の1回ボタンを出す</button>
       <button id="clearNotes" class="danger" type="button">メモを全消去</button>
       <button id="resetAll" class="danger" type="button">合計をリセット</button>
     </div>
@@ -207,7 +262,20 @@
     <div class="msg-emoji">🎵</div>
     <div class="msg-thanks">音源を聴いてくれて、ありがとう！</div>
     <div class="msg-body" id="msgBody"></div>
+    <div class="msg-cap hidden" id="msgCap"></div>
     <button id="msgClose" class="btn full" type="button">閉じる</button>
+  </div>
+</div>
+
+<div id="finale" class="finale hidden">
+  <canvas id="fxCanvas"></canvas>
+  <div class="fin-rays"></div>
+  <div class="fin-flash"></div>
+  <div class="fin-center">
+    <div class="fin-count" id="finCount">2010<small>回</small></div>
+    <div class="fin-kanji">証</div>
+    <div class="fin-title" id="finTitle">クラスの「証」、完成！</div>
+    <div class="fin-sub" id="finSub">みんなで積み重ねた練習の証</div>
   </div>
 </div>
 
@@ -216,6 +284,7 @@
 <script>
 /* ===== 設定 ===== */
 var DEFAULT_GOAL = 1000;
+var LYRICS_GOAL = 1000;   // 歌詞が完成する回数（これを超えると先生からのメッセージが現れ始める）
 var POLL_MS = 12000;
 
 /* 「証」の歌詞（"" は空行＝間あき） */
@@ -256,6 +325,17 @@ var LYRICS = [
   '絆を胸に秘め　僕も歩き出す'
 ];
 
+/* 先生からのメッセージ（1要素＝1段落。歌詞完成後、目標回数に近づくにつれて1段落ずつ現れる） */
+var TEACHER_MSG = [
+  '私は毎年、この合唱祭という行事に本気で取り組んできました。合唱祭は、人生の中で中学校の3年間にしかない行事だと思っているからです。その行事を中途半端なものにはしたくないと感じています。',
+  'もちろん、合唱祭は教員が中心となって取り組む行事ではありません。でも、生徒が中心だからといって、教員が何もしなくていいわけではないと思っています。教員1年目の私は、「生徒が中心なのだから、自分は何もしなくてよい」と言い訳をしていました。その結果、「もっと関わるべきだった」と後悔しました。',
+  'それ以来、私は考えを改めました。自分にできることはやる。そして、その気持ちに必ず応えてくれるリーダーがいるから、任せるべきときはそのリーダーを信じて任せる。そういう方針に変えました。',
+  'さて、いよいよ本番が近づいてきました。私の一番の願いは、皆さんの想いを観客の皆さんに届けてほしいということです。一生懸命に気持ちを込めて歌う姿こそが、聴いている人の心を動かします。合唱部のように、完璧なハーモニーは難しいかもしれません。でも、想いを込めて歌うことはできます。',
+  '本音を言えば、私もステージに上がって皆さんと一緒に歌いたい気持ちです。でも、皆さんが積み重ねてきた練習をすべて知ったうえで、その晴れ舞台を客席から聴くことができるのは、私だけです。',
+  '本番では、自分の心まで動いてしまうくらい、たっぷりと気持ちを込めて歌ってください。',
+  'そして、中学校生活最後の合唱祭を、皆さんの「証」にしてください。客席から応援しています！'
+];
+
 var MESSAGES = [
   "小さな積み重ねが、本番の大きな自信になります。",
   "みんなの「聴いた」が集まって、クラスの音が一つになっていきます。",
@@ -287,6 +367,7 @@ var MESSAGES = [
 var $ = function(id){ return document.getElementById(id); };
 var state = { total:0, goal:DEFAULT_GOAL };
 var pollTimer = null, lastMsgIdx = -1;
+var finalPin = null;   // 先生パネルで「最後の1回ボタンを出す」と入る（この端末だけ）
 
 var MINE_KEY = "shirushi_mine";
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
@@ -310,8 +391,8 @@ function call(method){
   });
 }
 
-/* ===== ゲージ＋歌詞 ===== */
-var lyLines=[], gaugeReady=false;
+/* ===== ゲージ＋歌詞＋先生からのメッセージ ===== */
+var lyLines=[], msgLines=[], gaugeReady=false;
 function buildGauge(){
   if(gaugeReady) return;
   var c=$("lyrics"); c.innerHTML='<div class="ly-head">♪ 証 ― 歌詞（ゲージがたまると完成）</div>';
@@ -321,6 +402,12 @@ function buildGauge(){
     var d=document.createElement("div"); d.className="ly-line"; d.textContent=line;
     c.appendChild(d); lyLines.push(d);
   });
+  var m=$("teacherMsg"); m.innerHTML='<div class="ly-head">✉ 先生から ― 歌詞完成のごほうび（ゲージがたまると読めるよ）</div>';
+  msgLines=[];
+  TEACHER_MSG.forEach(function(p, i){
+    var d=document.createElement("div"); d.className="ly-line"+(i===TEACHER_MSG.length-1?" last":""); d.textContent=p;
+    m.appendChild(d); msgLines.push(d);
+  });
   gaugeReady=true;
 }
 function updateGauge(total, goal){
@@ -329,9 +416,18 @@ function updateGauge(total, goal){
   var rect=$("gaugeRect");
   rect.style.y=(400-400*ratio)+"px";
   rect.style.height=(400*ratio)+"px";
-  $("gaugePct").textContent=Math.round(ratio*100);
-  var shown=Math.round(ratio*lyLines.length);
+  $("gaugePct").textContent = total>=goal ? 100 : Math.min(99, Math.round(ratio*100));
+  // 歌詞は LYRICS_GOAL 回で完成
+  var lyGoal=Math.min(LYRICS_GOAL, goal);
+  var lyRatio=Math.min(lyGoal>0?total/lyGoal:0, 1);
+  var shown=Math.round(lyRatio*lyLines.length);
   lyLines.forEach(function(d,i){ d.classList.toggle('on', i<shown); });
+  // 歌詞完成後、目標回数までの残りで先生からのメッセージが1段落ずつ現れる
+  var lyDone = total>=lyGoal;
+  $("teacherMsg").classList.toggle("hidden", !lyDone);
+  var msgRatio = goal>lyGoal ? Math.min(Math.max((total-lyGoal)/(goal-lyGoal),0),1) : (lyDone?1:0);
+  var msgShown=Math.floor(msgRatio*msgLines.length);
+  msgLines.forEach(function(d,i){ d.classList.toggle('on', i<msgShown); });
 }
 function render(spark){
   var goal = state.goal || DEFAULT_GOAL;
@@ -343,9 +439,20 @@ function render(spark){
   $("barFill").style.width = (ratio*100)+"%";
   $("myCount").textContent = getMine();
   var remain = Math.max(0, goal-total);
-  $("remainText").innerHTML = "あと <b>"+remain+"</b> 回で証ゲージが満タン＆歌詞が完成！";
+  var remainHtml;
+  if(remain===1){
+    remainHtml = "🔒 <b>"+(goal-1)+"</b> 回に到達！　最後の1回は、クラスみんなで押そう！";
+  }else if(goal>LYRICS_GOAL && total<LYRICS_GOAL){
+    remainHtml = "あと <b>"+(LYRICS_GOAL-total)+"</b> 回で歌詞が完成！";
+  }else if(goal>LYRICS_GOAL){
+    remainHtml = "あと <b>"+remain+"</b> 回で証ゲージが満タン＆先生からのメッセージが完成！";
+  }else{
+    remainHtml = "あと <b>"+remain+"</b> 回で証ゲージが満タン＆歌詞が完成！";
+  }
+  $("remainText").innerHTML = remainHtml;
   $("remainText").classList.toggle("hidden", remain<=0);
   $("doneMsg").classList.toggle("hidden", total < goal);
+  $("finalBtn").classList.toggle("hidden", !(finalPin && remain===1));
   if(spark) sparkle();
 }
 function sparkle(){
@@ -366,14 +473,14 @@ function report(n){
   $("addOne").disabled = true; $("addManyBtn").disabled = true;
   call("addCount", n).then(function(j){
     if(!j || !j.ok){ throw new Error((j&&j.error)||"add failed"); }
-    addMine(j.added);
-    var before = state.total||0;
+    if(j.added>0) addMine(j.added);
     state.total = j.total; state.goal = j.goal;
-    render(true);
-    showMessage();
-    if(before < state.goal && state.total >= state.goal){
-      setTimeout(function(){ toast("🎉 証ゲージ満タン！　クラスの証、完成！"); }, 600);
+    render(j.added>0);
+    var cap = "";
+    if(j.capped){
+      cap = (j.added>0 ? j.added+" 回分を足して、" : "") + "証ゲージは "+(j.goal-1)+" 回でストップ中！<br>最後の1回は、クラスみんなで押そう！";
     }
+    showMessage(cap);
   }).catch(function(){
     toast("追加できませんでした");
     $("addOne").disabled=false; $("addManyBtn").disabled=false;
@@ -383,8 +490,10 @@ function pickMessage(){
   var i; do { i = Math.floor(Math.random()*MESSAGES.length); } while(MESSAGES.length>1 && i===lastMsgIdx);
   lastMsgIdx = i; return MESSAGES[i];
 }
-function showMessage(){
+function showMessage(cap){
   $("msgBody").textContent = pickMessage();
+  $("msgCap").innerHTML = cap || "";
+  $("msgCap").classList.toggle("hidden", !cap);
   $("msgModal").classList.remove("hidden");
 }
 function closeMessage(){
@@ -427,7 +536,12 @@ function postNote(){
 function startPoll(){
   stopPoll();
   pollTimer=setInterval(function(){
-    call("getState").then(function(s){ state=s; render(false); }).catch(function(){});
+    call("getState").then(function(s){
+      var before = state.total||0;
+      state=s; render(false);
+      // 先生の端末で最後の1回が押されたら、全員の画面で演出
+      if(before>0 && before<s.goal && s.total>=s.goal) celebrate();
+    }).catch(function(){});
     loadNotes();
   }, POLL_MS);
 }
@@ -444,6 +558,110 @@ function renderRoster(){
   $("rosterArea").innerHTML=head+'<div style="color:#8fa0cc;font-size:13px">匿名集計のため、クラス合計のみ記録しています。</div>';
 }
 
+/* ===== 最後の1回（みんなで押す） ===== */
+function pressFinal(){
+  if(!finalPin) return;
+  $("finalBtn").disabled = true;
+  call("teacherFinal", finalPin).then(function(j){
+    if(!j || !j.ok){ alert((j&&j.error)||"失敗しました"); finalPin=null; render(false); return; }
+    state.total = j.total; state.goal = j.goal;
+    finalPin = null;
+    celebrate();
+  }).catch(function(){ toast("通信エラー。もう一度押してください"); })
+  .then(function(){ $("finalBtn").disabled = false; });
+}
+
+/* ===== 2011回目の演出 ===== */
+var finaleShown=false, finaleClosable=false, fxRAF=null, fxStop=false;
+function celebrate(){
+  if(finaleShown) return; finaleShown=true;
+  var goal = state.goal || DEFAULT_GOAL;
+  $("msgModal").classList.add("hidden"); $("teacherModal").classList.add("hidden");
+  var f=$("finale"); f.classList.remove("hidden","go");
+  var cnt=$("finCount"); cnt.innerHTML=(goal-1)+"<small>回</small>"; cnt.classList.remove("pop");
+  var title=$("finTitle"); var txt=title.textContent;
+  title.innerHTML=""; txt.split("").forEach(function(ch){ var s=document.createElement("span"); s.textContent=ch; title.appendChild(s); });
+  $("finSub").textContent = goal+"回 ― みんなで積み重ねた練習の証";
+  $("finSub").classList.remove("on"); finaleClosable=false;
+  startFx();
+  // 1) 2010 → 2011 にカウントアップ
+  setTimeout(function(){
+    cnt.innerHTML=goal+"<small>回</small>"; void cnt.offsetWidth; cnt.classList.add("pop");
+    f.classList.add("go");        // 閃光・光線・「証」
+    burst(0.5,0.42,220);
+    setTimeout(function(){ burst(0.25,0.3,140); burst(0.75,0.3,140); }, 450);
+  }, 1100);
+  // 2) タイトルを1文字ずつ
+  setTimeout(function(){
+    Array.prototype.forEach.call(title.children, function(s,i){ setTimeout(function(){ s.classList.add("on"); }, i*110); });
+  }, 2600);
+  // 3) サブタイトル・紙吹雪・ボタン
+  setTimeout(function(){ $("finSub").classList.add("on"); confettiOn=true; }, 4200);
+  setTimeout(function(){ finaleClosable=true; }, 6200);
+}
+function closeFinale(){
+  $("finale").classList.add("hidden"); stopFx();
+  render(false);
+  var last = msgLines[msgLines.length-1];
+  if(last){
+    last.classList.remove("shine"); void last.offsetWidth; last.classList.add("shine");
+    $("teacherMsg").scrollIntoView({ behavior:"smooth", block:"start" });
+  }
+}
+
+/* 花火・紙吹雪（canvas） */
+var fxParts=[], confettiOn=false, fxCtx=null, fxW=0, fxH=0, fxNextAuto=0;
+var FX_COLORS=["#fff7ec","#ffe7a6","#f7cf63","#eaa84a","#ff8fa3","#8fd3ff","#b9a2ff","#9dffb0"];
+function fxResize(){
+  var c=$("fxCanvas"), dpr=window.devicePixelRatio||1;
+  fxW=c.clientWidth; fxH=c.clientHeight; c.width=fxW*dpr; c.height=fxH*dpr;
+  fxCtx=c.getContext("2d"); fxCtx.setTransform(dpr,0,0,dpr,0,0);
+}
+function burst(rx, ry, n){
+  var x=rx*fxW, y=ry*fxH, base=FX_COLORS[Math.floor(Math.random()*FX_COLORS.length)];
+  for(var i=0;i<n;i++){
+    var a=Math.random()*Math.PI*2, sp=2+Math.random()*7;
+    fxParts.push({ x:x, y:y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life:70+Math.random()*50, age:0,
+      size:1.6+Math.random()*2.2, color:Math.random()<.6?base:"#fff3c4", kind:"spark" });
+  }
+}
+function addConfetti(){
+  fxParts.push({ x:Math.random()*fxW, y:-20, vx:(Math.random()-.5)*1.5, vy:1.5+Math.random()*2.5, life:600, age:0,
+    w:7+Math.random()*7, h:4+Math.random()*5, rot:Math.random()*6, vr:(Math.random()-.5)*.25,
+    color:FX_COLORS[Math.floor(Math.random()*FX_COLORS.length)], kind:"conf" });
+}
+function startFx(){
+  fxStop=false; fxParts=[]; confettiOn=false; fxResize(); fxNextAuto=performance.now()+2200;
+  window.addEventListener("resize", fxResize);
+  var loop=function(t){
+    if(fxStop) return;
+    if(t>fxNextAuto && $("finale").classList.contains("go")){ burst(.15+Math.random()*.7, .15+Math.random()*.4, 90+Math.floor(Math.random()*80)); fxNextAuto=t+700+Math.random()*900; }
+    if(confettiOn) for(var k=0;k<3;k++) addConfetti();
+    fxCtx.clearRect(0,0,fxW,fxH);
+    fxCtx.globalCompositeOperation="lighter";
+    fxParts=fxParts.filter(function(p){
+      p.age++; if(p.age>p.life || p.y>fxH+30) return false;
+      if(p.kind==="spark"){
+        p.vx*=.97; p.vy=p.vy*.97+.06; p.x+=p.vx; p.y+=p.vy;
+        fxCtx.globalAlpha=Math.max(0,1-p.age/p.life);
+        fxCtx.fillStyle=p.color; fxCtx.beginPath(); fxCtx.arc(p.x,p.y,p.size,0,Math.PI*2); fxCtx.fill();
+      }
+      return true;
+    });
+    fxCtx.globalCompositeOperation="source-over"; fxCtx.globalAlpha=1;
+    fxParts.forEach(function(p){
+      if(p.kind!=="conf") return;
+      p.x+=p.vx+Math.sin(p.age/20); p.y+=p.vy; p.rot+=p.vr;
+      fxCtx.save(); fxCtx.translate(p.x,p.y); fxCtx.rotate(p.rot); fxCtx.scale(1, Math.abs(Math.cos(p.age/12))+.2);
+      fxCtx.fillStyle=p.color; fxCtx.fillRect(-p.w/2,-p.h/2,p.w,p.h); fxCtx.restore();
+    });
+    fxRAF=requestAnimationFrame(loop);
+  };
+  fxRAF=requestAnimationFrame(loop);
+}
+function stopFx(){ fxStop=true; if(fxRAF) cancelAnimationFrame(fxRAF); window.removeEventListener("resize", fxResize); fxParts=[]; }
+
+
 /* ===== 起動 ===== */
 function init(){
   buildGauge();
@@ -455,6 +673,18 @@ function init(){
   $("msgClose").addEventListener("click", closeMessage);
   $("msgModal").addEventListener("click", function(e){ if(e.target===$("msgModal")) closeMessage(); });
   $("notePost").addEventListener("click", postNote);
+  $("finalBtn").addEventListener("click", pressFinal);
+  // 演出が出そろったあと、画面のどこかをタップすると閉じる
+  $("finale").addEventListener("click", function(){ if(finaleClosable) closeFinale(); });
+  $("finalUnlock").addEventListener("click", function(){
+    var pin=prompt("先生用の暗証番号を入力してください（この端末に「最後の1回」ボタンを出します）"); if(pin===null) return;
+    finalPin = pin;
+    $("teacherModal").classList.add("hidden");
+    render(false);
+    var goal = state.goal||DEFAULT_GOAL;
+    if((state.total||0) >= goal-1) toast("「みんなで押す！」ボタンを出しました");
+    else toast((goal-1)+"回に届いたら、この端末にボタンが出ます");
+  });
 
   $("appTitle").addEventListener("click", function(){
     titleTaps++; clearTimeout(titleTapTimer);

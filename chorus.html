@@ -280,6 +280,12 @@
     <div id="ref-view"></div>
   </div>
 
+  <!-- お手本②（YouTube・音声だけ） -->
+  <div class="card" id="ref2-card" style="display:none">
+    <div class="card-title">📺 お手本②</div>
+    <div class="vocal-list" id="ref2-list"></div>
+  </div>
+
   <!-- パート別音源（YouTube） -->
   <div class="card" id="partvid-card" style="display:none">
     <div class="card-title">🎼 パート別音源（YouTube）</div>
@@ -384,7 +390,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-18-5';
+const APP_VERSION = '2026-10-25-1';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -909,23 +915,11 @@ function stopAll(){
 /* ===== パート別音源（YouTube埋め込み） ===== */
 function getPartVideos(){ const c=ensureChorus(); return c.partVideos||[]; }
 let _pvRenderedSig='';
-function renderPartVideos(){
-  const card=document.getElementById('partvid-card'), el=document.getElementById('partvid-list');
-  if(!card||!el) return;
-  const list=getPartVideos();
-  if(!list.length){ card.style.display='none'; _pvRenderedSig=''; return; }
-  card.style.display='block';
-  // 既に描画済みで動画の顔ぶれが同じなら、プレーヤーは作り直さずマーカー欄だけ更新（再生を止めない）
-  const sig=JSON.stringify(list.map(v=>v.id+':'+v.youtubeId));
-  if(sig===_pvRenderedSig && el.children.length){
-    list.forEach(v=>{ const w=document.getElementById('mk-wrap-'+v.id); if(w) w.innerHTML=markersHtml(v.id); });
-    return;
-  }
-  _pvRenderedSig=sig;
-  el.innerHTML=list.map(v=>{
-    const pc=partClass(v.part), id=escHtml(v.id), yt=escHtml(v.youtubeId);
-    return `<div class="pv-item">
-      <div class="vocal-head"><span class="part-badge ${pc}">${escHtml(v.part)}</span><span class="vocal-title">${escHtml(v.title)}</span></div>
+function pvItemHtml(v){
+  const pc=partClass(v.part), id=escHtml(v.id), yt=escHtml(v.youtubeId);
+  const badge = v.part?`<span class="part-badge ${pc}">${escHtml(v.part)}</span>`:'';
+  return `<div class="pv-item">
+      <div class="vocal-head">${badge}<span class="vocal-title">${escHtml(v.title)}</span></div>
       <div class="ref-controls">
         <button class="skip-btn play" id="pvplay-${id}" onclick="pvToggle('${id}','${yt}')">▶ 再生</button>
         <button class="skip-btn" onclick="pvSkip('${id}',-5)">⏪ 5秒</button>
@@ -942,7 +936,26 @@ function renderPartVideos(){
       <div id="mk-wrap-${id}">${markersHtml(id)}</div>
       <div class="yt-holder-off"><div id="ytp-${id}"></div></div>
     </div>`;
-  }).join('');
+}
+function renderPartVideos(){
+  const card=document.getElementById('partvid-card'), el=document.getElementById('partvid-list');
+  const card2=document.getElementById('ref2-card'), el2=document.getElementById('ref2-list');
+  if(!card||!el) return;
+  const list=getPartVideos();
+  const refs=list.filter(v=>v.kind==='ref2');
+  const parts=list.filter(v=>v.kind!=='ref2');
+  if(card2&&el2) card2.style.display=refs.length?'block':'none';
+  card.style.display=parts.length?'block':'none';
+  if(!list.length){ _pvRenderedSig=''; return; }
+  // 既に描画済みで動画の顔ぶれが同じなら、プレーヤーは作り直さずマーカー欄だけ更新（再生を止めない）
+  const sig=JSON.stringify(list.map(v=>v.id+':'+v.youtubeId));
+  if(sig===_pvRenderedSig && (el.children.length||(el2&&el2.children.length))){
+    list.forEach(v=>{ const w=document.getElementById('mk-wrap-'+v.id); if(w) w.innerHTML=markersHtml(v.id); });
+    return;
+  }
+  _pvRenderedSig=sig;
+  el.innerHTML=parts.map(pvItemHtml).join('');
+  if(el2) el2.innerHTML=refs.map(pvItemHtml).join('');
 }
 /* パート別音源（音声だけ・複数プレーヤー） */
 let _pvPlayers={}, _pvPoll={}, _pvPendingSeek={};
