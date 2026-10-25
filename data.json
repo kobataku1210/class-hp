@@ -79,7 +79,12 @@
         "title": "お手本②「証」",
         "youtubeId": "qrdilmxSe7w",
         "kind": "ref2",
-        "markers": []
+        "markers": [
+          {
+            "label": "①前を向きなよ",
+            "t": 11.6
+          }
+        ]
       },
       {
         "id": "pv-sop-1",
