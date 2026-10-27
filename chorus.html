@@ -262,6 +262,13 @@
     <div class="page-sub">練習の音源をいつでも聴けます。何度も聴いて合わせよう！</div>
   </div>
 
+  <!-- 証 動画（学校サーバーでのみ表示） -->
+  <div class="card" id="video-card" style="display:none">
+    <div class="card-title">🎬 証（動画）</div>
+    <video id="akashi-video" controls preload="metadata" playsinline onplay="onVideoPlay()"
+           style="width:100%;border-radius:12px;background:#000;display:block"></video>
+  </div>
+
   <!-- 気づきメモ（クラス共有） -->
   <div class="card" id="notes-card">
     <div class="card-title">💡 気づき・曲のポイント</div>
@@ -390,7 +397,7 @@
 
 <script>
 // ===== 自動更新（キャッシュ対策）: version.json と比べて古ければ最新を読み込み直す =====
-const APP_VERSION = '2026-10-25-1';
+const APP_VERSION = '2026-10-27-1';
 (async function checkVersion(){
   try{
     const r = await fetch('version.json?_='+Date.now(), { cache:'no-store' });
@@ -481,6 +488,7 @@ function schedulePush(){
 /* ===== 描画 ===== */
 function render(){
   renderReference();
+  renderVideo();
   renderNotes();
   renderCompare();
   renderPartVideos();
@@ -563,6 +571,7 @@ function onAnyPlay(el){
   if(typeof _cmp!=='undefined' && _cmp.active) return;  // 聴き比べ中は専用スケジューラが管理（お手本を止めない）
   document.querySelectorAll('audio').forEach(a=>{ if(a!==el) a.pause(); });
   if(typeof pausePartPlayers==='function') pausePartPlayers();
+  if(typeof pauseAkashiVideo==='function') pauseAkashiVideo();
   if(ytPlayer && ytPlayer.getPlayerState){ try{ if(ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }catch(e){} }
 }
 // マーカー／ポイントの位置へジャンプして再生
@@ -897,11 +906,28 @@ function stopCompare(silent){
   if(!silent) renderCompare();
 }
 
+/* ===== 証 動画（学校サーバーでのみ表示） ===== */
+function renderVideo(){
+  const card=document.getElementById('video-card'), v=document.getElementById('akashi-video');
+  if(!card||!v) return;
+  if(HOME_ONLY){ card.style.display='none'; try{ v.pause(); }catch(e){} v.removeAttribute('src'); return; }
+  card.style.display='block';
+  if(!v.getAttribute('src')) v.setAttribute('src','chorus_video/akashi.mp4');
+}
+// 動画を再生したら、他の音源は止める
+function onVideoPlay(){
+  document.querySelectorAll('audio').forEach(a=>a.pause());
+  try{ if(ytPlayer && ytPlayer.getPlayerState && ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }catch(e){}
+  if(typeof pausePartPlayers==='function') pausePartPlayers();
+}
+function pauseAkashiVideo(){ const v=document.getElementById('akashi-video'); if(v) v.pause(); }
+
 /* ===== 全部とめる ===== */
 function anythingPlaying(){
   try{ if(ytPlayer && ytPlayer.getPlayerState && ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) return true; }catch(e){}
   for(const k in _pvPlayers){ try{ if(_pvPlayers[k].getPlayerState && _pvPlayers[k].getPlayerState()===YT.PlayerState.PLAYING) return true; }catch(e){} }
   for(const a of document.querySelectorAll('audio')){ if(!a.paused) return true; }
+  const vv=document.getElementById('akashi-video'); if(vv && !vv.paused) return true;
   return false;
 }
 function stopAll(){
@@ -909,6 +935,7 @@ function stopAll(){
   try{ if(ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo(); }catch(e){}
   for(const k in _pvPlayers){ try{ _pvPlayers[k].pauseVideo(); }catch(e){} }
   document.querySelectorAll('audio').forEach(a=>a.pause());
+  pauseAkashiVideo();
   const b=document.getElementById('stopall-btn'); if(b) b.style.display='none';
 }
 
@@ -966,6 +993,7 @@ function pvPauseOthers(exceptId){
   pausePartPlayers(exceptId);
   if(ytPlayer&&ytPlayer.pauseVideo){ try{ if(ytPlayer.getPlayerState&&ytPlayer.getPlayerState()===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }catch(e){} }
   document.querySelectorAll('audio').forEach(a=>a.pause());
+  if(typeof pauseAkashiVideo==='function') pauseAkashiVideo();
 }
 async function pvToggle(id, ytid){
   await loadYTApi();
@@ -1140,7 +1168,7 @@ function onRefState(e){
     try{ ytPlayer.seekTo(0, true); ytPlayer.playVideo(); }catch(err){}
     return;
   }
-  if(e.data===YT.PlayerState.PLAYING){ document.querySelectorAll('audio').forEach(a=>a.pause()); if(typeof pausePartPlayers==='function') pausePartPlayers(); if(btn) btn.textContent='⏸'; if(ytPollTimer) clearInterval(ytPollTimer); ytPollTimer=setInterval(updateRefTime,400); }
+  if(e.data===YT.PlayerState.PLAYING){ document.querySelectorAll('audio').forEach(a=>a.pause()); if(typeof pausePartPlayers==='function') pausePartPlayers(); if(typeof pauseAkashiVideo==='function') pauseAkashiVideo(); if(btn) btn.textContent='⏸'; if(ytPollTimer) clearInterval(ytPollTimer); ytPollTimer=setInterval(updateRefTime,400); }
   else { if(btn) btn.textContent='▶'; if(e.data!==YT.PlayerState.BUFFERING && ytPollTimer){ clearInterval(ytPollTimer); ytPollTimer=null; updateRefTime(); } }
 }
 function updateRefTime(){

@@ -27,6 +27,9 @@ const MIME = {
   '.wav' : 'audio/wav',
   '.ogg' : 'audio/ogg',
   '.aac' : 'audio/aac',
+  '.mp4' : 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov' : 'video/quicktime',
 };
 
 // リクエストボディを読み取る
@@ -318,7 +321,7 @@ const server = http.createServer(async (req, res) => {
   }
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME[ext] || 'application/octet-stream';
-  const isAudio = ['.mp3', '.m4a', '.wav', '.ogg', '.aac'].includes(ext);
+  const isAudio = ['.mp3', '.m4a', '.wav', '.ogg', '.aac', '.mp4', '.webm', '.mov'].includes(ext);
 
   fs.stat(filePath, (statErr, stat) => {
     if (statErr || !stat.isFile()) {
