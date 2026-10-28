@@ -134,6 +134,17 @@
   .msg-cap{ font-size:15px; line-height:1.8; color:var(--gold-soft); font-weight:700; margin:-6px 0 16px;
     padding:10px 12px; border:1px solid rgba(244,200,74,.45); border-radius:10px; background:rgba(244,200,74,.08); }
 
+  /* ===== 最後の局面：みんなで長押し ===== */
+  #finalHoldBox{ margin-bottom:14px; text-align:center; }
+  .fh-title{ font-size:16px; font-weight:800; color:#ffe9a8; margin-bottom:10px; line-height:1.55; text-shadow:0 0 12px rgba(255,214,100,.5); }
+  .fh-gauge{ position:relative; height:28px; border-radius:16px; background:rgba(255,255,255,.12); overflow:hidden; margin-bottom:12px; border:1.5px solid rgba(255,214,100,.45); }
+  .fh-fill{ position:absolute; left:0; top:0; bottom:0; width:0%; border-radius:16px; background:linear-gradient(90deg,#eaa84a,#f7cf63,#ffe7a6,#fff3c4); transition:width .35s ease; box-shadow:0 0 18px rgba(255,214,100,.8); }
+  .fh-pct{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:900; color:#2a2160; text-shadow:0 1px 0 rgba(255,255,255,.4); }
+  #holdBtn{ width:100%; font-size:24px; padding:26px 16px; letter-spacing:.06em; -webkit-user-select:none; user-select:none; touch-action:none; }
+  #holdBtn:disabled{ opacity:.5; animation:none; }
+  #holdBtn.holding{ transform:scale(.98); box-shadow:0 0 46px rgba(255,236,170,1); }
+  .fh-hint{ font-size:13px; color:#bcd0ff; margin-top:9px; }
+
   /* ===== 最後の1回（みんなで押す）ボタン ===== */
   .final-btn{ width:100%; margin-bottom:12px; font-size:24px; padding:22px 16px; letter-spacing:.06em;
     background:linear-gradient(180deg,#fff7d6,#ffd96a 45%,#e8a92a); color:#3a2300;
@@ -221,9 +232,16 @@
     <div id="doneMsg" class="doneMsg hidden">🎉 証ゲージ満タン！　クラスみんなの「証」が完成しました！</div>
 
     <div class="report">
-      <button id="finalBtn" class="btn final-btn hidden" type="button">🎉 みんなで押す！ 最後の1回</button>
+      <!-- 最後の局面：みんなで長押しして証ゲージをためる -->
+      <div id="finalHoldBox" class="hidden">
+        <div class="fh-title" id="fhTitle">🔒 あと少し！ みんなで長押しして「証」を完成させよう！</div>
+        <div class="fh-gauge"><div class="fh-fill" id="fhFill"></div><span class="fh-pct" id="fhPct">0%</span></div>
+        <button id="holdBtn" class="btn final-btn" type="button" disabled>🔥 長押しで証をためる</button>
+        <div class="fh-hint" id="fhHint">先生の「スタート！」を待ってね</div>
+      </div>
+
       <button id="addOne" class="btn big" type="button">🎵 1回 聴いた！</button>
-      <div class="row">
+      <div class="row" id="addManyRow">
         <input id="addMany" type="number" min="1" max="1000" placeholder="まとめて入力（最大1000）">
         <button id="addManyBtn" class="btn ghost" type="button">追加</button>
       </div>
@@ -250,7 +268,9 @@
     <div class="foot">
       <button id="closeTeacher" class="btn ghost" type="button">閉じる</button>
       <button id="changeGoal" class="btn ghost" type="button">目標回数を変更</button>
-      <button id="finalUnlock" class="btn" type="button">🎉 最後の1回ボタンを出す</button>
+      <button id="finalStartBtn" class="btn" type="button">🔥 最後の長押し：スタート！</button>
+      <button id="finalStopBtn" class="btn ghost" type="button">長押しを中止</button>
+      <button id="finalSecBtn" class="btn ghost" type="button">満タン秒数を変更</button>
       <button id="clearNotes" class="danger" type="button">メモを全消去</button>
       <button id="resetAll" class="danger" type="button">合計をリセット</button>
     </div>
@@ -367,7 +387,12 @@ var MESSAGES = [
 var $ = function(id){ return document.getElementById(id); };
 var state = { total:0, goal:DEFAULT_GOAL };
 var pollTimer = null, lastMsgIdx = -1;
-var finalPin = null;   // 先生パネルで「最後の1回ボタンを出す」と入る（この端末だけ）
+var finalPin = null;   // （旧）未使用
+// ▼ 最後の局面：みんなで長押しして証ゲージをためる
+var DEFAULT_FINAL_SEC = 120;
+var fin = { armed:false, fill:0, target:DEFAULT_FINAL_SEC, done:false, atLast:false };
+var holdActive=false, holdLastSentMs=0, holdReportTimer=null, finalPollTimer=null;
+var FINAL_POLL_MS = 900;
 
 var MINE_KEY = "shirushi_mine";
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
@@ -452,7 +477,6 @@ function render(spark){
   $("remainText").innerHTML = remainHtml;
   $("remainText").classList.toggle("hidden", remain<=0);
   $("doneMsg").classList.toggle("hidden", total < goal);
-  $("finalBtn").classList.toggle("hidden", !(finalPin && remain===1));
   if(spark) sparkle();
 }
 function sparkle(){
@@ -536,12 +560,7 @@ function postNote(){
 function startPoll(){
   stopPoll();
   pollTimer=setInterval(function(){
-    call("getState").then(function(s){
-      var before = state.total||0;
-      state=s; render(false);
-      // 先生の端末で最後の1回が押されたら、全員の画面で演出
-      if(before>0 && before<s.goal && s.total>=s.goal) celebrate();
-    }).catch(function(){});
+    call("finalStatus").then(applyFinal).catch(function(){});
     loadNotes();
   }, POLL_MS);
 }
@@ -558,17 +577,94 @@ function renderRoster(){
   $("rosterArea").innerHTML=head+'<div style="color:#8fa0cc;font-size:13px">匿名集計のため、クラス合計のみ記録しています。</div>';
 }
 
-/* ===== 最後の1回（みんなで押す） ===== */
-function pressFinal(){
-  if(!finalPin) return;
-  $("finalBtn").disabled = true;
-  call("teacherFinal", finalPin).then(function(j){
-    if(!j || !j.ok){ alert((j&&j.error)||"失敗しました"); finalPin=null; render(false); return; }
-    state.total = j.total; state.goal = j.goal;
-    finalPin = null;
-    celebrate();
-  }).catch(function(){ toast("通信エラー。もう一度押してください"); })
-  .then(function(){ $("finalBtn").disabled = false; });
+/* ===== 最後の局面：みんなで長押しして証ゲージをためる ===== */
+function applyFinal(s){
+  if(!s) return;
+  var wasBelow = (state.total||0) < (state.goal||DEFAULT_GOAL);
+  state.total = s.total; state.goal = s.goal;
+  fin.armed = !!s.armed; fin.fill = s.fill||0; fin.target = s.target||DEFAULT_FINAL_SEC;
+  fin.done = !!s.done; fin.atLast = !!s.atLast;
+  render(false);
+  renderFinalPhase();
+  if(fin.atLast && !fin.done) startFinalPoll(); else stopFinalPoll();
+  if(wasBelow && s.done) celebrate();
+}
+function renderFinalPhase(){
+  var show = fin.atLast && !fin.done;
+  $("finalHoldBox").classList.toggle("hidden", !show);
+  $("addOne").classList.toggle("hidden", show);
+  var manyRow=$("addManyRow"); if(manyRow) manyRow.classList.toggle("hidden", show);
+  if(!show) return;
+  var ratio = fin.target>0 ? Math.min(fin.fill/fin.target,1) : 0;
+  $("fhFill").style.width = (ratio*100)+"%";
+  $("fhPct").textContent = Math.round(ratio*100)+"%";
+  var btn=$("holdBtn"); btn.disabled = !fin.armed;
+  if(fin.armed){
+    $("fhTitle").innerHTML = "🔥 今だ！ みんなで長押しして「証」を完成させよう！";
+    $("fhHint").textContent = "ボタンを長く押し続けよう！ みんなで押すほど速くたまるよ";
+  }else{
+    $("fhTitle").innerHTML = "🔒 あと少し！ 先生の「スタート！」の合図を待ってね";
+    $("fhHint").textContent = "先生がスタートすると、長押しできるようになります";
+  }
+}
+function startFinalPoll(){
+  if(finalPollTimer) return;
+  finalPollTimer=setInterval(function(){
+    call("finalStatus").then(applyFinal).catch(function(){});
+  }, FINAL_POLL_MS);
+}
+function stopFinalPoll(){ if(finalPollTimer){ clearInterval(finalPollTimer); finalPollTimer=null; } }
+
+/* 長押し */
+function holdStart(ev){
+  if(ev && ev.cancelable) ev.preventDefault();
+  if(!fin.armed || fin.done || holdActive) return;
+  try{ if(ev && ev.pointerId!=null) $("holdBtn").setPointerCapture(ev.pointerId); }catch(e){}
+  holdActive=true; holdLastSentMs=Date.now();
+  $("holdBtn").classList.add("holding");
+  if(holdReportTimer) clearInterval(holdReportTimer);
+  holdReportTimer=setInterval(sendHoldChunk, 2500);
+}
+function holdEnd(){
+  if(!holdActive) return;
+  holdActive=false;
+  $("holdBtn").classList.remove("holding");
+  if(holdReportTimer){ clearInterval(holdReportTimer); holdReportTimer=null; }
+  sendHoldChunk();   // 残りを送る
+}
+function sendHoldChunk(){
+  var now=Date.now();
+  var sec=(now-holdLastSentMs)/1000;
+  if(sec<=0.05) return;
+  holdLastSentMs=now;
+  if(sec>6) sec=6;
+  call("finalHold", Math.round(sec*10)/10).then(function(s){ applyFinal(s); }).catch(function(){});
+}
+
+/* 先生：長押しスタート（解禁）／中止／満タン秒数の変更 */
+function finalStartNow(){
+  var pin=prompt("先生用の暗証番号（「せーの！」の合図で長押しを解禁します）"); if(pin===null) return;
+  call("finalStart", pin).then(function(s){
+    if(s && s.ok===false){ alert(s.error||"失敗しました"); return; }
+    applyFinal(s); $("teacherModal").classList.add("hidden"); toast("長押しスタート！ みんなで押そう！");
+  }).catch(function(){ alert("通信エラー"); });
+}
+function finalStopNow(){
+  var pin=prompt("先生用の暗証番号（長押しを中止してたまりを0に戻します）"); if(pin===null) return;
+  call("finalStop", pin).then(function(s){
+    if(s && s.ok===false){ alert(s.error||"失敗しました"); return; }
+    applyFinal(s); toast("長押しを中止しました");
+  }).catch(function(){ alert("通信エラー"); });
+}
+function finalSecNow(){
+  var cur = fin.target||DEFAULT_FINAL_SEC;
+  var v=prompt("満タンまでの『みんなの合計秒数』を入力（例：120）", cur); if(v===null) return;
+  var sec=parseInt(v,10); if(!sec||sec<1){ alert("数字を入れてください"); return; }
+  var pin=prompt("先生用の暗証番号を入力してください"); if(pin===null) return;
+  call("teacherSetFinalSec", pin, sec).then(function(s){
+    if(s && s.ok===false){ alert(s.error||"失敗しました"); return; }
+    applyFinal(s); toast("満タンを合計"+sec+"秒にしました");
+  }).catch(function(){ alert("通信エラー"); });
 }
 
 /* ===== 2011回目の演出 ===== */
@@ -673,18 +769,21 @@ function init(){
   $("msgClose").addEventListener("click", closeMessage);
   $("msgModal").addEventListener("click", function(e){ if(e.target===$("msgModal")) closeMessage(); });
   $("notePost").addEventListener("click", postNote);
-  $("finalBtn").addEventListener("click", pressFinal);
   // 演出が出そろったあと、画面のどこかをタップすると閉じる
   $("finale").addEventListener("click", function(){ if(finaleClosable) closeFinale(); });
-  $("finalUnlock").addEventListener("click", function(){
-    var pin=prompt("先生用の暗証番号を入力してください（この端末に「最後の1回」ボタンを出します）"); if(pin===null) return;
-    finalPin = pin;
-    $("teacherModal").classList.add("hidden");
-    render(false);
-    var goal = state.goal||DEFAULT_GOAL;
-    if((state.total||0) >= goal-1) toast("「みんなで押す！」ボタンを出しました");
-    else toast((goal-1)+"回に届いたら、この端末にボタンが出ます");
-  });
+
+  // 長押しボタン（最後の局面）
+  var hb=$("holdBtn");
+  hb.addEventListener("pointerdown", holdStart);
+  hb.addEventListener("pointerup", holdEnd);
+  hb.addEventListener("pointercancel", holdEnd);
+  hb.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+  window.addEventListener("blur", holdEnd);
+
+  // 先生：長押しスタート／中止／秒数変更
+  $("finalStartBtn").addEventListener("click", finalStartNow);
+  $("finalStopBtn").addEventListener("click", finalStopNow);
+  $("finalSecBtn").addEventListener("click", finalSecNow);
 
   $("appTitle").addEventListener("click", function(){
     titleTaps++; clearTimeout(titleTapTimer);
@@ -719,7 +818,7 @@ function init(){
     }).catch(function(){ alert("通信エラー"); });
   });
 
-  call("getState").then(function(s){ state=s; render(false); }).catch(function(){ toast("接続できませんでした"); });
+  call("finalStatus").then(applyFinal).catch(function(){ toast("接続できませんでした"); });
   loadNotes();
   startPoll();
 }
