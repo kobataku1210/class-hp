@@ -12,6 +12,10 @@
  * ▼ セットアップは「証カウンター_設定手順.md」を参照。
  */
 
+// ★「みんなの気づき」の新規投稿の受付（false＝締め切り。また受け付けるときは true に戻す）
+//   Index.html の ACCEPT_NOTES も同じ値にそろえること
+var ACCEPT_NOTES = false;
+
 var DEFAULT_GOAL = 1000;
 var ADMIN_PIN    = '1210';   // 先生用パネルの暗証番号
 var MAX_ADD      = 1000;     // 一度に足せる上限
@@ -135,6 +139,7 @@ function getNotes() {
 }
 
 function addNote(text) {
+  if (!ACCEPT_NOTES) return { ok: false, error: '新しい投稿の受付は終了しました' };
   text = String(text || '').slice(0, MAX_NOTE_LEN).replace(/^\s+|\s+$/g, '');
   if (!text) return { ok: false, error: '空です' };
   var lock = LockService.getScriptLock();
