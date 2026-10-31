@@ -38,6 +38,7 @@
   .del{margin-left:auto;padding:4px 12px;border:none;border-radius:8px;cursor:pointer;
     background:#fee2e2;color:#dc2626;font-weight:900;font-family:inherit;font-size:.74rem;}
   .empty{text-align:center;color:#94a3b8;font-size:.9rem;padding:22px 10px;}
+  .closed{text-align:center;font-size:.98rem;font-weight:800;color:#6d28d9;line-height:1.8;}
   .foot{text-align:center;margin-top:18px;}
   .tlink{background:none;border:none;color:#a78bda;font-weight:800;font-family:inherit;font-size:.82rem;cursor:pointer;text-decoration:underline;}
 </style>
@@ -49,7 +50,11 @@
     <div class="sub">聴いて気づいたこと・曲のポイントを、クラスみんなで共有しよう（名前を入れる／匿名、どちらでもOK）</div>
   </div>
 
-  <div class="card">
+  <div class="card closed" id="closedBox" style="display:none">
+    新しい投稿の受付は終了しました。<br>これまでのみんなの気づきは、下でそのまま読めます。
+  </div>
+
+  <div class="card" id="formCard">
     <div class="who-row">
       <input id="name" class="name-in" maxlength="20" placeholder="名前（ニックネーム可）">
       <label class="anon-lbl"><input type="checkbox" id="anon" onchange="onAnon()"> 匿名で出す</label>
@@ -69,6 +74,10 @@
 </div>
 
 <script>
+  // ★新しい投稿の受付スイッチ（false＝締め切り。また受け付けるときは true に戻す）
+  //   Code.gs の ACCEPT_POSTS も同じ値にそろえること
+  var ACCEPT_POSTS = false;
+
   var NOTES = [], isTeacher = false, pin = '';
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function fmt(ts){var d=new Date(ts);if(isNaN(d))return '';function p(n){return String(n).padStart(2,'0');}return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes());}
@@ -130,6 +139,10 @@
       .withSuccessHandler(function(d){NOTES=d||[];render();})
       .withFailureHandler(function(e){alert((e&&e.message)||'削除できません（暗証番号を確認）');})
       .apiDel(ts,pin);
+  }
+  if(!ACCEPT_POSTS){
+    document.getElementById('formCard').style.display='none';
+    document.getElementById('closedBox').style.display='block';
   }
   restorePrefs();
   load();

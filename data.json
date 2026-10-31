@@ -2069,79 +2069,6 @@
   "studies": {
     "members": [
       {
-        "id": "mmqojik5q807",
-        "name": "わたゆい",
-        "gender": "f",
-        "weekdays": [
-          3
-        ],
-        "promises": [
-          {
-            "date": "2026-06-24",
-            "status": "done",
-            "auto": true,
-            "doneDate": "2026-06-24"
-          },
-          {
-            "date": "2026-07-01",
-            "status": "done",
-            "auto": true,
-            "doneDate": "2026-07-02"
-          },
-          {
-            "date": "2026-07-08",
-            "status": "done",
-            "auto": true,
-            "doneDate": "2026-07-10"
-          },
-          {
-            "date": "2026-07-15",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-07-22",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-07-29",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-08-05",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-08-12",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-10-07",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-10-14",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-10-21",
-            "status": "pending",
-            "auto": true
-          },
-          {
-            "date": "2026-10-28",
-            "status": "pending",
-            "auto": true
-          }
-        ]
-      },
-      {
         "id": "mmqojiwur561",
         "name": "くわもも",
         "gender": "f",
@@ -2267,6 +2194,41 @@
             "date": "2026-11-03",
             "status": "pending",
             "auto": true
+          },
+          {
+            "date": "2026-11-06",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-10",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-13",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-17",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-20",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-24",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-27",
+            "status": "pending",
+            "auto": true
           }
         ],
         "memo": ""
@@ -2337,6 +2299,26 @@
           },
           {
             "date": "2026-10-28",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-04",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-11",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-18",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-25",
             "status": "pending",
             "auto": true
           }
@@ -2411,6 +2393,21 @@
             "date": "2026-11-03",
             "status": "pending",
             "auto": true
+          },
+          {
+            "date": "2026-11-10",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-17",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-24",
+            "status": "pending",
+            "auto": true
           }
         ],
         "memo": "１週間で、科目を問わず、合計１０ページワークを進める"
@@ -2483,6 +2480,21 @@
             "date": "2026-11-03",
             "status": "pending",
             "auto": true
+          },
+          {
+            "date": "2026-11-10",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-17",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-24",
+            "status": "pending",
+            "auto": true
           }
         ]
       },
@@ -2551,6 +2563,26 @@
           },
           {
             "date": "2026-10-28",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-04",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-11",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-18",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-25",
             "status": "pending",
             "auto": true
           }
@@ -2684,6 +2716,41 @@
           },
           {
             "date": "2026-11-03",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-05",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-10",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-12",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-17",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-19",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-24",
+            "status": "pending",
+            "auto": true
+          },
+          {
+            "date": "2026-11-26",
             "status": "pending",
             "auto": true
           }

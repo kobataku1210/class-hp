@@ -18,6 +18,10 @@
  *  ※コードを直したら「デプロイを管理」→編集→バージョン「新バージョン」で更新
  */
 
+// ★新しい投稿の受付スイッチ（false＝締め切り。また受け付けるときは true に戻す）
+//   Index.html の ACCEPT_POSTS も同じ値にそろえること
+var ACCEPT_POSTS = false;
+
 var ADMIN_PIN  = '1210';   // 先生用（削除時）
 var SHEET_NAME = 'notes';  // 保存シート（自動作成）
 var MAX_NOTES  = 500;      // 保存上限
@@ -60,6 +64,7 @@ function apiList() {
 }
 
 function apiAdd(name, text) {
+  if (!ACCEPT_POSTS) throw new Error('新しい投稿の受付は終了しました');
   name = String(name || '').replace(/[\r\n\t]+/g, ' ').trim().slice(0, 20);  // 空＝匿名
   text = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 200);
   if (!text) throw new Error('メモが空です');
